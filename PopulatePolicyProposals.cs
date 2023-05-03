@@ -12,7 +12,9 @@ public class PopulatePolicyProposals : MonoBehaviour
     public List<string> lines;
     public List<string> usedLines;
     public TMP_Dropdown tmpdd;
+    public TMP_Dropdown tmpdd_cat;
     public HashSet<string> usedProposals = new HashSet<string>();
+    public Dictionary<string, int> startIndex = new Dictionary<string, int>();
     public float liberal;
     public float libertarian;
     public float immigrant;
@@ -30,8 +32,10 @@ public class PopulatePolicyProposals : MonoBehaviour
     void Start()
     {
         TextAsset txt = (TextAsset)Resources.Load("CampaignProposals", typeof(TextAsset));
+        int lineNum = 0;
         lines = (txt.text.Split('\n').ToList());
         List<string> ddOptions = new List<string>{};
+        List<string> ddCatOptions = new List<string>{};
         foreach (string t in lines)
         {
             List<string> l = new List<string>(t.Split('\t').ToList());
@@ -39,12 +43,21 @@ public class PopulatePolicyProposals : MonoBehaviour
             {
                 ddOptions.Add(l[1]);
                 usedLines.Add(t);
+                if (!startIndex.ContainsKey(l[0]))
+                {
+                    ddCatOptions.Add(l[0]);
+                    startIndex[l[0]] = lineNum;
+                }
+                lineNum++;
             }
+            
         }
+        //ddOptions = ddOptions.OrderBy( x => Random.value ).ToList( );
         tmpdd.AddOptions(ddOptions);
+        tmpdd_cat.AddOptions(ddCatOptions);
 
-        tmpdd.onValueChanged.AddListener(delegate {
-            DropdownValueChanged(tmpdd);
+        tmpdd_cat.onValueChanged.AddListener(delegate {
+            DropdownValueChanged(tmpdd_cat);
         });
 
         li = (float)Variables.Saved.Get("Liberal");
@@ -64,24 +77,20 @@ public class PopulatePolicyProposals : MonoBehaviour
 
     void DropdownValueChanged(TMP_Dropdown change)
     {
-        /*
-        int i = change.value;
-        List<string> l = new List<string>(lines[i].Split('\t').ToList());
-        liberal = (float.Parse(l[2])/1f);
-        libertarian = (float.Parse(l[3])/1f);
-        immigrant = (float.Parse(l[4])/1f);
-        owner = (float.Parse(l[5])/1f);
-        worker = (float.Parse(l[6])/1f);
-        religious = (float.Parse(l[7])/1f);
-        int modifier = 1;
-        Variables.Saved.Set("Liberal", li + (liberal*modifier));
-        Variables.Saved.Set("Libertarian", la + (libertarian*modifier));
-        Variables.Saved.Set("Workers", wo + (worker*modifier));
-        Variables.Saved.Set("Immigrants", im + (immigrant*modifier));
-        Variables.Saved.Set("Owners", ow + (owner*modifier));
-        Variables.Saved.Set("Religious", re + (religious*modifier));
-        */
+        List<string> ddOptions = new List<string>{};
+        foreach (string t in lines)
+        {
+            List<string> l = new List<string>(t.Split('\t').ToList());
+            if ((!usedProposals.Contains(l[1])) && (l[0].Equals(change.options[change.value].text)))
+            {
+                ddOptions.Add(l[1]);
+                usedLines.Add(t);
+            }
+        }
+        tmpdd.ClearOptions();
+        tmpdd.AddOptions(ddOptions);
     }
 
 
 }
+

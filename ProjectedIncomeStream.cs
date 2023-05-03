@@ -22,7 +22,7 @@ public class ProjectedIncomeStream : MonoBehaviour
     
 
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
         fundMult += (float)Variables.Saved.Get("Fundraising");
         TextAsset txt = (TextAsset)Resources.Load("GeneralElection", typeof(TextAsset));
@@ -60,9 +60,9 @@ public class ProjectedIncomeStream : MonoBehaviour
             float staffCount = float.Parse(anArray[2]);
             float n = lines.Count * 1.0f;
             float mod = 1;
-            if (delegateCount.ContainsKey(anArray[0]))
+            if (delegateCount.ContainsKey(stateStaff.Key))
             {
-                mod = delegateCount[anArray[0]] / (delegateTotal/n);
+                mod = delegateCount[stateStaff.Key] / (delegateTotal/n);
             }
             amount += mod*staffMult*staffCount;
         }

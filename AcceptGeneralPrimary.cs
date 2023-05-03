@@ -52,7 +52,8 @@ public class AcceptGeneralPrimary : MonoBehaviour
         if (ppp.usedLines.Count > 0)
         {
             int i = ppp.tmpdd.value;
-            List<string> l = new List<string>(ppp.usedLines[i].Split('\t').ToList());
+            int j = ppp.startIndex[ppp.tmpdd_cat.options[ppp.tmpdd_cat.value].text] + i;
+            List<string> l = new List<string>(ppp.usedLines[j].Split('\t').ToList());
             liberal = (float.Parse(l[2])/1f);
             libertarian = (float.Parse(l[3])/1f);
             immigrant = (float.Parse(l[4])/1f);

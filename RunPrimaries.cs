@@ -11,6 +11,7 @@ using UnityEngine.SceneManagement;
 public class RunPrimaries : MonoBehaviour
 {
     public int numPrimaries = 4;
+    public GameObject removePicture;
     public int curPrimary;
     public GameObject prefab;
     public TextAsset txt;
@@ -55,11 +56,13 @@ public class RunPrimaries : MonoBehaviour
     public bool run1 = false;
     public GameObject victoryScreen;
     public GameObject defeatScreen;
+    public GameObject newsScreen;
 
     void setUpText()
     {
         if (((curPrimary) % numPrimaries == 0) && (run1))
         {
+            newsScreen.SetActive(true);
             buttonLabel.text = "End Primary Day";
             flag = true;
         }
@@ -119,12 +122,18 @@ public class RunPrimaries : MonoBehaviour
         //List<string> l = new List<string>(lines[curPrimary].Split('\t').ToList());
         startPrimary.onClick.AddListener(delegate {onButtonClicked(startPrimary);});
         //startPrimary.GetComponentsInChildren<TextMeshProUGUI>().text = "Start " + l[0] + " Primary";
-
+        int delegateTotal = 0;
+        for (int i = curPrimary; i < Mathf.Min(curPrimary+numPrimaries, lines.Count); i++)
+        {
+            List<string> l = new List<string>(lines[i].Split('\t').ToList());
+            delegateTotal += int.Parse(l[1]);
+        }
+        delegateCount.text = delegateTotal.ToString() + " delegates up for grabs in this round";
     }
 
     void onButtonClicked(Button b)
     {
-
+        removePicture.SetActive(false);
         float userDelegates = (float)Variables.Saved.Get("currentDelegates");
         float targetDelegates = (float)Variables.Saved.Get("targetDelegates");
         float del1 = (float)Variables.Saved.Get("d_rival1");

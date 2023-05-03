@@ -25,7 +25,7 @@ public class GeneralElectionVisits : MonoBehaviour
     public float ow;
     public float wo;
     public float im;
-    public float[][] stateArray = new float[50][];
+    public float[][] stateArray = new float[51][];
     public float evToWin = 270f;
     public int statesAbove = 3;
     public int statesBelow = 3;
