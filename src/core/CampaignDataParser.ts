@@ -1,0 +1,108 @@
+export interface StateElectionData {
+  stateName: string;
+  delegatesOrEV: number; // For General Election
+  demDelegates: number;  // For Primary
+  repDelegates: number;  // For Primary
+  liberal: number;
+  libertarian: number;
+  owner: number;
+  worker: number;
+  religious: number;
+  immigrant: number;
+  region: string;
+  date: string;
+  baseTurnout: number; // 0-100 percentage
+  topIssues: string[]; // List of key issues in this state
+  partisanLean: number; // New: Positive for Democrat, Negative for Republican
+}
+
+export interface CampaignSpendingData {
+  intAds: number;
+  tvAds: number;
+  mailers: number;
+  staff1: number;
+  staff2: number;
+  staff3: number;
+  visits: number;
+  groundGame: number;
+  socialMedia: number;
+  research: number;
+}
+
+export class CampaignDataParser {
+  /**
+   * Loads a JSON file containing the state demographics for a specific 'mod' (e.g., 'vanilla', '1992').
+   */
+  static async loadModData(modName: string = 'vanilla'): Promise<StateElectionData[]> {
+    try {
+      const response = await fetch(`/mods/${modName}/states.json`);
+      if (!response.ok) {
+        throw new Error(`Failed to load mod data for [${modName}]`);
+      }
+      const data: StateElectionData[] = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error loading mod data:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Generates a realistic 70-week campaign calendar from July 2023 to November 2024.
+   */
+  static generateCalendar(): CalendarWeek[] {
+    const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const weeks: CalendarWeek[] = [];
+    
+    // Start date: July 1, 2023
+    let currentDate = new Date(2023, 6, 1); // Month is 0-indexed
+    
+    for (let w = 1; w <= 70; w++) {
+      const month = currentDate.getMonth(); // 0-11
+      const year = currentDate.getFullYear();
+      const monthNum = month + 1; // 1-12
+      
+      let phase: CalendarWeek['phase'];
+      if (w <= 26) {
+        phase = 'campaigning'; // Jul 2023 – Dec 2023
+      } else if (w <= 52) {
+        phase = 'primary'; // Jan 2024 – Jun 2024
+      } else if (w <= 56) {
+        phase = 'convention'; // Jul 2024
+      } else if (w <= 69) {
+        phase = 'general'; // Aug 2024 – Oct 2024
+      } else {
+        phase = 'election_day'; // Nov 5, 2024
+      }
+
+      // Debate weeks (fixed schedule)
+      const isDebateWeek = [35, 60, 63, 66].includes(w);
+
+      weeks.push({
+        week: w,
+        month: MONTH_NAMES[month],
+        monthNum,
+        year,
+        label: `${MONTH_NAMES[month]} ${year} — Week ${w}`,
+        phase,
+        isDebateWeek
+      });
+      
+      // Advance by 7 days
+      currentDate.setDate(currentDate.getDate() + 7);
+    }
+    
+    return weeks;
+  }
+}
+
+export interface CalendarWeek {
+  week: number;
+  month: string;
+  monthNum: number; // 1-12
+  year: number;
+  label: string;
+  phase: 'campaigning' | 'primary' | 'convention' | 'general' | 'election_day';
+  isDebateWeek: boolean;
+}
+

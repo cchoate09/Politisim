@@ -1,0 +1,115 @@
+.budget-view {
+  width: 100%;
+  height: 100%;
+  padding: 2rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.budget-header {
+  margin-bottom: 1rem;
+}
+
+.budget-header h2 {
+  font-size: 2.25rem;
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
+}
+
+.budget-header p {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+.finance-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+
+.metric-card {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.metric-label {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.metric-value {
+  font-size: 3rem;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+}
+
+.funding-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.funding-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s;
+}
+
+.funding-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.funding-card h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: var(--text-main);
+}
+
+.funding-card p {
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+  flex-grow: 1;
+}
+
+.fund-btn {
+  padding: 1rem;
+  border-radius: 8px;
+  border: none;
+  font-weight: bold;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.fund-btn:hover {
+  opacity: 0.9;
+}
+
+.btn-grassroots {
+  background: var(--primary-accent);
+  color: white;
+}
+
+.btn-pac {
+  background: #d29922; /* Gold for PACs */
+  color: #0d1117;
+}

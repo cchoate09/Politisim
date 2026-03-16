@@ -1,0 +1,119 @@
+.campaign-hq-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.hq-header {
+  margin-bottom: 2rem;
+}
+
+.hq-header h2 {
+  font-size: 2rem;
+  margin: 0 0 0.5rem 0;
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+.hq-header p {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  margin: 0 0 1rem 0;
+}
+
+.hq-budget {
+  display: inline-block;
+  background: rgba(46, 160, 67, 0.2);
+  color: #2ea043;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  border: 1px solid rgba(46, 160, 67, 0.5);
+  font-weight: bold;
+}
+
+.staff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.staff-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  gap: 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.staff-card.hired {
+  background: rgba(56, 189, 248, 0.05);
+  border-color: var(--primary-accent);
+}
+
+.staff-icon {
+  font-size: 3rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.staff-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.staff-details h3 {
+  margin: 0 0 0.5rem 0;
+  color: var(--text-main);
+  font-size: 1.2rem;
+}
+
+.staff-desc {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin: 0 0 1rem 0;
+  flex: 1;
+}
+
+.staff-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+}
+
+.staff-cost {
+  font-weight: bold;
+  color: var(--secondary-accent);
+}
+
+.hire-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.hire-btn:hover:not(:disabled) {
+  background: var(--primary-accent);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+}
+
+.hire-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.staff-card.hired .hire-btn {
+  background: var(--primary-accent);
+  opacity: 1;
+}
