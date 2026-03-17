@@ -3,6 +3,7 @@ import './PrimaryElectionView.css';
 import { useGameStore } from '../store/gameStore';
 import { getPrimaryRuleProfile } from '../core/PrimaryRules';
 import { getCandidateEndorsementSummary } from '../core/EndorsementData';
+import { getFieldNetworkSummary } from '../core/FieldOperations';
 
 export const PrimaryElectionView: React.FC = () => {
   const {
@@ -17,7 +18,9 @@ export const PrimaryElectionView: React.FC = () => {
     playerName,
     primaryResults,
     activeConvention,
-    endorsements
+    endorsements,
+    fieldOperations,
+    volunteerReserve
   } = useGameStore();
   const [showAll, setShowAll] = useState(false);
 
@@ -48,6 +51,7 @@ export const PrimaryElectionView: React.FC = () => {
         }))
     ];
   }, [playerDelegates, playerName, rivalAIs]);
+  const organizationSummary = useMemo(() => getFieldNetworkSummary(fieldOperations), [fieldOperations]);
 
   return (
     <div className="primary-view">
@@ -87,6 +91,13 @@ export const PrimaryElectionView: React.FC = () => {
           </div>
         </div>
       )}
+
+      <div className="primary-ops-banner">
+        <span>{organizationSummary.officeStates} office states</span>
+        <span>{organizationSummary.volunteerStrength} volunteers deployed</span>
+        <span>{volunteerReserve} reserve volunteers</span>
+        <span>{organizationSummary.activeSurrogates} surrogate stops active</span>
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
         {fieldStandings.map((candidate) => (

@@ -45,6 +45,24 @@ import {
 import {
   allocatePrimaryDelegatesForState
 } from '../core/PrimaryRules';
+import {
+  applyWeeklyFieldOperationDecay,
+  buildPlayerSurrogateRoster,
+  createInitialFieldOperations,
+  getAssignedStateForSurrogate,
+  getFieldNetworkSummary,
+  getFieldOfficeBuildCost,
+  getFieldOperationEffect,
+  getOfficeCapacity,
+  getSurrogatePower,
+  getTotalOfficeUpkeep,
+  getVolunteerDeployCost,
+  getVolunteerRecruitmentGain,
+  getVolunteerWithdrawalReturn,
+  normalizeFieldOperations,
+  type StateFieldOperation,
+  type SurrogateProfile
+} from '../core/FieldOperations';
 
 // ─── EVENT DEFINITIONS ────────────────────────────────────────────────
 export interface CampaignEvent {
@@ -745,6 +763,8 @@ export interface GameState {
   // Simulation
   states: StateElectionData[];
   campaignSpending: Record<string, CampaignSpendingData>;
+  fieldOperations: Record<string, StateFieldOperation>;
+  volunteerReserve: number;
   pollingData: Record<string, PollingData>;
   primaryResults: Record<string, PrimaryStateResult>;
   nationalPollingHistory: { week: string; player: number; rival: number; undecided: number }[];
@@ -765,6 +785,10 @@ export interface GameState {
   initializeCampaign: (statesData: StateElectionData[]) => void;
   runSimulation: () => void;
   setSpending: (stateName: string, newSpending: Partial<CampaignSpendingData>) => void;
+  buildFieldOffice: (stateName: string) => boolean;
+  deployVolunteers: (stateName: string, amount: number) => boolean;
+  withdrawVolunteers: (stateName: string, amount: number) => void;
+  deploySurrogate: (surrogateId: string, stateName: string) => boolean;
   hireStaff: (staffId: string, cost: number) => boolean;
   selectVP: (vp: VPCandidate) => void;
 
@@ -804,7 +828,7 @@ function computeEVTotals(states: StateElectionData[], pollingData: Record<string
   return { playerEV, rivalEV };
 }
 
-const initialState: Omit<GameState, 'initializeCampaign' | 'runSimulation' | 'setSpending' | 'hireStaff' | 'selectVP' | 'advanceWeek' | 'addBudget' | 'spendBudget' | 'addMomentum' | 'resolveEvent' | 'answerDebateQuestion' | 'advanceDebate' | 'previewDebate' | 'answerConventionChoice' | 'advanceConvention' | 'courtEndorsement' | 'advanceElectionNight' | 'finalizeElectionNight' | 'saveGame' | 'loadGame' | 'getSaveSlots' | 'setHasStarted' | 'resetGame'> = {
+const initialState: Omit<GameState, 'initializeCampaign' | 'runSimulation' | 'setSpending' | 'buildFieldOffice' | 'deployVolunteers' | 'withdrawVolunteers' | 'deploySurrogate' | 'hireStaff' | 'selectVP' | 'advanceWeek' | 'addBudget' | 'spendBudget' | 'addMomentum' | 'resolveEvent' | 'answerDebateQuestion' | 'advanceDebate' | 'previewDebate' | 'answerConventionChoice' | 'advanceConvention' | 'courtEndorsement' | 'advanceElectionNight' | 'finalizeElectionNight' | 'saveGame' | 'loadGame' | 'getSaveSlots' | 'setHasStarted' | 'resetGame'> = {
   currentWeek: 1,
   calendar: [] as CalendarWeek[],
   calendarPhase: 'campaigning',
@@ -842,6 +866,8 @@ const initialState: Omit<GameState, 'initializeCampaign' | 'runSimulation' | 'se
 
   states: [] as StateElectionData[],
   campaignSpending: {} as Record<string, CampaignSpendingData>,
+  fieldOperations: {} as Record<string, StateFieldOperation>,
+  volunteerReserve: 0,
   pollingData: {} as Record<string, PollingData>,
   primaryResults: {} as Record<string, PrimaryStateResult>,
   nationalPollingHistory: [] as { week: string; player: number; rival: number; undecided: number }[],
@@ -856,9 +882,26 @@ const initialState: Omit<GameState, 'initializeCampaign' | 'runSimulation' | 'se
   pacFundraisedThisWeek: false,
 };
 
+const EMPTY_SPENDING: CampaignSpendingData = {
+  intAds: 0,
+  tvAds: 0,
+  mailers: 0,
+  staff1: 0,
+  staff2: 0,
+  staff3: 0,
+  visits: 0,
+  groundGame: 0,
+  socialMedia: 0,
+  research: 0
+};
+
 // Helper to cap log length
 function capLog(log: ActivityLogEntry[], max = 100): ActivityLogEntry[] {
   return log.length > max ? log.slice(log.length - max) : log;
+}
+
+function cloneEmptySpending(): CampaignSpendingData {
+  return { ...EMPTY_SPENDING };
 }
 
 function clampStat(value: number, min = 0, max = 100): number {
@@ -908,6 +951,34 @@ function getOrderedRivals(rivals: RivalAI[]): RivalAI[] {
 
 function getLeadRival(rivals: RivalAI[], difficulty: 'easy' | 'normal' | 'hard'): RivalAI {
   return getOrderedRivals(rivals)[0] ?? SimulationEngine.createRivalAI(difficulty);
+}
+
+function getPlayerSurrogateRoster(state: Pick<GameState, 'vpPick' | 'hiredStaff' | 'endorsements'>): SurrogateProfile[] {
+  return buildPlayerSurrogateRoster(state.vpPick, state.hiredStaff, state.endorsements);
+}
+
+function getStateCampaignSpending(campaignSpending: Record<string, CampaignSpendingData>, stateName: string): CampaignSpendingData {
+  return campaignSpending[stateName] ? { ...campaignSpending[stateName] } : cloneEmptySpending();
+}
+
+function getVolunteerCapacityForOperation(operation: StateFieldOperation): number {
+  return Math.max(60, getOfficeCapacity(operation.officeLevel, operation.officeReadiness));
+}
+
+function recalculateStateSurrogatePower(
+  stateName: string,
+  assignedSurrogates: string[],
+  surrogates: SurrogateProfile[],
+  states: StateElectionData[]
+): number {
+  const stateData = states.find((entry) => entry.stateName === stateName);
+  if (!stateData) return 0;
+
+  return assignedSurrogates.reduce((sum, surrogateId) => {
+    const surrogate = surrogates.find((entry) => entry.id === surrogateId);
+    if (!surrogate) return sum;
+    return sum + getSurrogatePower(surrogate, stateData);
+  }, 0);
 }
 
 function pickEndorsementTarget(
@@ -1061,6 +1132,8 @@ type PersistedGameState = Pick<GameState,
   | 'endorsements'
   | 'states'
   | 'campaignSpending'
+  | 'fieldOperations'
+  | 'volunteerReserve'
   | 'pollingData'
   | 'primaryResults'
   | 'nationalPollingHistory'
@@ -1086,11 +1159,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const state = get();
     const spending: Record<string, CampaignSpendingData> = {};
     for (const s of statesData) {
-      spending[s.stateName] = { 
-        intAds: 0, tvAds: 0, mailers: 0, 
-        staff1: 0, staff2: 0, staff3: 0, 
-        visits: 0, groundGame: 0, research: 0, socialMedia: 0
-      };
+      spending[s.stateName] = cloneEmptySpending();
     }
 
     // Generate realist campaign calendar
@@ -1101,11 +1170,13 @@ export const useGameStore = create<GameState>((set, get) => ({
     }, 0);
     const primaryTarget = Math.floor(totalPrimaryDelegates / 2) + 1;
 
-    const opponents = SimulationEngine.createPrimaryRivals(state.difficulty, state.voterParty);
+    const opponents = SimulationEngine.createPrimaryRivals(state.difficulty, state.voterParty, statesData);
 
     set({
       states: statesData,
       campaignSpending: spending,
+      fieldOperations: createInitialFieldOperations(statesData),
+      volunteerReserve: 90,
       delegateTarget: primaryTarget,
       calendar,
       calendarPhase: 'campaigning',
@@ -1145,14 +1216,15 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const effectivePlayerIdeology = applyDebateStanding(state.playerIdeology, state.debateStanding);
     const activeGeneralOpponent = state.generalOpponent
-      ?? SimulationEngine.createGeneralOpponentAI(state.difficulty, state.voterParty);
+      ?? SimulationEngine.createGeneralOpponentAI(state.difficulty, state.voterParty, state.states);
     const rival = state.gamePhase === 'general'
       ? activeGeneralOpponent
       : getLeadRival(state.rivalAIs, state.difficulty);
 
     for (const s of state.states) {
-      const playerSpending = state.campaignSpending[s.stateName] || { intAds: 0, tvAds: 0, mailers: 0, staff1: 0, staff2: 0, staff3: 0, visits: 0, groundGame: 0, research: 0, socialMedia: 0 };
+      const playerSpending = getStateCampaignSpending(state.campaignSpending, s.stateName);
       const playerEndorsementEffect = getCandidateStateEndorsementEffect(state.endorsements, 'player', s);
+      const playerFieldEffect = getFieldOperationEffect(s, state.fieldOperations[s.stateName]);
       const poll = state.gamePhase === 'primary'
         ? SimulationEngine.generatePrimaryFieldProjection(
             effectivePlayerIdeology,
@@ -1163,6 +1235,8 @@ export const useGameStore = create<GameState>((set, get) => ({
             state.rivalAIs,
             playerEndorsementEffect,
             Object.fromEntries(state.rivalAIs.map((entry) => [entry.id, getCandidateStateEndorsementEffect(state.endorsements, entry.id, s)])),
+            playerFieldEffect,
+            Object.fromEntries(state.rivalAIs.map((entry) => [entry.id, getFieldOperationEffect(s, entry.fieldOperations[s.stateName])])),
             staffDiv,
             visitMult,
             state.playerIssues,
@@ -1177,6 +1251,8 @@ export const useGameStore = create<GameState>((set, get) => ({
             rival,
             playerEndorsementEffect,
             getCandidateStateEndorsementEffect(state.endorsements, rival.id, s),
+            playerFieldEffect,
+            getFieldOperationEffect(s, rival.fieldOperations[s.stateName]),
             staffDiv,
             visitMult,
             state.playerIssues,
@@ -1212,11 +1288,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   setSpending: (stateName, newStats) => {
     set((state) => {
-      const current = state.campaignSpending[stateName] || { 
-        intAds: 0, tvAds: 0, mailers: 0, 
-        staff1: 0, staff2: 0, staff3: 0, 
-        visits: 0, groundGame: 0, research: 0, socialMedia: 0
-      };
+      const current = state.campaignSpending[stateName] || cloneEmptySpending();
       return {
         campaignSpending: {
           ...state.campaignSpending,
@@ -1225,6 +1297,189 @@ export const useGameStore = create<GameState>((set, get) => ({
       };
     });
     get().runSimulation();
+  },
+
+  buildFieldOffice: (stateName) => {
+    const state = get();
+    const stateData = state.states.find((entry) => entry.stateName === stateName);
+    if (!stateData) return false;
+
+    const currentOperation = state.fieldOperations[stateName] ?? {
+      officeLevel: 0,
+      officeReadiness: 0,
+      volunteerStrength: 0,
+      surrogatePower: 0,
+      assignedSurrogates: [],
+      lastOfficeWeek: null
+    };
+    if (currentOperation.officeLevel >= 3) return false;
+
+    const buildCost = getFieldOfficeBuildCost(stateData, currentOperation.officeLevel);
+    if (state.budget < buildCost) return false;
+
+    set({
+      budget: state.budget - buildCost,
+      fieldOperations: {
+        ...state.fieldOperations,
+        [stateName]: {
+          ...currentOperation,
+          officeLevel: currentOperation.officeLevel + 1,
+          officeReadiness: Math.max(18, currentOperation.officeReadiness),
+          lastOfficeWeek: state.currentWeek
+        }
+      },
+      activityLog: capLog([
+        ...state.activityLog,
+        {
+          week: state.currentWeek,
+          message: `${currentOperation.officeLevel === 0 ? 'Opened' : 'Upgraded'} a field office in ${stateName} for ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(buildCost)}.`,
+          type: 'positive'
+        }
+      ])
+    });
+    get().runSimulation();
+    return true;
+  },
+
+  deployVolunteers: (stateName, amount) => {
+    const state = get();
+    const stateData = state.states.find((entry) => entry.stateName === stateName);
+    if (!stateData || amount <= 0) return false;
+
+    const currentOperation = state.fieldOperations[stateName] ?? {
+      officeLevel: 0,
+      officeReadiness: 0,
+      volunteerStrength: 0,
+      surrogatePower: 0,
+      assignedSurrogates: [],
+      lastOfficeWeek: null
+    };
+    const capacity = getVolunteerCapacityForOperation(currentOperation);
+    const deployable = Math.min(amount, capacity - currentOperation.volunteerStrength, state.volunteerReserve);
+    if (deployable <= 0) return false;
+
+    const deploymentCost = getVolunteerDeployCost(stateData, deployable);
+    if (state.budget < deploymentCost) return false;
+
+    set({
+      budget: state.budget - deploymentCost,
+      volunteerReserve: state.volunteerReserve - deployable,
+      fieldOperations: {
+        ...state.fieldOperations,
+        [stateName]: {
+          ...currentOperation,
+          volunteerStrength: currentOperation.volunteerStrength + deployable
+        }
+      },
+      activityLog: capLog([
+        ...state.activityLog,
+        {
+          week: state.currentWeek,
+          message: `Deployed ${deployable} volunteers into ${stateName}'s field program.`,
+          type: 'positive'
+        }
+      ])
+    });
+    get().runSimulation();
+    return true;
+  },
+
+  withdrawVolunteers: (stateName, amount) => {
+    const state = get();
+    const currentOperation = state.fieldOperations[stateName];
+    if (!currentOperation || amount <= 0) return;
+
+    const withdrawn = Math.min(amount, currentOperation.volunteerStrength);
+    if (withdrawn <= 0) return;
+
+    const reserveReturn = getVolunteerWithdrawalReturn(withdrawn);
+    set({
+      volunteerReserve: state.volunteerReserve + reserveReturn,
+      fieldOperations: {
+        ...state.fieldOperations,
+        [stateName]: {
+          ...currentOperation,
+          volunteerStrength: currentOperation.volunteerStrength - withdrawn
+        }
+      },
+      activityLog: capLog([
+        ...state.activityLog,
+        {
+          week: state.currentWeek,
+          message: `Pulled ${withdrawn} volunteers out of ${stateName}. ${reserveReturn} return to the national reserve.`,
+          type: 'info'
+        }
+      ])
+    });
+    get().runSimulation();
+  },
+
+  deploySurrogate: (surrogateId, stateName) => {
+    const state = get();
+    const stateData = state.states.find((entry) => entry.stateName === stateName);
+    if (!stateData) return false;
+
+    const roster = getPlayerSurrogateRoster(state);
+    const surrogate = roster.find((entry) => entry.id === surrogateId);
+    if (!surrogate) return false;
+
+    const currentAssignedState = getAssignedStateForSurrogate(state.fieldOperations, surrogateId);
+    const nextFieldOperations = { ...state.fieldOperations };
+
+    if (currentAssignedState) {
+      const previousOperation = nextFieldOperations[currentAssignedState];
+      const remainingAssignments = previousOperation.assignedSurrogates.filter((entry) => entry !== surrogateId);
+      nextFieldOperations[currentAssignedState] = {
+        ...previousOperation,
+        assignedSurrogates: remainingAssignments,
+        surrogatePower: recalculateStateSurrogatePower(currentAssignedState, remainingAssignments, roster, state.states)
+      };
+    }
+
+    if (currentAssignedState === stateName) {
+      set({
+        fieldOperations: nextFieldOperations,
+        activityLog: capLog([
+          ...state.activityLog,
+          {
+            week: state.currentWeek,
+            message: `Recalled ${surrogate.name} from ${stateName}.`,
+            type: 'info'
+          }
+        ])
+      });
+      get().runSimulation();
+      return true;
+    }
+
+    const currentOperation = nextFieldOperations[stateName] ?? {
+      officeLevel: 0,
+      officeReadiness: 0,
+      volunteerStrength: 0,
+      surrogatePower: 0,
+      assignedSurrogates: [],
+      lastOfficeWeek: null
+    };
+    const nextAssignments = [...currentOperation.assignedSurrogates, surrogateId];
+    nextFieldOperations[stateName] = {
+      ...currentOperation,
+      assignedSurrogates: nextAssignments,
+      surrogatePower: recalculateStateSurrogatePower(stateName, nextAssignments, roster, state.states)
+    };
+
+    set({
+      fieldOperations: nextFieldOperations,
+      activityLog: capLog([
+        ...state.activityLog,
+        {
+          week: state.currentWeek,
+          message: `Deployed ${surrogate.name} to campaign in ${stateName}.`,
+          type: 'positive'
+        }
+      ])
+    });
+    get().runSimulation();
+    return true;
   },
 
   hireStaff: (staffId: string, cost: number) => {
@@ -1287,6 +1542,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       endorsements: state.endorsements,
       states: state.states,
       campaignSpending: state.campaignSpending,
+      fieldOperations: state.fieldOperations,
+      volunteerReserve: state.volunteerReserve,
       pollingData: state.pollingData,
       primaryResults: state.primaryResults,
       nationalPollingHistory: state.nationalPollingHistory,
@@ -1312,8 +1569,9 @@ export const useGameStore = create<GameState>((set, get) => ({
         const restoredCalendar = CampaignDataParser.generateCalendar();
         const restoredWeek = parsed.currentWeek ?? initialState.currentWeek;
         const restoredCalendarPhase = restoredCalendar[restoredWeek - 1]?.phase ?? parsed.calendarPhase ?? initialState.calendarPhase;
+        const restoredStates = parsed.states ?? [];
         const normalizedRivals = (parsed.rivalAIs ?? []).map((rival) => ({
-          ...SimulationEngine.createRivalAI(parsed.difficulty ?? initialState.difficulty),
+          ...SimulationEngine.createRivalAI(parsed.difficulty ?? initialState.difficulty, restoredStates),
           ...rival,
           shortName: rival.shortName ?? rival.name?.split(' ').slice(-1)[0] ?? 'Rival',
           tagline: rival.tagline ?? 'Campaign rival',
@@ -1323,18 +1581,24 @@ export const useGameStore = create<GameState>((set, get) => ({
           supportBase: rival.supportBase ?? 8,
           status: rival.status ?? 'active',
           homeRegion: rival.homeRegion ?? 'South',
-          endorsedCandidateId: rival.endorsedCandidateId ?? null
+          endorsedCandidateId: rival.endorsedCandidateId ?? null,
+          fieldOperations: normalizeFieldOperations(restoredStates, rival.fieldOperations),
+          volunteerReserve: rival.volunteerReserve ?? 150,
+          fieldStrategy: rival.fieldStrategy ?? 'regional'
         }));
         const normalizedGeneralOpponent = parsed.generalOpponent
           ? {
-              ...SimulationEngine.createGeneralOpponentAI(parsed.difficulty ?? initialState.difficulty, parsed.voterParty ?? initialState.voterParty),
+              ...SimulationEngine.createGeneralOpponentAI(parsed.difficulty ?? initialState.difficulty, parsed.voterParty ?? initialState.voterParty, restoredStates),
               ...parsed.generalOpponent,
               shortName: parsed.generalOpponent.shortName ?? parsed.generalOpponent.name?.split(' ').slice(-1)[0] ?? 'Opponent',
               trust: parsed.generalOpponent.trust ?? 55,
               delegates: parsed.generalOpponent.delegates ?? 0,
               supportBase: parsed.generalOpponent.supportBase ?? 10,
               status: parsed.generalOpponent.status ?? 'nominee',
-              endorsedCandidateId: parsed.generalOpponent.endorsedCandidateId ?? null
+              endorsedCandidateId: parsed.generalOpponent.endorsedCandidateId ?? null,
+              fieldOperations: normalizeFieldOperations(restoredStates, parsed.generalOpponent.fieldOperations),
+              volunteerReserve: parsed.generalOpponent.volunteerReserve ?? 220,
+              fieldStrategy: parsed.generalOpponent.fieldStrategy ?? 'battleground'
             }
           : null;
         const defaultEndorsements = createEndorsementRoster(parsed.voterParty ?? initialState.voterParty);
@@ -1369,6 +1633,9 @@ export const useGameStore = create<GameState>((set, get) => ({
           activeElectionNight: parsed.activeElectionNight ?? null,
           debateStanding: parsed.debateStanding ?? { ...EMPTY_DEBATE_STANDING },
           endorsements: normalizedEndorsements,
+          states: restoredStates,
+          fieldOperations: normalizeFieldOperations(restoredStates, parsed.fieldOperations),
+          volunteerReserve: parsed.volunteerReserve ?? 0,
           primaryResults: parsed.primaryResults ?? {},
           vpSelectionPending: parsed.vpSelectionPending ?? false,
           endReason: parsed.endReason ?? null,
@@ -1407,13 +1674,15 @@ export const useGameStore = create<GameState>((set, get) => ({
   resetGame: () => {
     set({
       ...initialState,
-        rivalAIs: SimulationEngine.createPrimaryRivals('normal', initialState.voterParty),
-        generalOpponent: null,
-        primaryResults: {},
-        activeConvention: null,
-        activeElectionNight: null,
-        endorsements: createEndorsementRoster(initialState.voterParty)
-      });
+      rivalAIs: SimulationEngine.createPrimaryRivals('normal', initialState.voterParty, initialState.states),
+      generalOpponent: null,
+      primaryResults: {},
+      fieldOperations: createInitialFieldOperations(initialState.states),
+      volunteerReserve: 0,
+      activeConvention: null,
+      activeElectionNight: null,
+      endorsements: createEndorsementRoster(initialState.voterParty)
+    });
   },
 
   advanceWeek: () => {
@@ -1452,6 +1721,15 @@ export const useGameStore = create<GameState>((set, get) => ({
       ]
     );
     let endorsementAnnouncementBudgetBonus = 0;
+    const nextFieldOperations = applyWeeklyFieldOperationDecay(state.fieldOperations);
+    const volunteerRecruitment = Math.floor(getVolunteerRecruitmentGain(
+      nextFieldOperations,
+      state.publicTrust,
+      state.momentum,
+      getCandidateEndorsementSummary(updatedEndorsements, 'player').count,
+      state.hiredStaff.includes('field_organizer')
+    ));
+    const nextVolunteerReserve = Math.min(2400, state.volunteerReserve + volunteerRecruitment);
 
     if (phaseChanged && newCalendarPhase === 'primary') {
       newLog.push({ week: nextWeek, message: 'Primary season begins. Early contests are about to shape the field.', type: 'info' });
@@ -1503,12 +1781,14 @@ export const useGameStore = create<GameState>((set, get) => ({
         const projection: PrimaryStateProjection = SimulationEngine.generatePrimaryFieldProjection(
           contestIdeology,
           contestState,
-          state.campaignSpending[contestState.stateName] || { intAds: 0, tvAds: 0, mailers: 0, staff1: 0, staff2: 0, staff3: 0, visits: 0, groundGame: 0, research: 0, socialMedia: 0 },
+          getStateCampaignSpending(state.campaignSpending, contestState.stateName),
           state.momentum,
           state.publicTrust,
           updatedRivals,
           getCandidateStateEndorsementEffect(updatedEndorsements, 'player', contestState),
           Object.fromEntries(updatedRivals.map((entry) => [entry.id, getCandidateStateEndorsementEffect(updatedEndorsements, entry.id, contestState)])),
+          getFieldOperationEffect(contestState, state.fieldOperations[contestState.stateName]),
+          Object.fromEntries(updatedRivals.map((entry) => [entry.id, getFieldOperationEffect(contestState, entry.fieldOperations[contestState.stateName])])),
           contestStaffDiv,
           contestVisitMult,
           state.playerIssues,
@@ -1696,7 +1976,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       if (playerWonOutright) {
         nextGamePhase = 'general';
         triggerVPSelection = true;
-        updatedGeneralOpponent = SimulationEngine.createGeneralOpponentAI(state.difficulty, state.voterParty);
+        updatedGeneralOpponent = SimulationEngine.createGeneralOpponentAI(state.difficulty, state.voterParty, state.states);
         const totalEV = state.states.reduce((sum, contestState) => sum + contestState.delegatesOrEV, 0);
         nextDelegateTarget = Math.floor(totalEV / 2) + 1;
         newLog.push({ week: nextWeek, message: `You secured the nomination with ${newPlayerDelegates} delegates.`, type: 'positive' });
@@ -1779,14 +2059,37 @@ export const useGameStore = create<GameState>((set, get) => ({
     const conventionBounce = phaseChanged && newCalendarPhase === 'convention' ? 8 : 0;
 
     const coalitionFundraising = getCandidateEndorsementSummary(updatedEndorsements, 'player').weeklyFundraising;
+    const currentFieldSummary = getFieldNetworkSummary(state.fieldOperations);
+    const fieldOfficeUpkeep = getTotalOfficeUpkeep(nextFieldOperations, state.states);
     const passiveIncome = Math.floor(8000 + (state.momentum / 100) * 18000) + coalitionFundraising + endorsementAnnouncementBudgetBonus;
-    const weeklyOverhead = 24000 + (state.hiredStaff.length * 7000);
+    const weeklyOverhead = 24000 + (state.hiredStaff.length * 7000) + fieldOfficeUpkeep;
     const nextBudget = Math.max(0, state.budget + passiveIncome - weeklyOverhead);
     newLog.push({ week: nextWeek, message: `Fundraising: +${(passiveIncome / 1000).toFixed(0)}K from small-dollar donors.`, type: 'info' });
     if (coalitionFundraising > 0) {
       newLog.push({ week: nextWeek, message: `Coalition network: +${(coalitionFundraising / 1000).toFixed(0)}K from endorsements and surrogate finance channels.`, type: 'positive' });
     }
+    if (volunteerRecruitment > 0) {
+      newLog.push({
+        week: nextWeek,
+        message: `Field recruitment: +${volunteerRecruitment} volunteers replenished the reserve through offices, organizers, and coalition contacts.`,
+        type: 'positive'
+      });
+    }
+    if (currentFieldSummary.activeSurrogates > 0) {
+      newLog.push({
+        week: nextWeek,
+        message: `Surrogate schedule: ${currentFieldSummary.activeSurrogates} surrogate stop${currentFieldSummary.activeSurrogates === 1 ? '' : 's'} helped hold local media this week.`,
+        type: 'info'
+      });
+    }
     newLog.push({ week: nextWeek, message: `Operating costs: -${(weeklyOverhead / 1000).toFixed(0)}K to keep the campaign running.`, type: 'negative' });
+    if (fieldOfficeUpkeep > 0) {
+      newLog.push({
+        week: nextWeek,
+        message: `Field upkeep: -${(fieldOfficeUpkeep / 1000).toFixed(0)}K to maintain ${currentFieldSummary.officeStates} staffed state office${currentFieldSummary.officeStates === 1 ? '' : 's'}.`,
+        type: 'negative'
+      });
+    }
 
     let randomEvent: CampaignEvent | null = null;
     let nextActiveDebate: ActiveDebate | null = null;
@@ -1847,6 +2150,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       stamina: newStamina,
       budget: nextBudget,
       campaignSpending: newSpending,
+      fieldOperations: nextFieldOperations,
+      volunteerReserve: nextVolunteerReserve,
       activeEvent: nextGamePhase === 'ended' || nextActiveDebate || nextActiveConvention || nextActiveElectionNight ? null : randomEvent,
       activeDebate: nextGamePhase === 'ended' ? null : nextActiveDebate,
       activeConvention: nextGamePhase === 'ended' ? null : nextActiveConvention,
@@ -1976,7 +2281,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!debateEntry) return;
 
     const rivalNames = phase === 'general'
-      ? [state.generalOpponent?.name ?? SimulationEngine.createGeneralOpponentAI(state.difficulty, state.voterParty).name]
+      ? [state.generalOpponent?.name ?? SimulationEngine.createGeneralOpponentAI(state.difficulty, state.voterParty, state.states).name]
       : getOrderedRivals(state.rivalAIs).map((rival) => rival.name);
     const previewDebate = createActiveDebate(debateEntry, state.playerName, rivalNames);
 
@@ -2204,7 +2509,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       const newLog = [...state.activityLog];
       if (playerWonConvention) {
-        const updatedGeneralOpponent = SimulationEngine.createGeneralOpponentAI(state.difficulty, state.voterParty);
+        const updatedGeneralOpponent = SimulationEngine.createGeneralOpponentAI(state.difficulty, state.voterParty, state.states);
         const totalEV = state.states.reduce((sum, contestState) => sum + contestState.delegatesOrEV, 0);
         const nextEVTarget = Math.floor(totalEV / 2) + 1;
         newLog.push({

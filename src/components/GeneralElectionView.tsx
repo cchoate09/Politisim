@@ -3,7 +3,7 @@ import './GeneralElectionView.css';
 import { useGameStore, computeEVTotals } from '../store/gameStore';
 
 export const GeneralElectionView: React.FC = () => {
-  const { states, pollingData, playerName, vpPick, voterParty, generalOpponent } = useGameStore();
+  const { states, pollingData, playerName, vpPick, voterParty, generalOpponent, fieldOperations } = useGameStore();
   const { playerEV, rivalEV } = computeEVTotals(states, pollingData);
   const generalTarget = Math.floor(states.reduce((sum, state) => sum + state.delegatesOrEV, 0) / 2) + 1;
   const opponentName = generalOpponent?.name ?? 'Opposition Nominee';
@@ -20,12 +20,15 @@ export const GeneralElectionView: React.FC = () => {
         ev: state.delegatesOrEV,
         playerPoll: Math.round(poll.player * 10) / 10,
         oppPoll: Math.round(poll.rival * 10) / 10,
-        margin: Math.abs(poll.player - poll.rival)
+        margin: Math.abs(poll.player - poll.rival),
+        officeLevel: fieldOperations[state.stateName]?.officeLevel ?? 0,
+        volunteers: fieldOperations[state.stateName]?.volunteerStrength ?? 0,
+        surrogates: fieldOperations[state.stateName]?.assignedSurrogates.length ?? 0
       };
     })
     .filter(Boolean)
     .sort((a, b) => a!.margin - b!.margin)
-    .slice(0, 8) as { name: string; ev: number; playerPoll: number; oppPoll: number; margin: number }[];
+    .slice(0, 8) as { name: string; ev: number; playerPoll: number; oppPoll: number; margin: number; officeLevel: number; volunteers: number; surrogates: number }[];
 
   const playerLeadingBattlegrounds = swingStates.filter((state) => state.playerPoll >= state.oppPoll).length;
 
@@ -89,6 +92,11 @@ export const GeneralElectionView: React.FC = () => {
                 <div className="swing-state-poll">
                   <span style={{ color: 'var(--primary-accent)' }}>{state.playerPoll}%</span>
                   <span style={{ color: 'var(--secondary-accent)' }}>{state.oppPoll}%</span>
+                </div>
+                <div className="swing-state-ops">
+                  <span>Office L{state.officeLevel}</span>
+                  <span>{state.volunteers} volunteers</span>
+                  <span>{state.surrogates} surrogates</span>
                 </div>
                 <div className="swing-state-bar">
                   <div className="swing-state-bar-player" style={{ width: `${playerWidth}%` }} />

@@ -4,13 +4,13 @@ This checklist turns the current competitive review into a working roadmap. The 
 
 ## Current Snapshot
 
-Estimated parity progress: `61%`
+Estimated parity progress: `67%`
 
-- Core election simulation: `80%`
+- Core election simulation: `84%`
 - Replayability and scenarios: `45%`
-- Presentation and immersion: `50%`
+- Presentation and immersion: `54%`
 - Product shell and Steam readiness: `35%`
-- QA, onboarding, and usability: `32%`
+- QA, onboarding, and usability: `34%`
 
 ## What Is Already Stronger Than Before
 
@@ -56,9 +56,9 @@ Goal: make the game feel strategically deep enough that players want multiple fu
 
 ### 3. Campaign Operations Depth
 
-- [ ] Add field offices as a longer-term investment system
+- [x] Add field offices as a longer-term investment system
   Acceptance: offices improve local turnout and resilience over several weeks instead of acting like one-shot spending.
-- [ ] Add volunteers and surrogate campaigning
+- [x] Add volunteers and surrogate campaigning
   Acceptance: staffing and coalition assets can help cover more states than the player can personally visit.
 - [ ] Add donor blocs
   Acceptance: small donors, business donors, activists, labor, and ideological networks respond differently to campaign choices.
@@ -166,17 +166,18 @@ Goal: stop future content passes from quietly breaking the game.
 
 If we want the highest return on effort, tackle these next:
 
-1. Field offices and volunteers
-2. Tutorial and glossary
-3. Audio/settings/accessibility
-4. Steam Cloud and final achievement coverage
-5. CI and deeper tests
+1. Tutorial and glossary
+2. Audio/settings/accessibility
+3. Steam Cloud and final achievement coverage
+4. CI and deeper tests
+5. Donor blocs and media strategy
 
 ## Latest Milestone Notes
 
 - `2026-03-16`: Added state-by-state delegate allocation rules for both parties, surfaced those rules in the UI, and introduced brokered conventions with ballot-by-ballot strategic resolution when no candidate reaches a delegate majority.
 - `2026-03-17`: Added a real endorsement system with party-specific validator rosters, player courtship actions, AI competition for backing, polling and fundraising effects, coalition tracking in Campaign HQ, and convention leverage tied to endorsement strength.
 - `2026-03-17`: Added a dedicated election-night resolution phase with state call waves, hidden polling misses, desk projections, and a final transition into the postgame report only after the map is actually called.
+- `2026-03-17`: Added persistent field offices, volunteer reserves, surrogate deployment, rival field-network AI, and UI surfacing across the state panel, Campaign HQ, primary tracker, and battleground view so campaign organization now functions as a real strategic layer.
 
 ## How We Should Track Progress
 

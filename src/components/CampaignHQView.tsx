@@ -3,6 +3,7 @@ import './CampaignHQView.css';
 import { useGameStore } from '../store/gameStore';
 import { evaluateEndorsement, getCandidateEndorsementSummary, type ActiveEndorsement, type CandidateEndorsementSnapshot } from '../core/EndorsementData';
 import type { PlayerDemographics } from '../core/ElectionMath';
+import { buildPlayerSurrogateRoster, getAssignedStateForSurrogate, getFieldNetworkSummary, getTotalOfficeUpkeep } from '../core/FieldOperations';
 
 const AVAILABLE_STAFF = [
   {
@@ -46,7 +47,13 @@ export const CampaignHQView: React.FC = () => {
     primaryResults,
     gamePhase,
     activeConvention,
-    courtEndorsement
+    courtEndorsement,
+    states,
+    pollingData,
+    fieldOperations,
+    volunteerReserve,
+    vpPick,
+    deploySurrogate
   } = useGameStore();
 
   const formattedBudget = new Intl.NumberFormat('en-US', {
@@ -127,6 +134,45 @@ export const CampaignHQView: React.FC = () => {
       return right.rival.delegates - left.rival.delegates;
     })
     .slice(0, 3);
+  const fieldSummary = useMemo(() => getFieldNetworkSummary(fieldOperations), [fieldOperations]);
+  const officeUpkeep = useMemo(() => getTotalOfficeUpkeep(fieldOperations, states), [fieldOperations, states]);
+  const surrogateRoster = useMemo(() => buildPlayerSurrogateRoster(vpPick, hiredStaff, endorsements), [endorsements, hiredStaff, vpPick]);
+  const recommendedTargets = useMemo(() => {
+    return [...states]
+      .map((state) => {
+        const poll = pollingData[state.stateName];
+        if (!poll) return null;
+        const margin = Math.abs(poll.player - poll.rival);
+        const operation = fieldOperations[state.stateName];
+        const fieldGap = Math.max(0, 2 - (operation?.officeLevel ?? 0));
+        const battlegroundWeight = gamePhase === 'general'
+          ? Math.max(0, 10 - Math.abs(state.partisanLean ?? 0))
+          : state.delegatesOrEV / 6;
+        return {
+          name: state.stateName,
+          margin,
+          score: battlegroundWeight + fieldGap * 7 + Math.max(0, 12 - margin),
+          poll
+        };
+      })
+      .filter(Boolean)
+      .sort((left, right) => right!.score - left!.score)
+      .slice(0, 4) as { name: string; margin: number; poll: { player: number; rival: number } }[];
+  }, [fieldOperations, gamePhase, pollingData, states]);
+  const strongestOperations = useMemo(() => {
+    return Object.entries(fieldOperations)
+      .map(([stateName, operation]) => ({
+        stateName,
+        operation
+      }))
+      .filter(({ operation }) => operation.officeLevel > 0 || operation.volunteerStrength > 0 || operation.assignedSurrogates.length > 0)
+      .sort((left, right) => {
+        const leftScore = left.operation.officeLevel * 100 + left.operation.officeReadiness + left.operation.volunteerStrength;
+        const rightScore = right.operation.officeLevel * 100 + right.operation.officeReadiness + right.operation.volunteerStrength;
+        return rightScore - leftScore;
+      })
+      .slice(0, 5);
+  }, [fieldOperations]);
 
   return (
     <div className="campaign-hq-view">
@@ -140,7 +186,103 @@ export const CampaignHQView: React.FC = () => {
         <SummaryCard label="Endorsements Held" value={playerCoalition.count.toString()} detail="Committed public validators currently backing you." />
         <SummaryCard label="Coalition Finance" value={`$${Math.round(playerCoalition.weeklyFundraising / 1000)}K`} detail="Approximate weekly network fundraising unlocked by endorsements." />
         <SummaryCard label="Convention Weight" value={playerCoalition.conventionWeight.toString()} detail="Broker leverage if the nomination reaches a contested floor." />
+        <SummaryCard label="Office States" value={fieldSummary.officeStates.toString()} detail="States where you have a permanent on-the-ground footprint." />
+        <SummaryCard label="Volunteer Reserve" value={volunteerReserve.toString()} detail="Unassigned volunteers ready to reinforce a state operation." />
+        <SummaryCard label="Surrogates" value={surrogateRoster.length.toString()} detail="Running mate, staff, and endorsers available for weekly deployment." />
         <SummaryCard label="Candidate Stamina" value={`${stamina}/100`} detail="Courtship costs stamina as well as money, so not every meeting fits every week." />
+      </div>
+
+      <div className="hq-columns">
+        <section className="hq-panel">
+          <div className="panel-header">
+            <div>
+              <h3>Field Operations Network</h3>
+              <p>Long-cycle investment in offices and volunteer labor. This is where campaigns become durable instead of flashy.</p>
+            </div>
+          </div>
+
+          <div className="operations-summary-grid">
+            <MiniMetric label="Office levels" value={fieldSummary.officeLevelTotal.toString()} />
+            <MiniMetric label="Volunteer strength" value={fieldSummary.volunteerStrength.toString()} />
+            <MiniMetric label="Avg readiness" value={`${fieldSummary.averageReadiness}%`} />
+            <MiniMetric label="Weekly upkeep" value={formatCompactDollars(officeUpkeep)} />
+          </div>
+
+          {strongestOperations.length === 0 ? (
+            <div className="empty-state-card">
+              You have not planted a real state organization yet. Open offices in early or swing states to turn ad spend into something sturdier.
+            </div>
+          ) : (
+            <div className="ops-state-list">
+              {strongestOperations.map(({ stateName, operation }) => (
+                <button
+                  key={stateName}
+                  type="button"
+                  className="ops-state-card"
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('politisim-navigate', { detail: { tab: 'map', state: stateName } }));
+                  }}
+                >
+                  <div className="ops-state-top">
+                    <strong>{stateName}</strong>
+                    <span>Level {operation.officeLevel}</span>
+                  </div>
+                  <div className="ops-state-meta">
+                    <span>{operation.officeReadiness}% ready</span>
+                    <span>{operation.volunteerStrength} volunteers</span>
+                    <span>{operation.assignedSurrogates.length} surrogates</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="hq-panel">
+          <div className="panel-header">
+            <div>
+              <h3>Surrogate Desk</h3>
+              <p>Quick-deploy validators and ticket partners into the states where the map is thinnest.</p>
+            </div>
+          </div>
+
+          <div className="surrogate-desk">
+            {surrogateRoster.length === 0 ? (
+              <div className="empty-state-card">
+                Your surrogate bench is empty. A running mate, more staff depth, and visible endorsements all expand this desk.
+              </div>
+            ) : (
+              surrogateRoster.map((surrogate) => {
+                const assignedState = getAssignedStateForSurrogate(fieldOperations, surrogate.id);
+                return (
+                  <div key={surrogate.id} className="surrogate-card">
+                    <div className="surrogate-card-top">
+                      <div>
+                        <strong>{surrogate.name}</strong>
+                        <span>{surrogate.summary}</span>
+                      </div>
+                      <div className={`surrogate-status ${assignedState ? 'active' : ''}`}>
+                        {assignedState ? assignedState : 'Unassigned'}
+                      </div>
+                    </div>
+                    <div className="surrogate-target-row">
+                      {recommendedTargets.slice(0, 3).map((target) => (
+                        <button
+                          key={`${surrogate.id}-${target.name}`}
+                          type="button"
+                          className="surrogate-target-btn"
+                          onClick={() => deploySurrogate(surrogate.id, target.name)}
+                        >
+                          Send to {target.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </section>
       </div>
 
       <div className="hq-columns">
@@ -314,6 +456,15 @@ function SummaryCard({ label, value, detail }: { label: string; value: string; d
       <span>{label}</span>
       <strong>{value}</strong>
       <p>{detail}</p>
+    </div>
+  );
+}
+
+function MiniMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="mini-metric-card">
+      <span>{label}</span>
+      <strong>{value}</strong>
     </div>
   );
 }

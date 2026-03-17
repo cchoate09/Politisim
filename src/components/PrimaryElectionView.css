@@ -71,6 +71,22 @@
   color: var(--text-main);
 }
 
+.primary-ops-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-bottom: 1.25rem;
+}
+
+.primary-ops-banner span {
+  padding: 0.42rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.16);
+  color: var(--text-main);
+  font-size: 0.78rem;
+}
+
 .election-cards {
   display: flex;
   flex-direction: column;

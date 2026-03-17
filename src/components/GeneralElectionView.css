@@ -194,6 +194,21 @@
   margin-bottom: 0.5rem;
 }
 
+.swing-state-ops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.45rem;
+}
+
+.swing-state-ops span {
+  padding: 0.24rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
 .swing-state-bar {
   width: 100%;
   height: 8px;

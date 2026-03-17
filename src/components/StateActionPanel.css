@@ -41,6 +41,196 @@
   font-size: 0.74rem;
 }
 
+.state-ops-panel {
+  margin-bottom: 1rem;
+  padding: 0.95rem;
+  border-radius: 14px;
+  background: rgba(14, 22, 35, 0.82);
+  border: 1px solid rgba(56, 189, 248, 0.14);
+}
+
+.state-ops-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.state-ops-title {
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary-accent);
+  margin-bottom: 0.2rem;
+}
+
+.state-ops-header p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.state-ops-reserve {
+  align-self: flex-start;
+  padding: 0.32rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(46, 160, 67, 0.16);
+  color: #2ea043;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.state-ops-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-bottom: 0.9rem;
+}
+
+.ops-metric-card {
+  padding: 0.8rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ops-metric-card span {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.ops-metric-card strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 1.15rem;
+  color: var(--text-main);
+}
+
+.ops-metric-card p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.field-action-section {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.field-btn {
+  border-color: rgba(56, 189, 248, 0.16);
+}
+
+.field-action-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.mini-action-btn {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+  padding: 0.6rem 0.65rem;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.mini-action-btn:hover:not(:disabled) {
+  border-color: rgba(56, 189, 248, 0.35);
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.mini-action-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.mini-action-btn span,
+.mini-action-btn small {
+  display: block;
+}
+
+.mini-action-btn span {
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.mini-action-btn small {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.mini-action-btn.muted {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.surrogate-section {
+  margin-top: 0.85rem;
+}
+
+.surrogate-section-title {
+  margin-bottom: 0.5rem;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.surrogate-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.surrogate-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 180px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text-main);
+  padding: 0.55rem 0.7rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.surrogate-chip.active {
+  border-color: rgba(46, 160, 67, 0.32);
+  background: rgba(46, 160, 67, 0.08);
+}
+
+.surrogate-chip strong {
+  font-size: 0.82rem;
+}
+
+.surrogate-chip span {
+  font-size: 0.73rem;
+  color: var(--text-muted);
+}
+
+.empty-inline-card {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
 .close-btn {
   background: none;
   border: none;
@@ -102,4 +292,26 @@
 .spend-desc {
   font-size: 0.8rem;
   color: var(--text-muted);
+}
+
+.state-tip-banner {
+  background: rgba(210, 153, 34, 0.1);
+  border: 1px solid rgba(210, 153, 34, 0.3);
+  padding: 0.5rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.75rem;
+  color: #d29922;
+}
+
+@media (max-width: 860px) {
+  .state-ops-header,
+  .state-ops-grid,
+  .field-action-row {
+    grid-template-columns: 1fr;
+  }
+
+  .state-ops-header {
+    flex-direction: column;
+  }
 }
