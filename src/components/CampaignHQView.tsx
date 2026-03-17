@@ -4,6 +4,7 @@ import { useGameStore } from '../store/gameStore';
 import { evaluateEndorsement, getCandidateEndorsementSummary, type ActiveEndorsement, type CandidateEndorsementSnapshot } from '../core/EndorsementData';
 import type { PlayerDemographics } from '../core/ElectionMath';
 import { buildPlayerSurrogateRoster, getAssignedStateForSurrogate, getFieldNetworkSummary, getTotalOfficeUpkeep } from '../core/FieldOperations';
+import { getMediaSummary } from '../core/CampaignStrategy';
 
 const AVAILABLE_STAFF = [
   {
@@ -53,7 +54,9 @@ export const CampaignHQView: React.FC = () => {
     fieldOperations,
     volunteerReserve,
     vpPick,
-    deploySurrogate
+    deploySurrogate,
+    donorBlocs,
+    mediaChannels
   } = useGameStore();
 
   const formattedBudget = new Intl.NumberFormat('en-US', {
@@ -173,6 +176,8 @@ export const CampaignHQView: React.FC = () => {
       })
       .slice(0, 5);
   }, [fieldOperations]);
+  const donorHeat = useMemo(() => donorBlocs.filter((bloc) => bloc.relationship >= 60).length, [donorBlocs]);
+  const mediaSummary = useMemo(() => getMediaSummary(mediaChannels), [mediaChannels]);
 
   return (
     <div className="campaign-hq-view">
@@ -186,6 +191,8 @@ export const CampaignHQView: React.FC = () => {
         <SummaryCard label="Endorsements Held" value={playerCoalition.count.toString()} detail="Committed public validators currently backing you." />
         <SummaryCard label="Coalition Finance" value={`$${Math.round(playerCoalition.weeklyFundraising / 1000)}K`} detail="Approximate weekly network fundraising unlocked by endorsements." />
         <SummaryCard label="Convention Weight" value={playerCoalition.conventionWeight.toString()} detail="Broker leverage if the nomination reaches a contested floor." />
+        <SummaryCard label="Warm Donor Lanes" value={donorHeat.toString()} detail="Funding blocs currently ready to respond without a cold ask." />
+        <SummaryCard label="Media Pressure" value={mediaSummary.strongestChannels.length.toString()} detail="Channels carrying meaningful national intensity right now." />
         <SummaryCard label="Office States" value={fieldSummary.officeStates.toString()} detail="States where you have a permanent on-the-ground footprint." />
         <SummaryCard label="Volunteer Reserve" value={volunteerReserve.toString()} detail="Unassigned volunteers ready to reinforce a state operation." />
         <SummaryCard label="Surrogates" value={surrogateRoster.length.toString()} detail="Running mate, staff, and endorsers available for weekly deployment." />

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import './index.css';
 import { PrimaryElectionView } from './components/PrimaryElectionView';
 import { GeneralElectionView } from './components/GeneralElectionView';
@@ -17,7 +17,10 @@ import { VPSelectionModal } from './components/VPSelectionModal';
 import { ActivityLog } from './components/ActivityLog';
 import { CampaignGuideDrawer } from './components/CampaignGuideDrawer';
 import { TutorialModal } from './components/TutorialModal';
+import { SettingsDrawer } from './components/SettingsDrawer';
 import { useGameStore, computeEVTotals } from './store/gameStore';
+import { useSettingsStore } from './store/settingsStore';
+import { audioManager } from './core/AudioManager';
 
 const TABS = ['map', 'analytics', 'primary', 'general', 'campaign', 'budget'] as const;
 const TUTORIAL_STORAGE_KEY = 'politisim_tutorial_complete';
@@ -28,7 +31,9 @@ function App() {
   const [showSaveSlots, setShowSaveSlots] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [tutorialSessionId, setTutorialSessionId] = useState(0);
+  const settings = useSettingsStore();
 
   const {
     budget,
@@ -63,6 +68,10 @@ function App() {
     rivalAIs,
     scenarioName,
   } = useGameStore();
+  const previousWeekRef = useRef(currentWeek);
+  const previousDebateIdRef = useRef<string | null>(null);
+  const previousEventTitleRef = useRef<string | null>(null);
+  const previousElectionRoundRef = useRef(activeElectionNight?.round ?? 0);
 
   const isDev = import.meta.env.DEV;
 
@@ -118,7 +127,7 @@ function App() {
     if ((event.target as HTMLElement).tagName === 'INPUT') return;
 
     if (event.code === 'Space') {
-      if (showGuide || showTutorial || activeEvent || activeDebate || activeConvention || activeElectionNight) return;
+      if (showGuide || showTutorial || showSettings || activeEvent || activeDebate || activeConvention || activeElectionNight) return;
       event.preventDefault();
       advanceWeek();
     } else if (event.code === 'Escape') {
@@ -126,12 +135,16 @@ function App() {
       setShowSaveSlots(false);
       setShowGuide(false);
       setShowTutorial(false);
+      setShowSettings(false);
+    } else if (event.key === ',' || (event.key.toLowerCase() === 's' && event.shiftKey)) {
+      event.preventDefault();
+      setShowSettings(true);
     } else if (event.key >= '1' && event.key <= '6') {
-      if (showGuide || showTutorial) return;
+      if (showGuide || showTutorial || showSettings) return;
       const idx = parseInt(event.key, 10) - 1;
       if (idx < TABS.length) setActiveTab(TABS[idx]);
     }
-  }, [hasStarted, gamePhase, showGuide, showTutorial, activeEvent, activeDebate, activeConvention, activeElectionNight, advanceWeek]);
+  }, [hasStarted, gamePhase, showGuide, showTutorial, showSettings, activeEvent, activeDebate, activeConvention, activeElectionNight, advanceWeek]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -148,6 +161,88 @@ function App() {
     return () => window.removeEventListener('politisim-navigate', handler);
   }, []);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--ui-scale', `${settings.uiScale / 100}`);
+    document.body.classList.toggle('high-contrast-ui', settings.highContrast);
+    document.body.classList.toggle('motion-reduced', settings.animationLevel !== 'full');
+    document.body.classList.toggle('motion-minimal', settings.animationLevel === 'minimal');
+    document.body.classList.toggle('hide-gameplay-hints', !settings.gameplayHints);
+  }, [settings.animationLevel, settings.gameplayHints, settings.highContrast, settings.uiScale]);
+
+  useEffect(() => {
+    audioManager.applyPreferences({
+      masterVolume: settings.masterVolume,
+      musicVolume: settings.musicVolume,
+      sfxVolume: settings.sfxVolume,
+      musicEnabled: settings.musicEnabled,
+      sfxEnabled: settings.sfxEnabled,
+      animationLevel: settings.animationLevel
+    });
+  }, [settings.animationLevel, settings.masterVolume, settings.musicEnabled, settings.musicVolume, settings.sfxEnabled, settings.sfxVolume]);
+
+  useEffect(() => {
+    const unlockAudio = () => {
+      void audioManager.unlock();
+    };
+    window.addEventListener('pointerdown', unlockAudio, { once: true });
+    window.addEventListener('keydown', unlockAudio, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+    };
+  }, []);
+
+  useEffect(() => {
+    const scene = !hasStarted
+      ? 'menu'
+      : activeDebate
+        ? 'debate'
+        : activeConvention
+          ? 'convention'
+          : activeElectionNight
+            ? 'election_night'
+            : gamePhase === 'ended'
+              ? 'endgame'
+              : calendarPhase === 'general' || gamePhase === 'general'
+                ? 'general'
+                : calendarPhase === 'primary'
+                  ? 'primary'
+                  : 'campaign';
+    audioManager.setScene(scene);
+  }, [activeConvention, activeDebate, activeElectionNight, calendarPhase, gamePhase, hasStarted]);
+
+  useEffect(() => {
+    if (currentWeek > previousWeekRef.current) {
+      audioManager.playCue('advance');
+    }
+    previousWeekRef.current = currentWeek;
+  }, [currentWeek]);
+
+  useEffect(() => {
+    const currentDebateId = activeDebate?.id ?? null;
+    if (currentDebateId && currentDebateId !== previousDebateIdRef.current) {
+      audioManager.playCue('debate');
+    }
+    previousDebateIdRef.current = currentDebateId;
+  }, [activeDebate]);
+
+  useEffect(() => {
+    const currentEventTitle = activeEvent?.title ?? null;
+    if (currentEventTitle && currentEventTitle !== previousEventTitleRef.current) {
+      audioManager.playCue('negative');
+    }
+    previousEventTitleRef.current = currentEventTitle;
+  }, [activeEvent]);
+
+  useEffect(() => {
+    const currentRound = activeElectionNight?.round ?? 0;
+    if (currentRound > previousElectionRoundRef.current) {
+      audioManager.playCue('call');
+    }
+    previousElectionRoundRef.current = currentRound;
+  }, [activeElectionNight]);
+
   const openTutorial = () => {
     setTutorialSessionId((current) => current + 1);
     setShowTutorial(true);
@@ -160,6 +255,7 @@ function App() {
 
   const handleCampaignStart = () => {
     setHasStarted(true);
+    void audioManager.unlock();
     const tutorialSeen = window.localStorage.getItem(TUTORIAL_STORAGE_KEY) === 'true';
     if (!tutorialSeen) {
       openTutorial();
@@ -167,7 +263,19 @@ function App() {
   };
 
   if (!hasStarted) {
-    return <CandidateCreator onComplete={handleCampaignStart} />;
+    return (
+      <>
+        <SettingsDrawer isOpen={showSettings} onClose={() => setShowSettings(false)} />
+        <button
+          type="button"
+          className="settings-floating-btn"
+          onClick={() => setShowSettings(true)}
+        >
+          Settings & Audio
+        </button>
+        <CandidateCreator onComplete={handleCampaignStart} />
+      </>
+    );
   }
 
   if (gamePhase === 'ended') {
@@ -187,6 +295,7 @@ function App() {
       <ConventionModal />
       {vpSelectionPending && <VPSelectionModal />}
       <CampaignGuideDrawer isOpen={showGuide} onClose={() => setShowGuide(false)} />
+      <SettingsDrawer isOpen={showSettings} onClose={() => setShowSettings(false)} />
       <TutorialModal
         key={`tutorial-${tutorialSessionId}`}
         isOpen={showTutorial}
@@ -213,7 +322,8 @@ function App() {
           </div>
 
           {TABS.map((tab, idx) => (
-            <div
+            <button
+              type="button"
               key={tab}
               className={`nav-link ${activeTab === tab ? 'active' : ''}`}
               onClick={() => setActiveTab(tab)}
@@ -225,7 +335,7 @@ function App() {
               {tab === 'general' && 'General Election'}
               {tab === 'campaign' && 'Campaign HQ & Staff'}
               {tab === 'budget' && 'Budget Allocation'}
-            </div>
+            </button>
           ))}
 
           <button
@@ -242,6 +352,14 @@ function App() {
             onClick={openTutorial}
           >
             Replay Tutorial
+          </button>
+
+          <button
+            type="button"
+            className="guide-launch-btn subtle"
+            onClick={() => setShowSettings(true)}
+          >
+            Settings & Audio
           </button>
 
           <div style={{ flexGrow: 1 }} />
@@ -272,17 +390,19 @@ function App() {
           <aside className="glass-panel stats-panel">
             <h3>National Dashboard</h3>
 
-            <div className="stat-card quickstart-card">
-              <div className="stat-card-title">Campaign Playbook</div>
-              <div className="quickstart-heading">{phaseBriefing.title}</div>
-              <p className="quickstart-copy">{phaseBriefing.body}</p>
-              <div className="quickstart-meta">
-                <span>{scenarioName}</span>
-                <button type="button" className="quickstart-link" onClick={() => setShowGuide(true)}>
-                  Open Guide
-                </button>
+            {settings.gameplayHints && (
+              <div className="stat-card quickstart-card">
+                <div className="stat-card-title">Campaign Playbook</div>
+                <div className="quickstart-heading">{phaseBriefing.title}</div>
+                <p className="quickstart-copy">{phaseBriefing.body}</p>
+                <div className="quickstart-meta">
+                  <span>{scenarioName}</span>
+                  <button type="button" className="quickstart-link" onClick={() => setShowGuide(true)}>
+                    Open Guide
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="stat-card" data-tooltip={gamePhase === 'primary' ? 'Reach the delegate threshold to secure the nomination.' : `Reach ${victoryTarget} electoral votes to win the presidency.`}>
               <div className="stat-card-title">
@@ -366,6 +486,9 @@ function App() {
                 <button onClick={() => setShowSaveSlots(!showSaveSlots)} style={{ flex: 1, padding: '0.4rem', borderRadius: '8px', background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}>
                   {showSaveSlots ? 'Close' : 'Save / Load'}
                 </button>
+                <button onClick={() => setShowSettings(true)} style={{ padding: '0.4rem 0.75rem', borderRadius: '8px', background: 'rgba(56,189,248,0.1)', color: 'var(--primary-accent)', border: '1px solid rgba(56,189,248,0.16)', cursor: 'pointer', fontSize: '0.8rem' }}>
+                  Settings
+                </button>
               </div>
 
               {showSaveSlots && (
@@ -433,19 +556,19 @@ function App() {
 
             <button
               onClick={advanceWeek}
-              disabled={vpSelectionPending || Boolean(activeEvent) || Boolean(activeDebate) || Boolean(activeConvention)}
+              disabled={vpSelectionPending || Boolean(activeEvent) || Boolean(activeDebate) || Boolean(activeConvention) || showSettings}
               title="Space"
-              className={!vpSelectionPending && !activeEvent && !activeDebate && !activeConvention ? 'pulse-primary' : ''}
+              className={!vpSelectionPending && !activeEvent && !activeDebate && !activeConvention && !showSettings ? 'pulse-primary' : ''}
               style={{
                 padding: '0.8rem',
                 borderRadius: '8px',
-                background: vpSelectionPending || activeEvent || activeDebate || activeConvention ? 'rgba(255,255,255,0.1)' : 'var(--primary-accent)',
+                background: vpSelectionPending || activeEvent || activeDebate || activeConvention || showSettings ? 'rgba(255,255,255,0.1)' : 'var(--primary-accent)',
                 color: 'white',
                 border: 'none',
                 fontWeight: 'bold',
-                cursor: vpSelectionPending || activeEvent || activeDebate || activeConvention ? 'not-allowed' : 'pointer',
+                cursor: vpSelectionPending || activeEvent || activeDebate || activeConvention || showSettings ? 'not-allowed' : 'pointer',
                 fontSize: '1rem',
-                opacity: vpSelectionPending || activeEvent || activeDebate || activeConvention ? 0.5 : 1
+                opacity: vpSelectionPending || activeEvent || activeDebate || activeConvention || showSettings ? 0.5 : 1
               }}
             >
               {vpSelectionPending
@@ -454,6 +577,8 @@ function App() {
                   ? 'Finish Debate First'
                   : activeConvention
                     ? 'Resolve Convention First'
+                  : showSettings
+                    ? 'Close Settings First'
                   : activeEvent
                     ? 'Resolve Event First'
                     : 'Advance to Next Week'}

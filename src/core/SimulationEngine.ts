@@ -1,6 +1,7 @@
 import { ElectionMath, type PlayerDemographics } from './ElectionMath';
 import type { CampaignSpendingData, StateElectionData } from './CampaignDataParser';
 import type { CandidateStateEndorsementEffect } from './EndorsementData';
+import type { CampaignMediaEffect, DonorBlocId, MediaChannelId } from './CampaignStrategy';
 import {
   applyWeeklyFieldOperationDecay,
   createInitialFieldOperations,
@@ -43,6 +44,18 @@ export interface RivalAI {
   fieldOperations: Record<string, StateFieldOperation>;
   volunteerReserve: number;
   fieldStrategy: 'regional' | 'delegate' | 'turnout' | 'battleground' | 'airwar' | 'insurgent';
+  issueBrands: string[];
+  strengths: string[];
+  vulnerabilities: string[];
+  debateStyle: 'attacker' | 'reassurer' | 'wonk' | 'outsider' | 'dodger';
+  temperament: 'disciplined' | 'charismatic' | 'volatile' | 'technocrat' | 'retail';
+  donorLanes: DonorBlocId[];
+  mediaLanes: MediaChannelId[];
+  attackPower: number;
+  organizationPower: number;
+  messageDiscipline: number;
+  scandalRisk: number;
+  earnedMediaSkill: number;
 }
 
 export interface PrimaryFieldShare {
@@ -70,6 +83,18 @@ interface RivalProfile {
   trust: number;
   ideology: PlayerDemographics;
   fieldStrategy: RivalAI['fieldStrategy'];
+  issueBrands: string[];
+  strengths: string[];
+  vulnerabilities: string[];
+  debateStyle: RivalAI['debateStyle'];
+  temperament: RivalAI['temperament'];
+  donorLanes: DonorBlocId[];
+  mediaLanes: MediaChannelId[];
+  attackPower: number;
+  organizationPower: number;
+  messageDiscipline: number;
+  scandalRisk: number;
+  earnedMediaSkill: number;
 }
 
 const EMPTY_SPENDING: CampaignSpendingData = {
@@ -96,7 +121,19 @@ const DEMOCRAT_PRIMARY_PROFILES: RivalProfile[] = [
     momentum: 30,
     trust: 58,
     ideology: { liberal: 60, libertarian: 35, owner: 55, worker: 62, religious: 42, immigrant: 68 },
-    fieldStrategy: 'regional'
+    fieldStrategy: 'regional',
+    issueBrands: ['Healthcare', 'Education', 'Governance'],
+    strengths: ['Governor record', 'Suburban donors', 'Southern validators'],
+    vulnerabilities: ['Feels too managerial', 'Base excitement can sag'],
+    debateStyle: 'reassurer',
+    temperament: 'disciplined',
+    donorLanes: ['business', 'tech'],
+    mediaLanes: ['local_tv', 'cable', 'direct_mail'],
+    attackPower: 55,
+    organizationPower: 76,
+    messageDiscipline: 84,
+    scandalRisk: 24,
+    earnedMediaSkill: 52
   },
   {
     id: 'dem-reed',
@@ -108,7 +145,19 @@ const DEMOCRAT_PRIMARY_PROFILES: RivalProfile[] = [
     momentum: 36,
     trust: 56,
     ideology: { liberal: 55, libertarian: 28, owner: 35, worker: 84, religious: 46, immigrant: 48 },
-    fieldStrategy: 'turnout'
+    fieldStrategy: 'turnout',
+    issueBrands: ['Jobs', 'Trade', 'Healthcare'],
+    strengths: ['Union floor game', 'Rust Belt authenticity', 'Working-class trust'],
+    vulnerabilities: ['Business backlash', 'Coastal donor weakness'],
+    debateStyle: 'attacker',
+    temperament: 'retail',
+    donorLanes: ['labor', 'small_donors'],
+    mediaLanes: ['earned_media', 'local_tv', 'direct_mail'],
+    attackPower: 78,
+    organizationPower: 72,
+    messageDiscipline: 63,
+    scandalRisk: 34,
+    earnedMediaSkill: 68
   },
   {
     id: 'dem-mercer',
@@ -120,7 +169,19 @@ const DEMOCRAT_PRIMARY_PROFILES: RivalProfile[] = [
     momentum: 40,
     trust: 52,
     ideology: { liberal: 48, libertarian: 42, owner: 58, worker: 51, religious: 40, immigrant: 55 },
-    fieldStrategy: 'airwar'
+    fieldStrategy: 'airwar',
+    issueBrands: ['Foreign Policy', 'Deficit', 'Security'],
+    strengths: ['Cable command', 'Donor confidence', 'Security profile'],
+    vulnerabilities: ['Thin grassroots energy', 'Can sound bloodless'],
+    debateStyle: 'wonk',
+    temperament: 'technocrat',
+    donorLanes: ['business', 'tech'],
+    mediaLanes: ['cable', 'local_tv', 'rapid_response'],
+    attackPower: 49,
+    organizationPower: 58,
+    messageDiscipline: 88,
+    scandalRisk: 18,
+    earnedMediaSkill: 46
   },
   {
     id: 'dem-cho',
@@ -132,7 +193,19 @@ const DEMOCRAT_PRIMARY_PROFILES: RivalProfile[] = [
     momentum: 34,
     trust: 54,
     ideology: { liberal: 82, libertarian: 34, owner: 42, worker: 64, religious: 30, immigrant: 78 },
-    fieldStrategy: 'insurgent'
+    fieldStrategy: 'insurgent',
+    issueBrands: ['Climate Change', 'Civil Rights', 'Housing'],
+    strengths: ['Movement enthusiasm', 'Youth turnout', 'Digital reach'],
+    vulnerabilities: ['Elite skepticism', 'Message overreach'],
+    debateStyle: 'outsider',
+    temperament: 'charismatic',
+    donorLanes: ['activists', 'small_donors', 'tech'],
+    mediaLanes: ['digital', 'earned_media', 'rapid_response'],
+    attackPower: 66,
+    organizationPower: 61,
+    messageDiscipline: 57,
+    scandalRisk: 42,
+    earnedMediaSkill: 81
   }
 ];
 
@@ -147,7 +220,19 @@ const REPUBLICAN_PRIMARY_PROFILES: RivalProfile[] = [
     momentum: 32,
     trust: 56,
     ideology: { liberal: 18, libertarian: 66, owner: 84, worker: 42, religious: 70, immigrant: 18 },
-    fieldStrategy: 'airwar'
+    fieldStrategy: 'airwar',
+    issueBrands: ['Taxes', 'Business Growth', 'Border'],
+    strengths: ['Finance network', 'Southern donor bundlers', 'Disciplined ad war'],
+    vulnerabilities: ['Base authenticity questions', 'Too polished in town halls'],
+    debateStyle: 'reassurer',
+    temperament: 'disciplined',
+    donorLanes: ['business', 'tech'],
+    mediaLanes: ['cable', 'local_tv', 'direct_mail'],
+    attackPower: 52,
+    organizationPower: 74,
+    messageDiscipline: 83,
+    scandalRisk: 20,
+    earnedMediaSkill: 43
   },
   {
     id: 'rep-kincaid',
@@ -159,7 +244,19 @@ const REPUBLICAN_PRIMARY_PROFILES: RivalProfile[] = [
     momentum: 38,
     trust: 58,
     ideology: { liberal: 14, libertarian: 44, owner: 62, worker: 58, religious: 82, immigrant: 14 },
-    fieldStrategy: 'delegate'
+    fieldStrategy: 'delegate',
+    issueBrands: ['Border', 'Public Safety', 'Judges'],
+    strengths: ['Attack discipline', 'Evangelical loyalty', 'Midwest message'],
+    vulnerabilities: ['Hard edges in suburbs', 'Press combat can backfire'],
+    debateStyle: 'attacker',
+    temperament: 'disciplined',
+    donorLanes: ['faith', 'business'],
+    mediaLanes: ['cable', 'rapid_response', 'direct_mail'],
+    attackPower: 82,
+    organizationPower: 66,
+    messageDiscipline: 78,
+    scandalRisk: 28,
+    earnedMediaSkill: 58
   },
   {
     id: 'rep-bishop',
@@ -171,7 +268,19 @@ const REPUBLICAN_PRIMARY_PROFILES: RivalProfile[] = [
     momentum: 42,
     trust: 54,
     ideology: { liberal: 10, libertarian: 36, owner: 54, worker: 56, religious: 90, immigrant: 10 },
-    fieldStrategy: 'turnout'
+    fieldStrategy: 'turnout',
+    issueBrands: ['Faith', 'Judges', 'Family'],
+    strengths: ['Church turnout machine', 'Base intensity', 'Values messaging'],
+    vulnerabilities: ['General election drag', 'Limited donor breadth'],
+    debateStyle: 'outsider',
+    temperament: 'retail',
+    donorLanes: ['faith', 'small_donors'],
+    mediaLanes: ['earned_media', 'direct_mail', 'cable'],
+    attackPower: 70,
+    organizationPower: 69,
+    messageDiscipline: 54,
+    scandalRisk: 39,
+    earnedMediaSkill: 75
   },
   {
     id: 'rep-vale',
@@ -183,7 +292,19 @@ const REPUBLICAN_PRIMARY_PROFILES: RivalProfile[] = [
     momentum: 35,
     trust: 50,
     ideology: { liberal: 20, libertarian: 88, owner: 72, worker: 40, religious: 50, immigrant: 16 },
-    fieldStrategy: 'insurgent'
+    fieldStrategy: 'insurgent',
+    issueBrands: ['Spending', 'Civil Liberties', 'Anti-Establishment'],
+    strengths: ['Online libertarian base', 'Earned media spikes', 'Donor outsider pitch'],
+    vulnerabilities: ['Coalition ceiling', 'Volatility under scrutiny'],
+    debateStyle: 'dodger',
+    temperament: 'volatile',
+    donorLanes: ['small_donors', 'tech'],
+    mediaLanes: ['digital', 'earned_media', 'rapid_response'],
+    attackPower: 61,
+    organizationPower: 52,
+    messageDiscipline: 42,
+    scandalRisk: 49,
+    earnedMediaSkill: 79
   }
 ];
 
@@ -199,7 +320,19 @@ const GENERAL_OPPONENTS: Record<'Democrat' | 'Republican', RivalProfile[]> = {
       momentum: 54,
       trust: 60,
       ideology: { liberal: 76, libertarian: 32, owner: 42, worker: 68, religious: 34, immigrant: 80 },
-      fieldStrategy: 'battleground'
+      fieldStrategy: 'battleground',
+      issueBrands: ['Abortion Rights', 'Healthcare', 'Democracy'],
+      strengths: ['Battleground coalition', 'Disciplined ticket', 'Strong validator bench'],
+      vulnerabilities: ['Activist impatience', 'Business donor skepticism'],
+      debateStyle: 'reassurer',
+      temperament: 'disciplined',
+      donorLanes: ['small_donors', 'labor', 'activists'],
+      mediaLanes: ['local_tv', 'digital', 'rapid_response'],
+      attackPower: 66,
+      organizationPower: 82,
+      messageDiscipline: 86,
+      scandalRisk: 18,
+      earnedMediaSkill: 62
     },
     {
       id: 'gen-dem-brooks',
@@ -211,7 +344,19 @@ const GENERAL_OPPONENTS: Record<'Democrat' | 'Republican', RivalProfile[]> = {
       momentum: 50,
       trust: 58,
       ideology: { liberal: 58, libertarian: 38, owner: 56, worker: 54, religious: 44, immigrant: 62 },
-      fieldStrategy: 'regional'
+      fieldStrategy: 'regional',
+      issueBrands: ['Economy', 'Infrastructure', 'Competence'],
+      strengths: ['Executive competence', 'Suburban reassurance', 'Business crossover'],
+      vulnerabilities: ['Lower movement intensity', 'Can be too cautious'],
+      debateStyle: 'wonk',
+      temperament: 'technocrat',
+      donorLanes: ['business', 'tech', 'small_donors'],
+      mediaLanes: ['cable', 'local_tv', 'rapid_response'],
+      attackPower: 48,
+      organizationPower: 74,
+      messageDiscipline: 90,
+      scandalRisk: 16,
+      earnedMediaSkill: 49
     }
   ],
   Republican: [
@@ -225,7 +370,19 @@ const GENERAL_OPPONENTS: Record<'Democrat' | 'Republican', RivalProfile[]> = {
       momentum: 54,
       trust: 60,
       ideology: { liberal: 18, libertarian: 68, owner: 82, worker: 46, religious: 78, immigrant: 18 },
-      fieldStrategy: 'battleground'
+      fieldStrategy: 'battleground',
+      issueBrands: ['Economy', 'Border', 'Order'],
+      strengths: ['Disciplined battleground message', 'Heavy donor support', 'Stable operation'],
+      vulnerabilities: ['Warmth gap', 'Base mistrust if under pressure'],
+      debateStyle: 'reassurer',
+      temperament: 'disciplined',
+      donorLanes: ['business', 'faith'],
+      mediaLanes: ['local_tv', 'cable', 'direct_mail'],
+      attackPower: 62,
+      organizationPower: 82,
+      messageDiscipline: 87,
+      scandalRisk: 19,
+      earnedMediaSkill: 46
     },
     {
       id: 'gen-rep-rutledge',
@@ -237,7 +394,19 @@ const GENERAL_OPPONENTS: Record<'Democrat' | 'Republican', RivalProfile[]> = {
       momentum: 52,
       trust: 57,
       ideology: { liberal: 16, libertarian: 50, owner: 64, worker: 60, religious: 74, immigrant: 14 },
-      fieldStrategy: 'delegate'
+      fieldStrategy: 'delegate',
+      issueBrands: ['Border', 'Trade', 'Anti-Elite'],
+      strengths: ['Populist contrast', 'Media attention', 'Blue-collar right lane'],
+      vulnerabilities: ['Trust volatility', 'Overexposure risk'],
+      debateStyle: 'attacker',
+      temperament: 'charismatic',
+      donorLanes: ['small_donors', 'faith', 'business'],
+      mediaLanes: ['earned_media', 'cable', 'rapid_response'],
+      attackPower: 84,
+      organizationPower: 68,
+      messageDiscipline: 61,
+      scandalRisk: 36,
+      earnedMediaSkill: 77
     }
   ]
 };
@@ -258,8 +427,50 @@ function getWeeklyIncomeByDifficulty(level: 'easy' | 'normal' | 'hard'): number 
   return level === 'hard' ? 420000 : level === 'normal' ? 160000 : 70000;
 }
 
+function emptyMediaEffect(): CampaignMediaEffect {
+  return {
+    scoreMultiplier: 1,
+    turnoutBonus: 0,
+    stabilityBonus: 0,
+    trustLift: 0,
+    momentumLift: 0,
+    rivalPenalty: 0,
+    scandalShield: 0
+  };
+}
+
+function getRivalPassiveFinance(rival: RivalAI) {
+  const donorWeight = rival.donorLanes.reduce((sum, lane) => {
+    if (lane === 'business') return sum + 1.25;
+    if (lane === 'faith') return sum + 0.95;
+    if (lane === 'labor') return sum + 0.85;
+    if (lane === 'tech') return sum + 1.05;
+    return sum + 0.78;
+  }, 0);
+  return Math.round((donorWeight * 42000) + (rival.supportBase * 6500) + (rival.earnedMediaSkill * 420));
+}
+
 function getRegionalBonus(stateData: StateElectionData, homeRegion: string): number {
   return stateData.region === homeRegion ? 18 : 0;
+}
+
+function getStyleLabel(style: RivalAI['debateStyle']) {
+  if (style === 'attacker') return 'attack dog';
+  if (style === 'reassurer') return 'steady closer';
+  if (style === 'wonk') return 'policy technician';
+  if (style === 'outsider') return 'outsider insurgent';
+  return 'slippery counterpuncher';
+}
+
+export function getRivalPersonaLine(rival: Pick<RivalAI, 'homeRegion' | 'issueBrands' | 'debateStyle' | 'strengths'>) {
+  const issueLine = rival.issueBrands.slice(0, 2).join(', ');
+  const strengthLine = rival.strengths[0] ?? 'message discipline';
+  return `${rival.homeRegion} base | ${getStyleLabel(rival.debateStyle)} | ${issueLine} | ${strengthLine}`;
+}
+
+export function getRivalDebateTagline(rival: Pick<RivalAI, 'debateStyle' | 'issueBrands' | 'tagline'>) {
+  const issueLead = rival.issueBrands[0] ?? 'campaign discipline';
+  return `${getStyleLabel(rival.debateStyle)} on ${issueLead.toLowerCase()}`;
 }
 
 function getPartyLeanAdjustment(stateData: StateElectionData, party: 'Democrat' | 'Republican'): number {
@@ -364,7 +575,19 @@ export class SimulationEngine {
       endorsedCandidateId: null,
       fieldOperations: createInitialFieldOperations(states),
       volunteerReserve: 160,
-      fieldStrategy: 'regional'
+      fieldStrategy: 'regional',
+      issueBrands: ['Economy', 'Security'],
+      strengths: ['Baseline party loyalty', 'Competent national operation'],
+      vulnerabilities: ['Little distinct identity', 'Can be out-organized'],
+      debateStyle: 'reassurer',
+      temperament: 'disciplined',
+      donorLanes: ['business', 'small_donors'],
+      mediaLanes: ['local_tv', 'cable'],
+      attackPower: 55,
+      organizationPower: 60,
+      messageDiscipline: 68,
+      scandalRisk: 28,
+      earnedMediaSkill: 45
     };
   }
 
@@ -394,7 +617,19 @@ export class SimulationEngine {
       endorsedCandidateId: null,
       fieldOperations: createInitialFieldOperations(states),
       volunteerReserve: 180 + (profile.supportBase * 6),
-      fieldStrategy: profile.fieldStrategy
+      fieldStrategy: profile.fieldStrategy,
+      issueBrands: [...profile.issueBrands],
+      strengths: [...profile.strengths],
+      vulnerabilities: [...profile.vulnerabilities],
+      debateStyle: profile.debateStyle,
+      temperament: profile.temperament,
+      donorLanes: [...profile.donorLanes],
+      mediaLanes: [...profile.mediaLanes],
+      attackPower: profile.attackPower + (level === 'hard' ? 4 : 0),
+      organizationPower: profile.organizationPower + (level === 'hard' ? 5 : level === 'easy' ? -4 : 0),
+      messageDiscipline: profile.messageDiscipline + (level === 'easy' ? -4 : 0),
+      scandalRisk: profile.scandalRisk + (level === 'easy' ? 4 : 0),
+      earnedMediaSkill: profile.earnedMediaSkill + (level === 'hard' ? 3 : 0)
     }));
   }
 
@@ -426,8 +661,110 @@ export class SimulationEngine {
       endorsedCandidateId: null,
       fieldOperations: createInitialFieldOperations(states),
       volunteerReserve: 260,
-      fieldStrategy: profile.fieldStrategy
+      fieldStrategy: profile.fieldStrategy,
+      issueBrands: [...profile.issueBrands],
+      strengths: [...profile.strengths],
+      vulnerabilities: [...profile.vulnerabilities],
+      debateStyle: profile.debateStyle,
+      temperament: profile.temperament,
+      donorLanes: [...profile.donorLanes],
+      mediaLanes: [...profile.mediaLanes],
+      attackPower: profile.attackPower + (level === 'hard' ? 4 : 0),
+      organizationPower: profile.organizationPower + (level === 'hard' ? 5 : 0),
+      messageDiscipline: profile.messageDiscipline,
+      scandalRisk: profile.scandalRisk,
+      earnedMediaSkill: profile.earnedMediaSkill + (level === 'hard' ? 4 : 0)
     };
+  }
+
+  static getRivalMediaEffect(
+    rival: RivalAI,
+    stateData: StateElectionData,
+    phase: 'primary' | 'general'
+  ): CampaignMediaEffect {
+    const localTv = rival.mediaLanes.includes('local_tv') ? 0.08 : 0.02;
+    const cable = rival.mediaLanes.includes('cable') ? 0.06 : 0.02;
+    const digital = rival.mediaLanes.includes('digital') ? 0.06 : 0.015;
+    const earned = rival.mediaLanes.includes('earned_media') ? rival.earnedMediaSkill / 650 : rival.earnedMediaSkill / 1200;
+    const rapid = rival.mediaLanes.includes('rapid_response') ? rival.messageDiscipline / 420 : rival.messageDiscipline / 900;
+    const mail = rival.mediaLanes.includes('direct_mail') ? 0.05 : 0.01;
+    const battlegroundFactor = phase === 'general'
+      ? Math.max(0.45, 1.1 - (Math.abs(stateData.partisanLean ?? 0) / 22))
+      : Math.max(0.55, stateData.delegatesOrEV / 28);
+    const baseCoalition = (stateData.owner + stateData.worker + stateData.religious) / 300;
+
+    return {
+      scoreMultiplier: 1
+        + (localTv * battlegroundFactor)
+        + (cable * baseCoalition)
+        + (digital * ((stateData.liberal + stateData.libertarian + stateData.immigrant) / 320))
+        + (mail * baseCoalition),
+      turnoutBonus: (digital * 2.3) + (mail * 1.4) + (localTv * 0.7),
+      stabilityBonus: (rapid * 7) + (mail * 3),
+      trustLift: cable * 1.2,
+      momentumLift: earned * 3.6,
+      rivalPenalty: rapid * 0.04,
+      scandalShield: rapid * 0.3
+    };
+  }
+
+  static resolveRivalCampaignBeat(
+    rival: RivalAI,
+    phase: 'primary' | 'general',
+    playerTrust: number
+  ): { rival: RivalAI; message: string; type: 'positive' | 'negative' | 'info' } | null {
+    if (rival.status === 'withdrawn') return null;
+
+    const scandalChance = 0.04 + (rival.scandalRisk / 260) - (rival.messageDiscipline / 1200);
+    const surgeChance = 0.05 + (rival.earnedMediaSkill / 450) + (rival.attackPower / 900);
+    const organizationChance = 0.03 + (rival.organizationPower / 1300);
+    const roll = Math.random();
+
+    if (roll < scandalChance) {
+      const trustHit = 5 + Math.round(rival.scandalRisk / 18);
+      const momentumHit = 4 + (rival.temperament === 'volatile' ? 3 : 0);
+      const vulnerability = rival.vulnerabilities[0] ?? 'message discipline';
+      return {
+        rival: {
+          ...rival,
+          trust: clampPercentage(rival.trust - trustHit),
+          momentum: clampPercentage(rival.momentum - momentumHit),
+          budget: Math.max(0, rival.budget - Math.round(45000 + (rival.scandalRisk * 1800)))
+        },
+        message: `${rival.name} hit turbulence after a ${vulnerability.toLowerCase()} problem turned into a damaging ${phase} news cycle.`,
+        type: 'negative'
+      };
+    }
+
+    if (roll < scandalChance + surgeChance) {
+      const momentumBoost = 4 + Math.round(rival.earnedMediaSkill / 24);
+      const trustBoost = rival.debateStyle === 'reassurer' ? 3 : 1;
+      const messageBase = rival.strengths[0] ?? 'media lane';
+      return {
+        rival: {
+          ...rival,
+          momentum: clampPercentage(rival.momentum + momentumBoost),
+          trust: clampPercentage(rival.trust + trustBoost),
+          budget: rival.budget + Math.round(getRivalPassiveFinance(rival) * 0.2)
+        },
+        message: `${rival.name} broke through this week on ${messageBase.toLowerCase()}, giving the campaign a fresh burst of coverage.`,
+        type: playerTrust < 46 ? 'negative' : 'info'
+      };
+    }
+
+    if (roll < scandalChance + surgeChance + organizationChance) {
+      return {
+        rival: {
+          ...rival,
+          momentum: clampPercentage(rival.momentum + 2),
+          trust: clampPercentage(rival.trust + 1)
+        },
+        message: `${rival.name} quietly tightened their ${rival.homeRegion.toLowerCase()} organization and kept the campaign stable.`,
+        type: 'info'
+      };
+    }
+
+    return null;
   }
 
   static runRivalAITurn(
@@ -443,14 +780,14 @@ export class SimulationEngine {
     if (rival.status === 'withdrawn') {
       return {
         ...rival,
-        budget: Math.max(0, rival.budget + Math.floor((getWeeklyIncomeByDifficulty(rival.difficulty) + coalitionFundraisingBonus) * 0.15)),
+        budget: Math.max(0, rival.budget + Math.floor((getWeeklyIncomeByDifficulty(rival.difficulty) + coalitionFundraisingBonus + getRivalPassiveFinance(rival)) * 0.15)),
         momentum: Math.max(0, rival.momentum - 1),
         fieldOperations: decayedOperations,
         volunteerReserve: Math.max(0, Math.floor(rival.volunteerReserve * 0.7))
       };
     }
 
-    const weeklyIncome = getWeeklyIncomeByDifficulty(rival.difficulty) + coalitionFundraisingBonus;
+    const weeklyIncome = getWeeklyIncomeByDifficulty(rival.difficulty) + coalitionFundraisingBonus + getRivalPassiveFinance(rival);
     const officeUpkeep = getTotalOfficeUpkeep(decayedOperations, states);
     const nextBudgetPool = Math.max(0, rival.budget + weeklyIncome - officeUpkeep);
     let newBudget = nextBudgetPool;
@@ -522,16 +859,29 @@ export class SimulationEngine {
         : rival.fieldStrategy === 'insurgent'
           ? 0.22
           : 0.18;
-      const socialBias = rival.fieldStrategy === 'insurgent' ? 0.13 : 0.06;
-      const tvBias = rival.fieldStrategy === 'airwar' ? 0.48 : rival.fieldStrategy === 'battleground' ? 0.38 : 0.34;
+      const socialBias = rival.mediaLanes.includes('digital')
+        ? 0.16
+        : rival.fieldStrategy === 'insurgent'
+          ? 0.13
+          : 0.06;
+      const tvBias = rival.mediaLanes.includes('local_tv')
+        ? 0.46
+        : rival.fieldStrategy === 'airwar'
+          ? 0.48
+          : rival.fieldStrategy === 'battleground'
+            ? 0.38
+            : 0.34;
+      const cableBias = rival.mediaLanes.includes('cable') ? 0.06 : 0;
+      const mailBias = rival.mediaLanes.includes('direct_mail') ? 0.08 : 0.04;
       const fieldBias = operation.officeLevel > 0 ? 0.08 + (operation.officeLevel * 0.03) : 0;
 
-      current.tvAds = Math.min(maxPerField, current.tvAds + scaledSpend * tvBias);
-      current.intAds = Math.min(maxPerField, current.intAds + scaledSpend * 0.22);
-      current.mailers = Math.min(maxPerField, current.mailers + scaledSpend * 0.12);
+      current.tvAds = Math.min(maxPerField, current.tvAds + scaledSpend * Math.max(0.18, tvBias - cableBias));
+      current.intAds = Math.min(maxPerField, current.intAds + scaledSpend * (0.18 + socialBias * 0.35 + cableBias));
+      current.mailers = Math.min(maxPerField, current.mailers + scaledSpend * mailBias);
       current.groundGame = Math.min(maxPerField, current.groundGame + scaledSpend * (groundBias + fieldBias));
       current.socialMedia = Math.min(maxPerField, current.socialMedia + scaledSpend * socialBias);
-      current.visits += 1;
+      current.research = Math.min(maxPerField, current.research + scaledSpend * (rival.mediaLanes.includes('rapid_response') ? 0.08 : 0.03));
+      current.visits += rival.temperament === 'retail' ? 2 : 1;
       newSpending[stateName] = current;
       newBudget -= scaledSpend;
 
@@ -573,8 +923,19 @@ export class SimulationEngine {
     const fieldPresence = Object.values(operations).reduce((sum, operation) => {
       return sum + (operation.officeLevel * 8) + Math.floor(operation.volunteerStrength / 30) + Math.round(operation.surrogatePower * 4);
     }, 0);
-    const momentumGain = (difficulty === 'hard' ? 3 : difficulty === 'normal' ? 1 : 0) + (fieldPresence >= 65 ? 1 : 0);
-    const trustShift = newBudget > rival.budget ? 1 : officeUpkeep > weeklyIncome * 0.4 ? -1 : 0;
+    const mediaMomentum = rival.mediaLanes.includes('earned_media')
+      ? Math.round(rival.earnedMediaSkill / 35)
+      : rival.mediaLanes.includes('cable')
+        ? 1
+        : 0;
+    const momentumGain = (difficulty === 'hard' ? 3 : difficulty === 'normal' ? 1 : 0) + (fieldPresence >= 65 ? 1 : 0) + mediaMomentum;
+    const trustShift = newBudget > rival.budget
+      ? 1 + Math.round(rival.messageDiscipline / 120)
+      : officeUpkeep > weeklyIncome * 0.4
+        ? -1
+        : rival.mediaLanes.includes('rapid_response')
+          ? 1
+          : 0;
 
     return {
       ...rival,
@@ -598,6 +959,8 @@ export class SimulationEngine {
     rivalEndorsementEffects: Record<string, CandidateStateEndorsementEffect> = {},
     playerFieldEffect: FieldOperationEffect = { scoreMultiplier: 1, turnoutBonus: 0, stabilityBonus: 0 },
     rivalFieldEffects: Record<string, FieldOperationEffect> = {},
+    playerMediaEffect: CampaignMediaEffect = emptyMediaEffect(),
+    rivalMediaEffects: Record<string, CampaignMediaEffect> = {},
     globalStaffDiv = 2.0,
     globalVisitMult = 1.0,
     playerIssues: string[] = [],
@@ -617,12 +980,13 @@ export class SimulationEngine {
       playerMomentum,
       12,
       stateData.region
-    ) * playerEndorsementEffect.scoreMultiplier * playerFieldEffect.scoreMultiplier;
+    ) * playerEndorsementEffect.scoreMultiplier * playerFieldEffect.scoreMultiplier * playerMediaEffect.scoreMultiplier;
 
     const rivalScores = activeRivals.map((rival) => {
       const statusPenalty = rival.status === 'withdrawn' ? 0.18 : 1;
       const endorsementEffect = rivalEndorsementEffects[rival.id] ?? { scoreMultiplier: 1, turnoutBonus: 0 };
       const fieldEffect = rivalFieldEffects[rival.id] ?? { scoreMultiplier: 1, turnoutBonus: 0, stabilityBonus: 0 };
+      const mediaEffect = rivalMediaEffects[rival.id] ?? emptyMediaEffect();
       const score = buildCandidateScore(
         rival.ideology,
         stateData,
@@ -636,7 +1000,7 @@ export class SimulationEngine {
         rival.supportBase,
         rival.homeRegion,
         statusPenalty
-      ) * endorsementEffect.scoreMultiplier * fieldEffect.scoreMultiplier;
+      ) * endorsementEffect.scoreMultiplier * fieldEffect.scoreMultiplier * mediaEffect.scoreMultiplier;
 
       return { rival, score };
     });
@@ -644,15 +1008,25 @@ export class SimulationEngine {
     const totalGroundGame = (playerSpending.groundGame || 0) +
       rivalScores.reduce((sum, entry) => sum + (entry.rival.spending[stateData.stateName]?.groundGame || 0), 0);
     const totalMomentum = playerMomentum + rivalScores.reduce((sum, entry) => sum + entry.rival.momentum, 0);
-    const rivalTurnoutBoost = activeRivals.reduce((sum, rival) => sum + (rivalEndorsementEffects[rival.id]?.turnoutBonus ?? 0) + (rivalFieldEffects[rival.id]?.turnoutBonus ?? 0), 0);
+    const rivalTurnoutBoost = activeRivals.reduce((sum, rival) => {
+      return sum
+        + (rivalEndorsementEffects[rival.id]?.turnoutBonus ?? 0)
+        + (rivalFieldEffects[rival.id]?.turnoutBonus ?? 0)
+        + (rivalMediaEffects[rival.id]?.turnoutBonus ?? 0);
+    }, 0);
     const turnout = clampPercentage(
       ElectionMath.calculateTurnout(stateData, totalGroundGame, totalMomentum)
       + playerEndorsementEffect.turnoutBonus
       + playerFieldEffect.turnoutBonus
+      + playerMediaEffect.turnoutBonus
       + Math.min(4.5, rivalTurnoutBoost * 0.42)
     );
 
-    const organizationalCertainty = playerFieldEffect.stabilityBonus + activeRivals.reduce((sum, rival) => sum + (rivalFieldEffects[rival.id]?.stabilityBonus ?? 0), 0);
+    const organizationalCertainty = playerFieldEffect.stabilityBonus
+      + playerMediaEffect.stabilityBonus
+      + activeRivals.reduce((sum, rival) => {
+          return sum + (rivalFieldEffects[rival.id]?.stabilityBonus ?? 0) + (rivalMediaEffects[rival.id]?.stabilityBonus ?? 0);
+        }, 0);
     const undecided = Math.max(3, Math.min(12, 12 - Math.floor(totalMomentum / 45) - Math.floor(organizationalCertainty / 10)));
     const scoreSum = playerScore + rivalScores.reduce((sum, entry) => sum + entry.score, 0);
 
@@ -708,6 +1082,8 @@ export class SimulationEngine {
     rivalEndorsementEffect: CandidateStateEndorsementEffect = { scoreMultiplier: 1, turnoutBonus: 0 },
     playerFieldEffect: FieldOperationEffect = { scoreMultiplier: 1, turnoutBonus: 0, stabilityBonus: 0 },
     rivalFieldEffect: FieldOperationEffect = { scoreMultiplier: 1, turnoutBonus: 0, stabilityBonus: 0 },
+    playerMediaEffect: CampaignMediaEffect = emptyMediaEffect(),
+    rivalMediaEffect: CampaignMediaEffect = emptyMediaEffect(),
     globalStaffDiv = 2.0,
     globalVisitMult = 1.0,
     playerIssues: string[] = [],
@@ -726,7 +1102,7 @@ export class SimulationEngine {
       playerMomentum,
       12,
       stateData.region
-    ) * playerEndorsementEffect.scoreMultiplier * playerFieldEffect.scoreMultiplier;
+    ) * playerEndorsementEffect.scoreMultiplier * playerFieldEffect.scoreMultiplier * playerMediaEffect.scoreMultiplier;
 
     const rivalScore = buildCandidateScore(
       rivalAI.ideology,
@@ -740,13 +1116,13 @@ export class SimulationEngine {
       rivalAI.momentum,
       rivalAI.supportBase,
       rivalAI.homeRegion
-    ) * rivalEndorsementEffect.scoreMultiplier * rivalFieldEffect.scoreMultiplier;
+    ) * rivalEndorsementEffect.scoreMultiplier * rivalFieldEffect.scoreMultiplier * rivalMediaEffect.scoreMultiplier;
 
     const stateTurnout = clampPercentage(ElectionMath.calculateTurnout(
       stateData,
       (playerSpending.groundGame || 0) + (rivalAI.spending[stateData.stateName]?.groundGame || 0),
       playerMomentum + rivalAI.momentum
-    ) + playerEndorsementEffect.turnoutBonus + playerFieldEffect.turnoutBonus + (rivalEndorsementEffect.turnoutBonus * 0.7) + (rivalFieldEffect.turnoutBonus * 0.85));
+    ) + playerEndorsementEffect.turnoutBonus + playerFieldEffect.turnoutBonus + playerMediaEffect.turnoutBonus + (rivalEndorsementEffect.turnoutBonus * 0.7) + (rivalFieldEffect.turnoutBonus * 0.85) + (rivalMediaEffect.turnoutBonus * 0.75));
 
     const totalScore = playerScore + rivalScore;
     if (totalScore <= 0) {
@@ -757,16 +1133,20 @@ export class SimulationEngine {
     let playerPct = (playerScore / totalScore) * (100 - undecided);
     let rivalPct = (rivalScore / totalScore) * (100 - undecided);
 
-    playerPct += Math.floor(playerMomentum / 25) + (playerMomentum >= 75 ? 2 : playerMomentum >= 55 ? 1 : 0);
-    rivalPct += Math.floor(rivalAI.momentum / 25);
+    playerPct += Math.floor(playerMomentum / 25) + (playerMomentum >= 75 ? 2 : playerMomentum >= 55 ? 1 : 0) + playerMediaEffect.momentumLift + playerMediaEffect.trustLift;
+    rivalPct += Math.floor(rivalAI.momentum / 25) + rivalMediaEffect.momentumLift + rivalMediaEffect.trustLift;
 
-    const stabilityNoiseFactor = Math.max(2.2, 6 - (playerFieldEffect.stabilityBonus * 0.35) - (rivalFieldEffect.stabilityBonus * 0.3));
+    const stabilityNoiseFactor = Math.max(1.9, 6 - (playerFieldEffect.stabilityBonus * 0.35) - (playerMediaEffect.stabilityBonus * 0.24) - (rivalFieldEffect.stabilityBonus * 0.3) - (rivalMediaEffect.stabilityBonus * 0.22));
     const noise = (Math.random() - 0.5) * stabilityNoiseFactor;
     playerPct += noise;
     rivalPct -= noise * 0.7;
 
     playerPct += playerFieldEffect.stabilityBonus * 0.18;
+    playerPct += playerMediaEffect.stabilityBonus * 0.12;
+    playerPct -= rivalMediaEffect.rivalPenalty;
     rivalPct += rivalFieldEffect.stabilityBonus * 0.18;
+    rivalPct += rivalMediaEffect.stabilityBonus * 0.12;
+    rivalPct -= playerMediaEffect.rivalPenalty;
 
     if (playerPct + rivalPct > 100) {
       const scale = 100 / (playerPct + rivalPct);

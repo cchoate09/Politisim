@@ -141,6 +141,20 @@
   color: var(--text-muted);
 }
 
+.candidate-persona-line {
+  margin-bottom: 0.55rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.candidate-vulnerability-line {
+  margin-top: 0.5rem;
+  font-size: 0.74rem;
+  color: #fca5a5;
+  line-height: 1.4;
+}
+
 .state-delegates {
   font-family: 'Outfit', sans-serif;
   color: var(--primary-accent);

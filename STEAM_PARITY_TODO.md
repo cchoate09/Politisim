@@ -4,13 +4,13 @@ This checklist turns the current competitive review into a working roadmap. The 
 
 ## Current Snapshot
 
-Estimated parity progress: `71%`
+Estimated parity progress: `82%`
 
-- Core election simulation: `84%`
+- Core election simulation: `89%`
 - Replayability and scenarios: `45%`
-- Presentation and immersion: `57%`
-- Product shell and Steam readiness: `35%`
-- QA, onboarding, and usability: `43%`
+- Presentation and immersion: `72%`
+- Product shell and Steam readiness: `55%`
+- QA, onboarding, and usability: `70%`
 
 ## What Is Already Stronger Than Before
 
@@ -47,11 +47,11 @@ Goal: make the game feel strategically deep enough that players want multiple fu
 
 ### 2. Rival Identity
 
-- [ ] Give each rival clearer strengths, weaknesses, regions, and issue brands
+- [x] Give each rival clearer strengths, weaknesses, regions, and issue brands
   Acceptance: players can explain why each rival is dangerous in specific states or phases.
-- [ ] Add rival-specific scandals and strengths
+- [x] Add rival-specific scandals and strengths
   Acceptance: rivals can stumble, overperform in debates, collect endorsements, and lose trust too.
-- [ ] Add different debate personalities
+- [x] Add different debate personalities
   Acceptance: some rivals attack, some reassure, some dodge, and the post-debate fallout reflects that.
 
 ### 3. Campaign Operations Depth
@@ -60,9 +60,9 @@ Goal: make the game feel strategically deep enough that players want multiple fu
   Acceptance: offices improve local turnout and resilience over several weeks instead of acting like one-shot spending.
 - [x] Add volunteers and surrogate campaigning
   Acceptance: staffing and coalition assets can help cover more states than the player can personally visit.
-- [ ] Add donor blocs
+- [x] Add donor blocs
   Acceptance: small donors, business donors, activists, labor, and ideological networks respond differently to campaign choices.
-- [ ] Add media strategy by channel
+- [x] Add media strategy by channel
   Acceptance: local TV, cable, digital, earned media, and rapid response feel meaningfully different.
 - [ ] Add oppo research consequences
   Acceptance: research can unlock events, weaken rivals, or backfire if abused.
@@ -106,11 +106,11 @@ Goal: make the game feel like a product people want to stay inside, not just a s
 
 ### 7. Audio and Atmosphere
 
-- [ ] Add music system
+- [x] Add music system
   Acceptance: menu, debate, campaign, and endgame moments have distinct audio mood.
-- [ ] Add sound effects for actions and outcomes
+- [x] Add sound effects for actions and outcomes
   Acceptance: spending, debate choices, achievements, and election-night calls have feedback.
-- [ ] Add settings for volume and accessibility
+- [x] Add settings for volume and accessibility
   Acceptance: players can disable or tune audio easily.
 
 ### 8. Final UX Polish
@@ -137,11 +137,11 @@ Goal: ship like a credible Steam game, not just a functioning build.
 
 ### 10. Accessibility and Options
 
-- [ ] Add settings screen
+- [x] Add settings screen
   Acceptance: audio, animation intensity, UI scale, and gameplay hints can be adjusted.
-- [ ] Add colorblind-safe map options
+- [x] Add colorblind-safe map options
   Acceptance: battleground colors remain readable across common accessibility needs.
-- [ ] Add keyboard-first support and clearer focus states
+- [x] Add keyboard-first support and clearer focus states
   Acceptance: the game is fully usable without mouse-only interaction.
 
 ## Milestone 5: QA Parity
@@ -150,16 +150,16 @@ Goal: stop future content passes from quietly breaking the game.
 
 ### 11. Test Coverage
 
-- [ ] Add unit tests for delegate allocation and threshold rules
+- [x] Add unit tests for delegate allocation and threshold rules
 - [ ] Add tests for phase transitions and end-state logic
-- [ ] Add save/load round-trip tests for mid-primary and mid-general runs
+- [x] Add save/load round-trip tests for mid-primary and mid-general runs
 - [ ] Add tests for debate scheduling and debate completion flow
 - [ ] Add packaged Electron smoke tests
 
 ### 12. Build Discipline
 
-- [ ] Add CI for lint, test, and build
-- [ ] Add scenario data validation to CI
+- [x] Add CI for lint, test, and build
+- [x] Add scenario data validation to CI
 - [ ] Add a release checklist for Steam builds
 
 ## Recommended Order
@@ -168,9 +168,9 @@ If we want the highest return on effort, tackle these next:
 
 1. Audio/settings/accessibility
 2. Steam Cloud and final achievement coverage
-3. CI and deeper tests
-4. Donor blocs and media strategy
-5. Rival identity and personality pass
+3. Candidate portraits and event staging
+4. More official scenarios and scenario-specific flavor
+5. Packaged Electron smoke tests and release checklist
 
 ## Latest Milestone Notes
 
@@ -179,6 +179,7 @@ If we want the highest return on effort, tackle these next:
 - `2026-03-17`: Added a dedicated election-night resolution phase with state call waves, hidden polling misses, desk projections, and a final transition into the postgame report only after the map is actually called.
 - `2026-03-17`: Added persistent field offices, volunteer reserves, surrogate deployment, rival field-network AI, and UI surfacing across the state panel, Campaign HQ, primary tracker, and battleground view so campaign organization now functions as a real strategic layer.
 - `2026-03-17`: Added a first-run tutorial, a persistent guide and glossary drawer, phase-sensitive dashboard coaching, and richer save-slot metadata so the product now explains itself much more like a real Steam release instead of expecting genre knowledge.
+- `2026-03-17`: Added a full settings and accessibility drawer with audio controls, UI scale, motion tuning, high-contrast panels, and colorblind-safe map palettes; added procedural soundtrack and scene-aware sound effects; deepened the finance layer with donor blocs and channel-based media strategy; gave rivals stronger personality, style, and weekly campaign beats; and added CI plus behavior tests for primary rules, strategy systems, rival identity, and save/load persistence.
 
 ## How We Should Track Progress
 

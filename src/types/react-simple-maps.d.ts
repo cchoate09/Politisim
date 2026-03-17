@@ -1,5 +1,5 @@
 declare module 'react-simple-maps' {
-  import type { ComponentType, CSSProperties, MouseEventHandler, ReactNode } from 'react';
+  import type { ComponentType, CSSProperties, KeyboardEventHandler, MouseEventHandler, ReactNode } from 'react';
 
   interface MapGeography {
     rsmKey: string;
@@ -16,9 +16,13 @@ declare module 'react-simple-maps' {
   export const Geography: ComponentType<{
     geography: unknown;
     onClick?: MouseEventHandler<SVGPathElement>;
+    onKeyDown?: KeyboardEventHandler<SVGPathElement>;
     onMouseEnter?: MouseEventHandler<SVGPathElement>;
     onMouseMove?: MouseEventHandler<SVGPathElement>;
     onMouseLeave?: MouseEventHandler<SVGPathElement>;
+    role?: string;
+    tabIndex?: number;
+    'aria-label'?: string;
     style?: {
       default?: CSSProperties;
       hover?: CSSProperties;

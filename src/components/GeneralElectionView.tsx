@@ -1,14 +1,16 @@
 import React from 'react';
 import './GeneralElectionView.css';
 import { useGameStore, computeEVTotals } from '../store/gameStore';
+import { getRivalPersonaLine } from '../core/SimulationEngine';
 
 export const GeneralElectionView: React.FC = () => {
-  const { states, pollingData, playerName, vpPick, voterParty, generalOpponent, fieldOperations } = useGameStore();
+  const { states, pollingData, playerName, vpPick, voterParty, generalOpponent, fieldOperations, playerIssues } = useGameStore();
   const { playerEV, rivalEV } = computeEVTotals(states, pollingData);
   const generalTarget = Math.floor(states.reduce((sum, state) => sum + state.delegatesOrEV, 0) / 2) + 1;
   const opponentName = generalOpponent?.name ?? 'Opposition Nominee';
   const opponentParty = generalOpponent?.party ?? (voterParty === 'Democrat' ? 'Republican' : 'Democrat');
   const opponentTagline = generalOpponent?.tagline ?? `${opponentParty} standard-bearer`;
+  const opponentPersona = generalOpponent ? getRivalPersonaLine(generalOpponent) : 'National ticket | battleground-focused campaign';
 
   const swingStates = [...states]
     .map((state) => {
@@ -44,6 +46,9 @@ export const GeneralElectionView: React.FC = () => {
           <div className="candidate-name">{playerName}</div>
           <div className="candidate-party">{vpPick ? `Ticket with ${vpPick.name}` : `${voterParty} nominee`}</div>
           <div className="candidate-summary">Your coalition is trying to lock down enough battlegrounds to cross the national threshold.</div>
+          <div className="candidate-summary" style={{ marginTop: '0.45rem', fontSize: '0.82rem' }}>
+            {playerIssues.length > 0 ? `Issue frame: ${playerIssues.slice(0, 3).join(', ')}` : 'Issue frame still diffuse'}
+          </div>
           <div className="electoral-votes" style={{ color: 'var(--primary-accent)' }}>{playerEV}</div>
         </div>
 
@@ -53,6 +58,7 @@ export const GeneralElectionView: React.FC = () => {
           <div className="candidate-name">{opponentName}</div>
           <div className="candidate-party">{opponentParty} nominee</div>
           <div className="candidate-summary">{opponentTagline}</div>
+          <div className="candidate-summary" style={{ marginTop: '0.45rem', fontSize: '0.82rem' }}>{opponentPersona}</div>
           <div className="electoral-votes" style={{ color: 'var(--secondary-accent)' }}>{rivalEV}</div>
         </div>
       </div>

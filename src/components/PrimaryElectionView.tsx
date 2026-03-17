@@ -4,6 +4,7 @@ import { useGameStore } from '../store/gameStore';
 import { getPrimaryRuleProfile } from '../core/PrimaryRules';
 import { getCandidateEndorsementSummary } from '../core/EndorsementData';
 import { getFieldNetworkSummary } from '../core/FieldOperations';
+import { getRivalPersonaLine } from '../core/SimulationEngine';
 
 export const PrimaryElectionView: React.FC = () => {
   const {
@@ -32,7 +33,7 @@ export const PrimaryElectionView: React.FC = () => {
 
   const fieldStandings = useMemo(() => {
     return [
-      { id: 'player', name: playerName, delegates: playerDelegates, momentum: null, tagline: 'Your campaign', status: 'active' },
+      { id: 'player', name: playerName, delegates: playerDelegates, momentum: null, tagline: 'Your campaign', status: 'active', persona: 'National coalition | define your issue lane and protect trust', vulnerabilities: [] as string[] },
       ...[...rivalAIs]
         .sort((a, b) => {
           if (a.status !== b.status) return a.status === 'withdrawn' ? 1 : -1;
@@ -47,7 +48,9 @@ export const PrimaryElectionView: React.FC = () => {
           tagline: rival.status === 'withdrawn'
             ? `Withdrawn${rival.endorsedCandidateId ? ' and endorsed' : ''}`
             : rival.tagline,
-          status: rival.status
+          status: rival.status,
+          persona: getRivalPersonaLine(rival),
+          vulnerabilities: rival.vulnerabilities
         }))
     ];
   }, [playerDelegates, playerName, rivalAIs]);
@@ -109,6 +112,7 @@ export const PrimaryElectionView: React.FC = () => {
               </span>
             </div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.6rem' }}>{candidate.tagline}</div>
+            <div className="candidate-persona-line">{candidate.persona}</div>
             {(() => {
               const coalition = getCandidateEndorsementSummary(endorsements, candidate.id);
               if (coalition.count === 0) return null;
@@ -122,6 +126,11 @@ export const PrimaryElectionView: React.FC = () => {
             {candidate.momentum !== null && (
               <div style={{ fontSize: '0.8rem', color: 'var(--text-main)' }}>
                 Momentum <strong>{candidate.momentum}</strong>
+              </div>
+            )}
+            {candidate.vulnerabilities.length > 0 && (
+              <div className="candidate-vulnerability-line">
+                Watch for: {candidate.vulnerabilities[0]}
               </div>
             )}
           </div>
