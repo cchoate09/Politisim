@@ -19,7 +19,7 @@
   padding: 4rem;
   border-radius: 20px;
   text-align: center;
-  max-width: 800px;
+  max-width: 980px;
   width: 90%;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
@@ -104,6 +104,68 @@
   font-weight: bold;
 }
 
+.result-briefing {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.result-briefing-card {
+  padding: 1rem 1.1rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: left;
+}
+
+.result-briefing-label {
+  display: block;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.result-briefing-card strong {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.2rem;
+  color: var(--text-main);
+}
+
+.endgame-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.endgame-panel {
+  text-align: left;
+  padding: 1.2rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.endgame-panel h3 {
+  font-size: 0.92rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.85rem;
+}
+
+.endgame-list-item {
+  padding: 0.6rem 0.75rem;
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  margin-bottom: 0.45rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
 .restart-btn {
   background: white;
   color: black;
@@ -119,6 +181,27 @@
 .restart-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 900px) {
+  .endgame-container {
+    padding: 2rem;
+  }
+
+  .electoral-results,
+  .result-briefing,
+  .endgame-grid {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .electoral-results {
+    gap: 1rem;
+  }
+
+  .result-divider {
+    display: none;
+  }
 }
 
 @keyframes fadeIn {

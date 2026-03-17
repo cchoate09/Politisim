@@ -1,73 +1,49 @@
-# React + TypeScript + Vite
+# PolitiSim
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+PolitiSim is a U.S. presidential campaign simulation game built with React, Zustand, Vite, and Electron. You roleplay as a major-party candidate, fight through a multi-rival primary, survive debates and scandals, choose a running mate, and try to assemble a winning general-election map.
 
-Currently, two official plugins are available:
+## Current Focus
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Four-rival primary field with delegate accumulation, dropouts, and endorsements
+- Debate stage flow with policy questions and hidden demographic consequences
+- Scenario-driven state data loaded from `public/mods/`
+- Electron build with Steam achievement bridge and offline-safe renderer paths
 
-## React Compiler
+## Scenarios Included
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- `Road to 2024`: the flagship modern campaign map
+- `Sun Belt Surge`: a faster-growth battleground map centered on turnout and migration
+- `Heartland Reckoning`: a recession-heavy map that punishes trust and weak economic positioning
 
-## Expanding the ESLint configuration
+## Development
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Electron
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run electron:dev
 ```
+
+To initialize Steamworks in a production wrapper, set `POLITISIM_STEAM_APP_ID` before launch.
+
+## Build
+
+```bash
+npm run build
+npm run electron:build
+```
+
+## Quality Checks
+
+```bash
+npm run lint
+npm test
+```
+
+## Modding
+
+Scenario data lives in `public/mods/`. Add new scenarios to `public/mods/manifest.json` and create a matching folder with `states.json`. See [public/mods/MODDING_GUIDE.md](public/mods/MODDING_GUIDE.md) for the expected schema.

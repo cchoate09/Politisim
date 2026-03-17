@@ -2,6 +2,12 @@ import React, { useEffect, useMemo } from 'react';
 import './EndGameScreen.css';
 import { useGameStore, computeEVTotals } from '../store/gameStore';
 
+interface AchievementEntry {
+  label: string;
+  achievementId: string;
+  unlocked: boolean;
+}
+
 export const EndGameScreen: React.FC = () => {
   const {
     states,
@@ -9,13 +15,14 @@ export const EndGameScreen: React.FC = () => {
     playerName,
     vpPick,
     difficulty,
-    currentWeek,
     hiredStaff,
     resetGame,
     budget,
     endReason,
     playerDelegates,
     delegateTarget,
+    generalOpponent,
+    activityLog,
   } = useGameStore();
 
   const { playerEV, rivalEV } = useMemo(
@@ -23,63 +30,113 @@ export const EndGameScreen: React.FC = () => {
     [states, pollingData]
   );
 
+  const generalTarget = Math.floor(states.reduce((sum, state) => sum + state.delegatesOrEV, 0) / 2) + 1;
   const endedInPrimary = endReason === 'primary_loss';
-  const hasWon = !endedInPrimary && playerEV > rivalEV;
+  const hasWon = endReason === 'general_win';
+  const opponentName = generalOpponent?.name ?? 'Opposition Nominee';
 
-  const achievements = useMemo(() => {
+  const achievements = useMemo<AchievementEntry[]>(() => {
     if (endedInPrimary) {
-      return ['Campaign Setback - You failed to secure enough delegates to win the nomination.'];
+      return [{
+        label: 'Campaign Setback - You failed to secure enough delegates to win the nomination.',
+        achievementId: 'ACH_PRIMARY_LOSS',
+        unlocked: true
+      }];
     }
 
-    const achs: string[] = [];
+    return [
+      {
+        label: hasWon ? 'Victory - You won the presidency.' : 'Defeat - Better luck next election cycle.',
+        achievementId: hasWon ? 'ACH_WIN' : 'ACH_LOSE',
+        unlocked: true
+      },
+      {
+        label: 'Landslide Victory - Win 400 or more electoral votes.',
+        achievementId: 'ACH_LANDSLIDE',
+        unlocked: hasWon && playerEV >= 400
+      },
+      {
+        label: 'Shoestring Budget - Win with less than $100K remaining.',
+        achievementId: 'ACH_SHOESTRING',
+        unlocked: hasWon && budget < 100000
+      },
+      {
+        label: 'Hard Mode Champion - Win on hard difficulty.',
+        achievementId: 'ACH_HARD_MODE',
+        unlocked: hasWon && difficulty === 'hard'
+      },
+      {
+        label: 'Full Staff - Hire all three staff roles.',
+        achievementId: 'ACH_FULL_STAFF',
+        unlocked: hiredStaff.length >= 3
+      },
+      {
+        label: vpPick ? `Running Mate - Complete the ticket with ${vpPick.name}.` : 'Running Mate - Complete the ticket with a vice presidential pick.',
+        achievementId: 'ACH_RUNNING_MATE',
+        unlocked: Boolean(vpPick)
+      },
+      {
+        label: 'Electoral Cushion - Win with a comfortable map above the minimum threshold.',
+        achievementId: 'ACH_EARLY_CLINCH',
+        unlocked: hasWon && playerEV >= generalTarget + 25
+      }
+    ];
+  }, [budget, difficulty, endedInPrimary, generalTarget, hasWon, hiredStaff.length, playerEV, vpPick]);
 
-    if (hasWon) {
-      achs.push('Victory - You won the presidency!');
-    } else {
-      achs.push('Defeat - Better luck next election cycle.');
-    }
+  const stateHighlights = useMemo(() => {
+    if (endedInPrimary) return [];
 
-    if (playerEV >= 400) achs.push('Landslide Victory - Won 400+ electoral votes');
-    if (hasWon && budget < 100000) achs.push('Shoestring Budget - Won with less than $100K remaining');
-    if (hasWon && difficulty === 'hard') achs.push('Hard Mode Champion - Won on the hardest difficulty');
-    if (hiredStaff.length >= 3) achs.push('Full Staff - Hired all three staff members');
-    if (vpPick) achs.push(`Running Mate - Selected ${vpPick.name} as VP`);
-    if (hasWon && currentWeek <= 65) achs.push('Early Clinch - Secured victory before Election Day');
+    const calledStates = states
+      .map((state) => {
+        const poll = pollingData[state.stateName];
+        if (!poll) return null;
 
-    return achs;
-  }, [budget, currentWeek, difficulty, endedInPrimary, hasWon, hiredStaff.length, playerEV, vpPick]);
+        const playerWon = poll.player >= poll.rival;
+        return {
+          name: state.stateName,
+          value: state.delegatesOrEV,
+          margin: Math.abs(poll.player - poll.rival),
+          playerWon
+        };
+      })
+      .filter(Boolean) as { name: string; value: number; margin: number; playerWon: boolean }[];
+
+    const highlights = calledStates
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6);
+
+    return highlights;
+  }, [endedInPrimary, pollingData, states]);
+
+  const closingMoments = useMemo(() => activityLog.slice(-4).reverse(), [activityLog]);
 
   useEffect(() => {
     if (endedInPrimary || !window.electron) return;
 
     const unlockAchievements = async () => {
-      if (hasWon) {
-        await window.electron?.unlockAchievement('ACH_WIN');
-      } else {
-        await window.electron?.unlockAchievement('ACH_LOSE');
+      for (const achievement of achievements) {
+        if (achievement.unlocked) {
+          await window.electron?.unlockAchievement(achievement.achievementId);
+        }
       }
-
-      if (playerEV >= 400) await window.electron?.unlockAchievement('ACH_LANDSLIDE');
-      if (hasWon && budget < 100000) await window.electron?.unlockAchievement('ACH_SHOESTRING');
-      if (hasWon && difficulty === 'hard') await window.electron?.unlockAchievement('ACH_HARD_MODE');
     };
 
     void unlockAchievements();
-  }, [budget, difficulty, endedInPrimary, hasWon, playerEV]);
+  }, [achievements, endedInPrimary]);
 
   return (
     <div className="endgame-screen">
       <div className={`endgame-container ${hasWon ? 'victory' : 'defeat'}`}>
         <h1 className="endgame-title">
-          {endedInPrimary ? 'PRIMARY DEFEAT' : hasWon ? 'CAMPAIGN VICTORY!' : 'CONCESSION SPEECH'}
+          {endedInPrimary ? 'PRIMARY DEFEAT' : hasWon ? 'ELECTION NIGHT VICTORY' : 'CONCESSION NIGHT'}
         </h1>
 
         <p className="endgame-subtitle">
           {endedInPrimary
-            ? `${playerName}'s campaign ended at the convention. The party moved on without you after a bruising primary fight.`
+            ? `${playerName}'s campaign ended at the convention after falling short of the delegate threshold.`
             : hasWon
-              ? `Congratulations, ${playerName}! The networks have called the race. You will be the next leader of the free world.`
-              : `The numbers have fallen short for ${playerName}. The rival campaign has secured the necessary electoral votes.`}
+              ? `${playerName} defeated ${opponentName} and secured the presidency on the national map.`
+              : `${opponentName} carried the electoral map. ${playerName}'s campaign came up short in the general election.`}
         </p>
 
         {endedInPrimary ? (
@@ -106,27 +163,51 @@ export const EndGameScreen: React.FC = () => {
             <div className="result-divider">VS</div>
 
             <div className="result-card rival-result">
-              <span className="result-label">Rival Nominee</span>
+              <span className="result-label">{opponentName}</span>
               <span className="result-value">{rivalEV} EV</span>
             </div>
           </div>
         )}
 
-        <div style={{ marginBottom: '2rem', textAlign: 'left', maxWidth: '500px', margin: '0 auto 2rem auto' }}>
-          <h3 style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
-            {endedInPrimary ? 'Campaign Summary' : 'Achievements Unlocked'}
-          </h3>
-          {achievements.map((ach, i) => (
-            <div key={i} style={{
-              padding: '0.5rem 0.75rem',
-              background: 'rgba(255,255,255,0.05)',
-              borderRadius: '6px',
-              marginBottom: '0.4rem',
-              fontSize: '0.9rem'
-            }}>
-              {ach}
+        {!endedInPrimary && (
+          <div className="result-briefing">
+            <div className="result-briefing-card">
+              <span className="result-briefing-label">Winning Number</span>
+              <strong>{generalTarget} EV</strong>
             </div>
-          ))}
+            <div className="result-briefing-card">
+              <span className="result-briefing-label">Ticket</span>
+              <strong>{vpPick ? `${playerName} / ${vpPick.name}` : playerName}</strong>
+            </div>
+          </div>
+        )}
+
+        <div className="endgame-grid">
+          <div className="endgame-panel">
+            <h3>{endedInPrimary ? 'Campaign Summary' : 'Achievements Unlocked'}</h3>
+            {achievements.filter((achievement) => achievement.unlocked).map((achievement) => (
+              <div key={achievement.achievementId} className="endgame-list-item">
+                {achievement.label}
+              </div>
+            ))}
+          </div>
+
+          <div className="endgame-panel">
+            <h3>{endedInPrimary ? 'Final Weeks' : 'Map Highlights'}</h3>
+            {endedInPrimary ? (
+              closingMoments.map((entry, index) => (
+                <div key={`${entry.week}-${index}`} className="endgame-list-item">
+                  Week {entry.week}: {entry.message}
+                </div>
+              ))
+            ) : (
+              stateHighlights.map((state) => (
+                <div key={state.name} className="endgame-list-item">
+                  {state.name} ({state.value} EV) - {state.playerWon ? `${playerName} +` : `${opponentName} +`}{state.margin.toFixed(1)}
+                </div>
+              ))
+            )}
+          </div>
         </div>
 
         <button

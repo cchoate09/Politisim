@@ -31,7 +31,45 @@ export interface CampaignSpendingData {
   research: number;
 }
 
+export interface ModManifestEntry {
+  id: string;
+  name: string;
+  yearLabel: string;
+  tagline: string;
+  description: string;
+  challenge: 'Accessible' | 'Competitive' | 'Hardcore';
+  focus: string[];
+  official?: boolean;
+}
+
 export class CampaignDataParser {
+  static async listMods(): Promise<ModManifestEntry[]> {
+    try {
+      if (window.electron) {
+        return await window.electron.listMods();
+      }
+
+      const response = await fetch(new URL('./mods/manifest.json', window.location.href).toString());
+      if (!response.ok) {
+        throw new Error('Failed to load mod manifest');
+      }
+
+      return await response.json() as ModManifestEntry[];
+    } catch (error) {
+      console.error('Error loading mod manifest:', error);
+      return [{
+        id: 'vanilla',
+        name: 'Road to 2024',
+        yearLabel: '2024',
+        tagline: 'The default presidential campaign sandbox.',
+        description: 'Fight through a modern nomination race and general election with the standard national map.',
+        challenge: 'Competitive',
+        focus: ['Primary strategy', 'Coalition building', 'Debates'],
+        official: true
+      }];
+    }
+  }
+
   /**
    * Loads a JSON file containing the state demographics for a specific 'mod' (e.g., 'vanilla', '1992').
    */

@@ -73,6 +73,14 @@
   color: var(--text-muted);
 }
 
+.candidate-summary {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  text-align: center;
+  max-width: 260px;
+}
+
 .electoral-votes {
   font-size: 3rem;
   font-weight: 700;
@@ -87,6 +95,47 @@
   padding: 1rem;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.race-outlook-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.2rem 1.4rem;
+  margin-bottom: 1.5rem;
+  border-radius: 14px;
+  background: rgba(56, 189, 248, 0.06);
+  border: 1px solid rgba(56, 189, 248, 0.12);
+}
+
+.race-outlook-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--primary-accent);
+  margin-bottom: 0.35rem;
+}
+
+.race-outlook-copy {
+  color: var(--text-muted);
+  line-height: 1.5;
+  max-width: 720px;
+}
+
+.race-outlook-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 150px;
+  text-align: right;
+  color: var(--text-muted);
+}
+
+.race-outlook-metric strong {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.6rem;
+  color: var(--text-main);
 }
 
 /* Swing States Section */
@@ -159,4 +208,47 @@
   background: var(--primary-accent);
   border-right: 2px solid #000;
   transition: width 0.5s ease;
+}
+
+.swing-state-action {
+  margin-top: 0.5rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 6px;
+  background: rgba(56, 189, 248, 0.15);
+  color: var(--primary-accent);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+@media (max-width: 900px) {
+  .head-to-head {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .candidate-profile {
+    width: 100%;
+  }
+
+  .race-outlook-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .race-outlook-metric {
+    text-align: left;
+  }
+
+  .swing-state-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.85rem;
+  }
+
+  .swing-state-bar-container {
+    width: 100%;
+    margin: 0;
+  }
 }

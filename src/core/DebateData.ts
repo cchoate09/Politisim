@@ -864,6 +864,574 @@ const DEBATE_LIBRARY: DebateTemplate[] = [
   }
 ];
 
+const DEBATE_QUESTION_COUNT = 10;
+
+const ADDITIONAL_PRIMARY_QUESTIONS: DebateQuestion[] = [
+  {
+    id: 'primary-extra-childcare',
+    topic: 'Childcare',
+    prompt: 'Parents say childcare costs now feel like a second mortgage. What does your party do first?',
+    choices: [
+      {
+        text: 'Create a national childcare guarantee tied to wages and quality standards.',
+        reaction: 'Working parents erupt while fiscal hawks tense up immediately.',
+        momentumEffect: 6,
+        trustEffect: 2,
+        groupEffects: { worker: 10, liberal: 7, owner: -5 }
+      },
+      {
+        text: 'Expand tax relief and let states build the system that fits them best.',
+        reaction: 'The answer sounds practical and harder to caricature.',
+        momentumEffect: 4,
+        trustEffect: 6,
+        groupEffects: { owner: 6, worker: 5, religious: 3 }
+      },
+      {
+        text: 'Prioritize employer partnerships and local flexibility over a federal model.',
+        reaction: 'Donors approve, though activists clearly wanted more urgency.',
+        momentumEffect: 3,
+        trustEffect: 4,
+        groupEffects: { owner: 8, libertarian: 5, worker: 2 }
+      }
+    ]
+  },
+  {
+    id: 'primary-extra-veterans',
+    topic: 'Veterans',
+    prompt: 'Veterans in the audience say the VA still feels slow and distant. How do you answer them?',
+    choices: [
+      {
+        text: 'Fund mental-health care, housing support, and quicker benefits decisions now.',
+        reaction: 'The room responds warmly to the specificity and moral clarity.',
+        momentumEffect: 5,
+        trustEffect: 6,
+        groupEffects: { worker: 6, religious: 5, liberal: 3 }
+      },
+      {
+        text: 'Let veterans use private options more easily if the VA cannot deliver fast enough.',
+        reaction: 'The answer sounds sharp, market-friendly, and politically safe.',
+        momentumEffect: 4,
+        trustEffect: 5,
+        groupEffects: { owner: 6, libertarian: 6, religious: 4 }
+      },
+      {
+        text: 'Clean out VA management first and make accountability the headline.',
+        reaction: 'The toughness cuts through, even if the plan is lighter on detail.',
+        momentumEffect: 5,
+        trustEffect: 2,
+        groupEffects: { religious: 7, owner: 3, worker: 3 }
+      }
+    ]
+  },
+  {
+    id: 'primary-extra-retirement',
+    topic: 'Retirement',
+    prompt: 'Social Security is under pressure. Do you promise expansion, restraint, or reform?',
+    choices: [
+      {
+        text: 'Protect and expand benefits by taxing higher incomes more aggressively.',
+        reaction: 'Primary voters on the left cheer instantly.',
+        momentumEffect: 5,
+        trustEffect: 3,
+        groupEffects: { worker: 9, liberal: 8, owner: -6 }
+      },
+      {
+        text: 'Protect current retirees and stabilize the system with measured revenue changes.',
+        reaction: 'The room hears competence rather than applause bait.',
+        momentumEffect: 4,
+        trustEffect: 7,
+        groupEffects: { worker: 6, religious: 4, owner: 2 }
+      },
+      {
+        text: 'Encourage private savings and gradual retirement reform instead of new promises.',
+        reaction: 'Budget hawks nod, but the audience cools noticeably.',
+        momentumEffect: 2,
+        trustEffect: 4,
+        groupEffects: { owner: 7, libertarian: 7, worker: -4 }
+      }
+    ]
+  },
+  {
+    id: 'primary-extra-china',
+    topic: 'China',
+    prompt: 'A moderator asks whether your party has been too soft on China. What is your lane?',
+    choices: [
+      {
+        text: 'Confront China on trade, security, and industrial dependence all at once.',
+        reaction: 'The line lands as forceful and politically useful.',
+        momentumEffect: 6,
+        trustEffect: 3,
+        groupEffects: { worker: 7, religious: 5, owner: 2 }
+      },
+      {
+        text: 'Compete hard at home with manufacturing, research, and allied supply chains.',
+        reaction: 'You sound disciplined and less theatrical than the field.',
+        momentumEffect: 4,
+        trustEffect: 6,
+        groupEffects: { owner: 5, worker: 5, immigrant: 2 }
+      },
+      {
+        text: 'Avoid chest-thumping and focus on domestic resilience instead of a new cold war.',
+        reaction: 'Anti-hawk voters like it, though others want more edge.',
+        momentumEffect: 3,
+        trustEffect: 5,
+        groupEffects: { libertarian: 8, liberal: 4, religious: -2 }
+      }
+    ]
+  },
+  {
+    id: 'primary-extra-guns',
+    topic: 'Guns',
+    prompt: 'After another mass shooting, the moderator asks what you would sign first.',
+    choices: [
+      {
+        text: 'Back assault-weapons restrictions, red-flag laws, and stronger background checks.',
+        reaction: 'The reform answer electrifies one side of the room immediately.',
+        momentumEffect: 6,
+        trustEffect: 2,
+        groupEffects: { liberal: 10, immigrant: 4, religious: -6 }
+      },
+      {
+        text: 'Push red-flag laws and enforcement against traffickers, but avoid sweeping bans.',
+        reaction: 'The answer feels calibrated for people who want action without maximalism.',
+        momentumEffect: 4,
+        trustEffect: 6,
+        groupEffects: { worker: 5, religious: 3, liberal: 4 }
+      },
+      {
+        text: 'Center mental health, school security, and prosecuting violent offenders.',
+        reaction: 'The crowd reaction is steadier and more conservative.',
+        momentumEffect: 4,
+        trustEffect: 4,
+        groupEffects: { religious: 7, owner: 4, liberal: -4 }
+      }
+    ]
+  },
+  {
+    id: 'primary-extra-rural-health',
+    topic: 'Rural Health',
+    prompt: 'Rural hospitals are closing across the map. What is your first intervention?',
+    choices: [
+      {
+        text: 'Use federal stabilization money and staffing incentives to keep them open.',
+        reaction: 'You connect with worried local officials right away.',
+        momentumEffect: 5,
+        trustEffect: 6,
+        groupEffects: { worker: 7, religious: 5, liberal: 3 }
+      },
+      {
+        text: 'Expand telehealth and cut bureaucracy so clinics can survive on their own.',
+        reaction: 'The answer sounds practical, efficient, and less ideological.',
+        momentumEffect: 4,
+        trustEffect: 5,
+        groupEffects: { owner: 5, libertarian: 5, worker: 4 }
+      },
+      {
+        text: 'Tie support to broader regional development instead of saving every facility.',
+        reaction: 'It sounds tough-minded, but some in the audience wince.',
+        momentumEffect: 3,
+        trustEffect: 3,
+        groupEffects: { owner: 4, worker: 2, religious: -2 }
+      }
+    ]
+  },
+  {
+    id: 'primary-extra-corruption',
+    topic: 'Corruption',
+    prompt: 'Voters say both parties look purchased. How do you prove you are different?',
+    choices: [
+      {
+        text: 'Promise public financing, donor transparency, and a ban on congressional stock trading.',
+        reaction: 'The anti-establishment mood in the room swings strongly your way.',
+        momentumEffect: 6,
+        trustEffect: 6,
+        groupEffects: { liberal: 7, worker: 6, libertarian: 4 }
+      },
+      {
+        text: 'Publish every meeting and donor event while keeping the current finance system intact.',
+        reaction: 'The answer sounds credible without sounding revolutionary.',
+        momentumEffect: 4,
+        trustEffect: 7,
+        groupEffects: { owner: 4, religious: 3, worker: 3 }
+      },
+      {
+        text: 'Argue corruption is mostly media theater and pivot to kitchen-table issues.',
+        reaction: 'The dodge gets noticed, even if the pivot partly works.',
+        momentumEffect: 3,
+        trustEffect: 1,
+        groupEffects: { worker: 4, owner: 2, liberal: -3 }
+      }
+    ]
+  },
+  {
+    id: 'primary-extra-farm',
+    topic: 'Agriculture',
+    prompt: 'Farm-state voters ask whether you stand with small producers or global agribusiness.',
+    choices: [
+      {
+        text: 'Break concentration, expand disaster support, and back small producers directly.',
+        reaction: 'The populist edge lands well with anxious rural voters.',
+        momentumEffect: 5,
+        trustEffect: 4,
+        groupEffects: { worker: 7, religious: 4, owner: -4 }
+      },
+      {
+        text: 'Protect export markets while helping family farms modernize and survive.',
+        reaction: 'The answer sounds governing-oriented and regionally savvy.',
+        momentumEffect: 4,
+        trustEffect: 6,
+        groupEffects: { owner: 6, worker: 4, religious: 3 }
+      },
+      {
+        text: 'Say federal policy should stop distorting the market and let efficiency win.',
+        reaction: 'Free-market audiences like it more than the farmers in the hall do.',
+        momentumEffect: 3,
+        trustEffect: 3,
+        groupEffects: { libertarian: 7, owner: 5, worker: -3 }
+      }
+    ]
+  },
+  {
+    id: 'primary-extra-ai-jobs',
+    topic: 'Automation',
+    prompt: 'Workers fear AI will wipe out good jobs before Washington reacts. What is your answer?',
+    choices: [
+      {
+        text: 'Tie AI deployment to worker protections, retraining, and shared productivity gains.',
+        reaction: 'It sounds like you actually see the labor market coming.',
+        momentumEffect: 5,
+        trustEffect: 6,
+        groupEffects: { worker: 9, liberal: 5, owner: -3 }
+      },
+      {
+        text: 'Lean into innovation but tax big windfalls to fund transition support.',
+        reaction: 'The answer feels modern without sounding reckless.',
+        momentumEffect: 4,
+        trustEffect: 5,
+        groupEffects: { owner: 5, worker: 5, liberal: 3 }
+      },
+      {
+        text: 'Avoid heavy regulation and trust new industries to create better jobs over time.',
+        reaction: 'The business crowd likes it more than the workers do.',
+        momentumEffect: 3,
+        trustEffect: 3,
+        groupEffects: { owner: 8, libertarian: 6, worker: -5 }
+      }
+    ]
+  },
+  {
+    id: 'primary-extra-opioids',
+    topic: 'Opioids',
+    prompt: 'Communities ravaged by opioids want to hear something more than slogans. What do you tell them?',
+    choices: [
+      {
+        text: 'Treat addiction like a public-health emergency and sue the companies that fueled it.',
+        reaction: 'The answer is morally sharp and broadly resonant.',
+        momentumEffect: 5,
+        trustEffect: 6,
+        groupEffects: { worker: 7, religious: 5, liberal: 3 }
+      },
+      {
+        text: 'Pair treatment expansion with tougher penalties on traffickers and cross-border supply.',
+        reaction: 'The blended posture plays well with swing-minded viewers.',
+        momentumEffect: 5,
+        trustEffect: 5,
+        groupEffects: { religious: 6, worker: 5, owner: 2 }
+      },
+      {
+        text: 'Say the deeper answer is jobs, family stability, and long-term local renewal.',
+        reaction: 'It sounds compassionate, though a little less immediate.',
+        momentumEffect: 3,
+        trustEffect: 5,
+        groupEffects: { worker: 6, religious: 3, liberal: 2 }
+      }
+    ]
+  }
+];
+
+const ADDITIONAL_GENERAL_QUESTIONS: DebateQuestion[] = [
+  {
+    id: 'general-extra-deficit',
+    topic: 'Deficit',
+    prompt: 'A moderator asks whether voters should expect spending cuts, tax hikes, or more borrowing under you.',
+    choices: [
+      {
+        text: 'Cut waste at the top and ask the wealthy to pay more before touching benefits.',
+        reaction: 'The answer is politically vivid and fiscally combative.',
+        momentumEffect: 5,
+        trustEffect: 4,
+        groupEffects: { worker: 7, liberal: 6, owner: -4 }
+      },
+      {
+        text: 'Promise discipline on both taxes and spending while protecting the middle class.',
+        reaction: 'It sounds careful, centrist, and highly electable.',
+        momentumEffect: 4,
+        trustEffect: 7,
+        groupEffects: { owner: 5, religious: 4, worker: 3 }
+      },
+      {
+        text: 'Argue growth is the answer and warn against panic over annual deficits.',
+        reaction: 'The answer lands better with markets than with anxious households.',
+        momentumEffect: 3,
+        trustEffect: 3,
+        groupEffects: { owner: 7, libertarian: 6, worker: -2 }
+      }
+    ]
+  },
+  {
+    id: 'general-extra-schools',
+    topic: 'Schools',
+    prompt: 'Parents say schools feel like the center of the culture war. How would you lower the temperature?',
+    choices: [
+      {
+        text: 'Fund schools better, defend student rights, and stop turning classrooms into battlegrounds.',
+        reaction: 'Supporters cheer while skeptics keep watching closely.',
+        momentumEffect: 5,
+        trustEffect: 4,
+        groupEffects: { liberal: 8, immigrant: 4, religious: -4 }
+      },
+      {
+        text: 'Put parents, teachers, and local boards in the same room and demand clear standards.',
+        reaction: 'The answer sounds sane and broadly reassuring.',
+        momentumEffect: 4,
+        trustEffect: 7,
+        groupEffects: { religious: 5, worker: 4, owner: 2 }
+      },
+      {
+        text: 'Push school choice harder and let families walk away from failing systems.',
+        reaction: 'The line energizes skeptics of the current system immediately.',
+        momentumEffect: 5,
+        trustEffect: 3,
+        groupEffects: { religious: 6, owner: 5, libertarian: 5 }
+      }
+    ]
+  },
+  {
+    id: 'general-extra-entitlements',
+    topic: 'Entitlements',
+    prompt: 'The moderator presses you on Medicare and Social Security insolvency warnings. What is your line?',
+    choices: [
+      {
+        text: 'Refuse benefit cuts and raise revenue from those most able to pay.',
+        reaction: 'The defense of the safety net hits emotionally and politically.',
+        momentumEffect: 5,
+        trustEffect: 5,
+        groupEffects: { worker: 8, liberal: 6, owner: -5 }
+      },
+      {
+        text: 'Protect current retirees and negotiate a long-run fix before the math gets worse.',
+        reaction: 'The answer sounds sober enough for undecided voters.',
+        momentumEffect: 4,
+        trustEffect: 7,
+        groupEffects: { worker: 5, religious: 4, owner: 3 }
+      },
+      {
+        text: 'Warn that Washington has overpromised and voters deserve the truth now.',
+        reaction: 'The directness is striking, though it chills the room a bit.',
+        momentumEffect: 3,
+        trustEffect: 3,
+        groupEffects: { libertarian: 7, owner: 5, worker: -5 }
+      }
+    ]
+  },
+  {
+    id: 'general-extra-disaster',
+    topic: 'Disaster Response',
+    prompt: 'Wildfires and storms have hit several states. What does competent national response look like under you?',
+    choices: [
+      {
+        text: 'Build a larger federal surge capacity and invest in resilience before disaster hits.',
+        reaction: 'The answer feels practical, urgent, and presidential.',
+        momentumEffect: 5,
+        trustEffect: 7,
+        groupEffects: { worker: 5, liberal: 5, religious: 3 }
+      },
+      {
+        text: 'Give states more flexibility and cut the red tape that slows local response.',
+        reaction: 'The decentralizing argument lands better than expected.',
+        momentumEffect: 4,
+        trustEffect: 5,
+        groupEffects: { owner: 5, libertarian: 6, religious: 3 }
+      },
+      {
+        text: 'Frame the issue mainly as climate adaptation and force polluters to pay.',
+        reaction: 'The base lights up, while some swing voters keep their distance.',
+        momentumEffect: 5,
+        trustEffect: 3,
+        groupEffects: { liberal: 9, immigrant: 3, owner: -4 }
+      }
+    ]
+  },
+  {
+    id: 'general-extra-aid',
+    topic: 'Foreign Aid',
+    prompt: 'Voters ask why America sends money overseas when problems at home still pile up.',
+    choices: [
+      {
+        text: 'Defend aid that prevents larger wars and protects American interests abroad.',
+        reaction: 'You sound authoritative, if not universally popular.',
+        momentumEffect: 4,
+        trustEffect: 6,
+        groupEffects: { owner: 4, religious: 5, immigrant: 3 }
+      },
+      {
+        text: 'Support aid only when it is tightly linked to accountability and burden-sharing.',
+        reaction: 'The room hears discipline instead of reflexive idealism.',
+        momentumEffect: 4,
+        trustEffect: 7,
+        groupEffects: { owner: 5, worker: 3, religious: 4 }
+      },
+      {
+        text: 'Say the money should stay home and America has done enough already.',
+        reaction: 'The populist hit is loud and immediate.',
+        momentumEffect: 6,
+        trustEffect: 1,
+        groupEffects: { libertarian: 8, worker: 4, immigrant: -3 }
+      }
+    ]
+  },
+  {
+    id: 'general-extra-judiciary',
+    topic: 'Judiciary',
+    prompt: 'The moderator asks whether the federal judiciary has become too political. What would you change?',
+    choices: [
+      {
+        text: 'Back stronger ethics rules and structural reforms for a court losing public legitimacy.',
+        reaction: 'The reform frame energizes one side of the electorate instantly.',
+        momentumEffect: 5,
+        trustEffect: 4,
+        groupEffects: { liberal: 8, worker: 3, religious: -4 }
+      },
+      {
+        text: 'Focus on ethics, transparency, and calmer appointments instead of a structural fight.',
+        reaction: 'That narrower answer sounds more broadly governable.',
+        momentumEffect: 4,
+        trustEffect: 7,
+        groupEffects: { owner: 3, religious: 4, liberal: 3 }
+      },
+      {
+        text: 'Defend judicial independence and say politicians should stop threatening the courts.',
+        reaction: 'The constitutional language gives the answer extra weight.',
+        momentumEffect: 4,
+        trustEffect: 6,
+        groupEffects: { libertarian: 6, owner: 4, religious: 3 }
+      }
+    ]
+  },
+  {
+    id: 'general-extra-housing',
+    topic: 'Housing',
+    prompt: 'Young families ask why the dream of owning a home keeps moving farther away. What would you do?',
+    choices: [
+      {
+        text: 'Finance a major housing buildout and break local barriers to supply.',
+        reaction: 'The scale of the answer catches the audience attention fast.',
+        momentumEffect: 5,
+        trustEffect: 5,
+        groupEffects: { worker: 8, liberal: 5, owner: -3 }
+      },
+      {
+        text: 'Reward faster building, modernize permits, and expand first-time buyer relief.',
+        reaction: 'The answer feels businesslike and electorally smart.',
+        momentumEffect: 4,
+        trustEffect: 7,
+        groupEffects: { owner: 6, worker: 4, libertarian: 3 }
+      },
+      {
+        text: 'Keep Washington out of local housing markets and focus on inflation broadly.',
+        reaction: 'It sounds disciplined, but less satisfying to squeezed renters.',
+        momentumEffect: 3,
+        trustEffect: 4,
+        groupEffects: { owner: 5, libertarian: 6, worker: -3 }
+      }
+    ]
+  },
+  {
+    id: 'general-extra-democracy',
+    topic: 'Democracy',
+    prompt: 'The moderator asks whether the country can still trust the peaceful transfer of power.',
+    choices: [
+      {
+        text: 'Say democracy is fragile and leaders must defend rules even when they lose.',
+        reaction: 'The line lands with moral seriousness and visible force.',
+        momentumEffect: 5,
+        trustEffect: 7,
+        groupEffects: { liberal: 7, immigrant: 5, religious: 2 }
+      },
+      {
+        text: 'Stress confidence in local election workers and reject apocalyptic rhetoric from both sides.',
+        reaction: 'The answer sounds stabilizing and broadly reassuring.',
+        momentumEffect: 4,
+        trustEffect: 6,
+        groupEffects: { owner: 3, religious: 4, worker: 3 }
+      },
+      {
+        text: 'Say trust returns only when institutions stop dismissing voter anger.',
+        reaction: 'The populist turn charges the room in a different direction.',
+        momentumEffect: 5,
+        trustEffect: 2,
+        groupEffects: { worker: 5, libertarian: 5, liberal: -2 }
+      }
+    ]
+  },
+  {
+    id: 'general-extra-energy',
+    topic: 'Energy',
+    prompt: 'Gas prices jump again a month before Election Day. What is your message to voters?',
+    choices: [
+      {
+        text: 'Accelerate clean domestic power and stop letting volatile fuel markets control family budgets.',
+        reaction: 'The answer sounds future-focused and economically sharper than usual.',
+        momentumEffect: 5,
+        trustEffect: 5,
+        groupEffects: { liberal: 7, worker: 4, owner: 1 }
+      },
+      {
+        text: 'Open more supply now and pair it with grid upgrades and permitting reform.',
+        reaction: 'The blended approach lands well with practical voters.',
+        momentumEffect: 5,
+        trustEffect: 6,
+        groupEffects: { owner: 6, worker: 5, religious: 3 }
+      },
+      {
+        text: 'Blame failed elites and promise immediate energy abundance.',
+        reaction: 'It is punchy, memorable, and lighter on detail.',
+        momentumEffect: 6,
+        trustEffect: 1,
+        groupEffects: { religious: 5, owner: 4, libertarian: 4 }
+      }
+    ]
+  },
+  {
+    id: 'general-extra-border-labor',
+    topic: 'Border Labor',
+    prompt: 'Business leaders say they need workers while communities say the border feels overwhelmed. How do you square that?',
+    choices: [
+      {
+        text: 'Expand legal work pathways while restoring order with more judges and processing capacity.',
+        reaction: 'The answer is balanced enough to quiet the room for a beat.',
+        momentumEffect: 5,
+        trustEffect: 7,
+        groupEffects: { owner: 5, immigrant: 6, religious: 3 }
+      },
+      {
+        text: 'Lead with security first and insist labor reform can only come after control is restored.',
+        reaction: 'The law-and-order emphasis gets a stronger pop from the crowd.',
+        momentumEffect: 6,
+        trustEffect: 3,
+        groupEffects: { religious: 7, owner: 4, immigrant: -5 }
+      },
+      {
+        text: 'Say economic demand makes zero-sum border politics dishonest and self-defeating.',
+        reaction: 'Some voters admire the candor, while others bristle.',
+        momentumEffect: 4,
+        trustEffect: 4,
+        groupEffects: { immigrant: 8, liberal: 5, religious: -3 }
+      }
+    ]
+  }
+];
+
 function cloneQuestions(questions: DebateQuestion[]): DebateQuestion[] {
   return questions.map((question) => ({
     ...question,
@@ -874,14 +1442,39 @@ function cloneQuestions(questions: DebateQuestion[]): DebateQuestion[] {
   }));
 }
 
+function getQuestionPool(phase: DebatePhase): DebateQuestion[] {
+  const templateQuestions = DEBATE_LIBRARY
+    .filter((debate) => debate.phase === phase)
+    .flatMap((debate) => debate.questions);
+  const additionalQuestions = phase === 'primary'
+    ? ADDITIONAL_PRIMARY_QUESTIONS
+    : ADDITIONAL_GENERAL_QUESTIONS;
+
+  return [...templateQuestions, ...additionalQuestions];
+}
+
+function buildDebateQuestions(template: DebateTemplate): DebateQuestion[] {
+  const baseQuestionIds = new Set(template.questions.map((question) => question.id));
+  const additionalPool = getQuestionPool(template.phase).filter((question) => !baseQuestionIds.has(question.id));
+  const rotationOffset = additionalPool.length === 0
+    ? 0
+    : ((template.sequence - 1) * 6 + template.id.length) % additionalPool.length;
+  const rotatedPool = additionalPool.length === 0
+    ? []
+    : [...additionalPool.slice(rotationOffset), ...additionalPool.slice(0, rotationOffset)];
+
+  return cloneQuestions([...template.questions, ...rotatedPool].slice(0, DEBATE_QUESTION_COUNT));
+}
+
 function buildPrimaryParticipants(playerName: string, rivalNames: string[]): DebateParticipant[] {
   const taglines = [
     'Your campaign',
     'Establishment favorite',
     'Grassroots challenger',
-    'Media disruptor'
+    'Media disruptor',
+    'Regional power broker'
   ];
-  const names = [playerName, ...rivalNames.slice(0, 3)];
+  const names = [playerName, ...rivalNames.slice(0, 4)];
 
   return names.map((name, index) => ({
     name,
@@ -915,7 +1508,7 @@ export function createActiveDebate(
   return {
     ...template,
     week: entry.week,
-    questions: cloneQuestions(template.questions),
+    questions: buildDebateQuestions(template),
     participants: entry.phase === 'primary'
       ? buildPrimaryParticipants(playerName, rivalNames)
       : buildGeneralParticipants(playerName, rivalNames),

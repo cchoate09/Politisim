@@ -34,7 +34,7 @@ export const AnalyticsDashboard: React.FC = () => {
     <div className="analytics-dashboard">
       <div className="dashboard-header">
         <h2>Campaign Data Center</h2>
-        <p>Review national polling trends and demographic performance across all 50 states.</p>
+        <p>Review national polling trends and demographic performance across the full national map.</p>
       </div>
 
       <div className="chart-grid">
@@ -52,7 +52,7 @@ export const AnalyticsDashboard: React.FC = () => {
               />
               <Legend />
               <Line type="monotone" dataKey="player" name="Your Campaign" stroke="var(--primary-accent)" strokeWidth={3} dot={{ r: 4 }} />
-              <Line type="monotone" dataKey="rival" name="Rival Nominee" stroke="var(--secondary-accent)" strokeWidth={3} dot={{ r: 4 }} />
+              <Line type="monotone" dataKey="rival" name="Opposition" stroke="var(--secondary-accent)" strokeWidth={3} dot={{ r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>

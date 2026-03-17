@@ -1,0 +1,32 @@
+[
+  {
+    "id": "vanilla",
+    "name": "Road to 2024",
+    "yearLabel": "2024",
+    "tagline": "The flagship modern campaign scenario.",
+    "description": "Fight through a crowded primary field and a volatile general election on the standard national map with all 50 states plus DC.",
+    "challenge": "Competitive",
+    "focus": ["Debates", "Coalition building", "General election"],
+    "official": true
+  },
+  {
+    "id": "sunbelt_surge",
+    "name": "Sun Belt Surge",
+    "yearLabel": "Alt 2024",
+    "tagline": "A growth-state map where migration and turnout scramble the battlegrounds.",
+    "description": "The Sun Belt becomes the center of gravity. Arizona, Georgia, Nevada, North Carolina, Texas, and Florida all demand sharper messaging on immigration, housing, and economic growth.",
+    "challenge": "Competitive",
+    "focus": ["Fast-growth states", "Turnout pressure", "Immigration"],
+    "official": true
+  },
+  {
+    "id": "heartland_reckoning",
+    "name": "Heartland Reckoning",
+    "yearLabel": "Alt 2024",
+    "tagline": "A recession-scarred map where Midwestern trust collapses quickly.",
+    "description": "Economic pain reshapes the race around labor, credibility, and industrial policy. Midwestern and Appalachian states swing harder, and your campaign has less room for cosmetic momentum.",
+    "challenge": "Hardcore",
+    "focus": ["Rust Belt", "Economic trust", "Working-class turnout"],
+    "official": true
+  }
+]

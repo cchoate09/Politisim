@@ -298,42 +298,42 @@
     "delegatesOrEV": 11,
     "demDelegates": 79,
     "repDelegates": 58,
-    "liberal": 35,
+    "liberal": 33,
     "libertarian": 55,
-    "owner": 55,
-    "worker": 70,
-    "religious": 60,
+    "owner": 52,
+    "worker": 78,
+    "religious": 65,
     "immigrant": 20,
     "region": "Midwest",
     "date": "2024-05-07",
-    "baseTurnout": 72.1,
+    "baseTurnout": 73.3,
     "topIssues": [
       "Economy",
       "Healthcare",
-      "Climate Change"
+      "Trade"
     ],
-    "partisanLean": -12
+    "partisanLean": -16
   },
   {
     "stateName": "Iowa",
     "delegatesOrEV": 6,
     "demDelegates": 40,
     "repDelegates": 40,
-    "liberal": 40,
+    "liberal": 38,
     "libertarian": 55,
-    "owner": 55,
-    "worker": 70,
-    "religious": 60,
+    "owner": 52,
+    "worker": 78,
+    "religious": 65,
     "immigrant": 20,
     "region": "Midwest",
     "date": "2024-01-15",
-    "baseTurnout": 65.2,
+    "baseTurnout": 66.4,
     "topIssues": [
       "Economy",
       "Healthcare",
-      "Education"
+      "Trade"
     ],
-    "partisanLean": -9
+    "partisanLean": -13
   },
   {
     "stateName": "Kansas",
@@ -466,42 +466,42 @@
     "delegatesOrEV": 15,
     "demDelegates": 117,
     "repDelegates": 55,
-    "liberal": 52,
+    "liberal": 50,
     "libertarian": 50,
-    "owner": 50,
-    "worker": 75,
-    "religious": 40,
+    "owner": 47,
+    "worker": 83,
+    "religious": 45,
     "immigrant": 35,
     "region": "Midwest",
     "date": "2024-02-27",
-    "baseTurnout": 65.9,
+    "baseTurnout": 67.10000000000001,
     "topIssues": [
       "Economy",
       "Healthcare",
-      "National Security"
+      "Trade"
     ],
-    "partisanLean": 1
+    "partisanLean": -3
   },
   {
     "stateName": "Minnesota",
     "delegatesOrEV": 10,
     "demDelegates": 75,
     "repDelegates": 39,
-    "liberal": 58,
+    "liberal": 56,
     "libertarian": 52,
-    "owner": 50,
-    "worker": 68,
-    "religious": 35,
+    "owner": 47,
+    "worker": 76,
+    "religious": 40,
     "immigrant": 40,
     "region": "Midwest",
     "date": "2024-03-05",
-    "baseTurnout": 68.2,
+    "baseTurnout": 69.4,
     "topIssues": [
       "Economy",
       "Healthcare",
-      "Immigration"
+      "Trade"
     ],
-    "partisanLean": 7
+    "partisanLean": 5
   },
   {
     "stateName": "Mississippi",
@@ -529,21 +529,21 @@
     "delegatesOrEV": 10,
     "demDelegates": 64,
     "repDelegates": 54,
-    "liberal": 35,
+    "liberal": 33,
     "libertarian": 55,
-    "owner": 55,
-    "worker": 65,
-    "religious": 60,
+    "owner": 52,
+    "worker": 73,
+    "religious": 65,
     "immigrant": 18,
     "region": "Midwest",
     "date": "2024-03-23",
-    "baseTurnout": 74.5,
+    "baseTurnout": 75.7,
     "topIssues": [
       "Economy",
       "Healthcare",
-      "National Security"
+      "Trade"
     ],
-    "partisanLean": -15
+    "partisanLean": -19
   },
   {
     "stateName": "Montana",
@@ -739,21 +739,21 @@
     "delegatesOrEV": 17,
     "demDelegates": 127,
     "repDelegates": 79,
-    "liberal": 42,
+    "liberal": 40,
     "libertarian": 50,
-    "owner": 52,
-    "worker": 72,
-    "religious": 50,
+    "owner": 49,
+    "worker": 80,
+    "religious": 55,
     "immigrant": 22,
     "region": "Midwest",
     "date": "2024-03-19",
-    "baseTurnout": 71.3,
+    "baseTurnout": 72.5,
     "topIssues": [
       "Economy",
       "Healthcare",
-      "Immigration"
+      "Trade"
     ],
-    "partisanLean": -8
+    "partisanLean": -12
   },
   {
     "stateName": "Oklahoma",
@@ -802,21 +802,21 @@
     "delegatesOrEV": 19,
     "demDelegates": 159,
     "repDelegates": 67,
-    "liberal": 50,
+    "liberal": 48,
     "libertarian": 48,
-    "owner": 52,
-    "worker": 72,
-    "religious": 45,
+    "owner": 49,
+    "worker": 80,
+    "religious": 50,
     "immigrant": 30,
     "region": "Northeast",
     "date": "2024-04-23",
-    "baseTurnout": 71,
+    "baseTurnout": 72.2,
     "topIssues": [
       "Economy",
       "Healthcare",
-      "National Security"
+      "Trade"
     ],
-    "partisanLean": 0
+    "partisanLean": -4
   },
   {
     "stateName": "Rhode Island",
@@ -1012,42 +1012,42 @@
     "delegatesOrEV": 4,
     "demDelegates": 20,
     "repDelegates": 32,
-    "liberal": 18,
+    "liberal": 16,
     "libertarian": 55,
-    "owner": 40,
-    "worker": 78,
-    "religious": 70,
+    "owner": 37,
+    "worker": 86,
+    "religious": 75,
     "immigrant": 5,
     "region": "South",
     "date": "2024-05-14",
-    "baseTurnout": 65.1,
+    "baseTurnout": 66.3,
     "topIssues": [
       "Economy",
-      "Civil Rights",
-      "Healthcare"
+      "Healthcare",
+      "Trade"
     ],
-    "partisanLean": -38
+    "partisanLean": -44
   },
   {
     "stateName": "Wisconsin",
     "delegatesOrEV": 10,
     "demDelegates": 82,
     "repDelegates": 41,
-    "liberal": 52,
+    "liberal": 50,
     "libertarian": 52,
-    "owner": 50,
-    "worker": 70,
-    "religious": 38,
+    "owner": 47,
+    "worker": 78,
+    "religious": 43,
     "immigrant": 28,
     "region": "Midwest",
     "date": "2024-04-02",
-    "baseTurnout": 70.5,
+    "baseTurnout": 71.7,
     "topIssues": [
       "Economy",
       "Healthcare",
-      "Climate Change"
+      "Trade"
     ],
-    "partisanLean": 1
+    "partisanLean": -3
   },
   {
     "stateName": "Wyoming",

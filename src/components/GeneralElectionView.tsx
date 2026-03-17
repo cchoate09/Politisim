@@ -3,18 +3,21 @@ import './GeneralElectionView.css';
 import { useGameStore, computeEVTotals } from '../store/gameStore';
 
 export const GeneralElectionView: React.FC = () => {
-  const { states, pollingData, playerName, vpPick, voterParty } = useGameStore();
+  const { states, pollingData, playerName, vpPick, voterParty, generalOpponent } = useGameStore();
   const { playerEV, rivalEV } = computeEVTotals(states, pollingData);
   const generalTarget = Math.floor(states.reduce((sum, state) => sum + state.delegatesOrEV, 0) / 2) + 1;
+  const opponentName = generalOpponent?.name ?? 'Opposition Nominee';
+  const opponentParty = generalOpponent?.party ?? (voterParty === 'Democrat' ? 'Republican' : 'Democrat');
+  const opponentTagline = generalOpponent?.tagline ?? `${opponentParty} standard-bearer`;
 
-  // Find the closest-margin swing states
   const swingStates = [...states]
-    .map(s => {
-      const poll = pollingData[s.stateName];
+    .map((state) => {
+      const poll = pollingData[state.stateName];
       if (!poll) return null;
+
       return {
-        name: s.stateName,
-        ev: s.delegatesOrEV,
+        name: state.stateName,
+        ev: state.delegatesOrEV,
         playerPoll: Math.round(poll.player * 10) / 10,
         oppPoll: Math.round(poll.rival * 10) / 10,
         margin: Math.abs(poll.player - poll.rival)
@@ -24,31 +27,52 @@ export const GeneralElectionView: React.FC = () => {
     .sort((a, b) => a!.margin - b!.margin)
     .slice(0, 8) as { name: string; ev: number; playerPoll: number; oppPoll: number; margin: number }[];
 
+  const playerLeadingBattlegrounds = swingStates.filter((state) => state.playerPoll >= state.oppPoll).length;
+
   return (
     <div className="general-view">
-        <div className="general-header">
-          <h2>General Election Map</h2>
-          <p>The race to {generalTarget} Electoral Votes. Review the tightest battleground states.</p>
-        </div>
+      <div className="general-header">
+        <h2>General Election Map</h2>
+        <p>The race to {generalTarget} electoral votes. The margin is narrow, the map is volatile, and debate fallout will matter.</p>
+      </div>
 
       <div className="head-to-head">
         <div className="candidate-profile player">
           <div className="candidate-name">{playerName}</div>
-          <div className="candidate-party">{vpPick ? `VP: ${vpPick.name}` : `${voterParty} Nominee`}</div>
+          <div className="candidate-party">{vpPick ? `Ticket with ${vpPick.name}` : `${voterParty} nominee`}</div>
+          <div className="candidate-summary">Your coalition is trying to lock down enough battlegrounds to cross the national threshold.</div>
           <div className="electoral-votes" style={{ color: 'var(--primary-accent)' }}>{playerEV}</div>
         </div>
 
         <div className="vs-badge">VS</div>
 
         <div className="candidate-profile opponent">
-          <div className="candidate-name">Rival Nominee</div>
-          <div className="candidate-party">{voterParty === 'Democrat' ? 'Republican Nominee' : 'Democratic Nominee'}</div>
+          <div className="candidate-name">{opponentName}</div>
+          <div className="candidate-party">{opponentParty} nominee</div>
+          <div className="candidate-summary">{opponentTagline}</div>
           <div className="electoral-votes" style={{ color: 'var(--secondary-accent)' }}>{rivalEV}</div>
         </div>
       </div>
 
+      <div className="race-outlook-card">
+        <div>
+          <div className="race-outlook-label">Race Outlook</div>
+          <div className="race-outlook-copy">
+            {playerEV >= generalTarget
+              ? 'You are currently on a winning map, but the path is thin enough that one bad week can still break it.'
+              : playerLeadingBattlegrounds >= Math.ceil(swingStates.length / 2)
+                ? 'You are alive in the battlegrounds. Protect narrow leads before the opposition converts them into electoral votes.'
+                : 'You are chasing the map. Rebuild trust and target the closest swing states before the battleground window closes.'}
+          </div>
+        </div>
+        <div className="race-outlook-metric">
+          <span>Closest swing average</span>
+          <strong>{swingStates.length > 0 ? `${swingStates[0].margin.toFixed(1)} pts` : 'n/a'}</strong>
+        </div>
+      </div>
+
       <div className="swing-states-section">
-        <h3 className="swing-states-header">Key Battlegrounds (Closest Margins)</h3>
+        <h3 className="swing-states-header">Key Battlegrounds</h3>
 
         {swingStates.map((state) => {
           const total = state.playerPoll + state.oppPoll;
@@ -67,21 +91,16 @@ export const GeneralElectionView: React.FC = () => {
                   <span style={{ color: 'var(--secondary-accent)' }}>{state.oppPoll}%</span>
                 </div>
                 <div className="swing-state-bar">
-                  <div className="swing-state-bar-player" style={{ width: `${playerWidth}%` }}></div>
+                  <div className="swing-state-bar-player" style={{ width: `${playerWidth}%` }} />
                 </div>
                 <button
-                  style={{
-                    marginTop: '0.5rem', padding: '0.3rem 0.8rem', borderRadius: '6px',
-                    background: 'rgba(56, 189, 248, 0.15)', color: 'var(--primary-accent)',
-                    border: '1px solid rgba(56, 189, 248, 0.3)', cursor: 'pointer',
-                    fontSize: '0.75rem', fontWeight: 'bold'
-                  }}
+                  type="button"
+                  className="swing-state-action"
                   onClick={() => {
-                    // Navigate to map tab with this state selected — signal via custom event
                     window.dispatchEvent(new CustomEvent('politisim-navigate', { detail: { tab: 'map', state: state.name } }));
                   }}
                 >
-                  Campaign Here →
+                  Campaign Here
                 </button>
               </div>
             </div>
@@ -90,4 +109,4 @@ export const GeneralElectionView: React.FC = () => {
       </div>
     </div>
   );
-}
+};

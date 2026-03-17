@@ -46,7 +46,7 @@ export class ElectionMath {
   static calculateTurnout(stateData: StateElectionData, groundGame: number, momentum: number): number {
     // Base turnout is boosted by ground game and momentum
     const groundBonus = Math.log(Math.max(1, groundGame) + 1) * 2;
-    const momentumBonus = momentum / 20.0;
+    const momentumBonus = momentum / 35.0;
     
     const totalTurnout = stateData.baseTurnout + groundBonus + momentumBonus;
     return Math.min(100, Math.max(30, totalTurnout));

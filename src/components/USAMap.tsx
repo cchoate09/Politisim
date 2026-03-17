@@ -3,7 +3,7 @@ import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
 import './USAMap.css';
 import { useGameStore } from '../store/gameStore';
 
-const geoUrl = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
+const geoUrl = new URL('./geo/us-states-10m.json', window.location.href).toString();
 
 interface MapGeography {
   rsmKey: string;
@@ -32,11 +32,11 @@ const USAMapComponent: React.FC<USAMapProps> = ({ onStateClick, activeStateName 
 
     const margin = poll.player - poll.rival;
 
-    if (margin > 10) return 'rgba(56, 189, 248, 0.6)';      // Strong player lead - blue
-    if (margin > 3) return 'rgba(56, 189, 248, 0.35)';       // Lean player - light blue
-    if (margin > -3) return 'rgba(168, 85, 247, 0.4)';       // Toss-up - purple
-    if (margin > -10) return 'rgba(239, 68, 68, 0.35)';      // Lean rival - light red
-    return 'rgba(239, 68, 68, 0.6)';                          // Strong rival lead - red
+    if (margin > 10) return 'rgba(56, 189, 248, 0.6)';
+    if (margin > 3) return 'rgba(56, 189, 248, 0.35)';
+    if (margin > -3) return 'rgba(245, 158, 11, 0.45)';
+    if (margin > -10) return 'rgba(239, 68, 68, 0.35)';
+    return 'rgba(239, 68, 68, 0.6)';
   };
 
   return (
@@ -99,7 +99,7 @@ const USAMapComponent: React.FC<USAMapProps> = ({ onStateClick, activeStateName 
       <div className="map-legend">
         <div className="legend-item"><span className="legend-dot" style={{ background: 'rgba(56, 189, 248, 0.6)' }}></span> Strong Lead</div>
         <div className="legend-item"><span className="legend-dot" style={{ background: 'rgba(56, 189, 248, 0.35)' }}></span> Lean</div>
-        <div className="legend-item"><span className="legend-dot" style={{ background: 'rgba(168, 85, 247, 0.4)' }}></span> Toss-up</div>
+        <div className="legend-item"><span className="legend-dot" style={{ background: 'rgba(245, 158, 11, 0.45)' }}></span> Toss-up</div>
         <div className="legend-item"><span className="legend-dot" style={{ background: 'rgba(239, 68, 68, 0.35)' }}></span> Rival Lean</div>
         <div className="legend-item"><span className="legend-dot" style={{ background: 'rgba(239, 68, 68, 0.6)' }}></span> Rival Lead</div>
       </div>

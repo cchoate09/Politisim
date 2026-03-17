@@ -10,6 +10,12 @@ function getRendererEntry() {
   return path.join(app.getAppPath(), 'dist', 'index.html');
 }
 
+function getModsRoot() {
+  return app.isPackaged
+    ? path.join(app.getAppPath(), 'dist', 'mods')
+    : path.join(app.getAppPath(), 'public', 'mods');
+}
+
 function getModDataPath(modName) {
   const requestedName = typeof modName === 'string' && modName.trim() ? modName.trim() : 'vanilla';
   const safeModName = path.basename(requestedName);
@@ -18,11 +24,11 @@ function getModDataPath(modName) {
     throw new Error(`Invalid mod name: ${modName}`);
   }
 
-  const modsRoot = app.isPackaged
-    ? path.join(app.getAppPath(), 'dist', 'mods')
-    : path.join(app.getAppPath(), 'public', 'mods');
+  return path.join(getModsRoot(), safeModName, 'states.json');
+}
 
-  return path.join(modsRoot, safeModName, 'states.json');
+function getModManifestPath() {
+  return path.join(getModsRoot(), 'manifest.json');
 }
 
 function createWindow() {
@@ -61,6 +67,12 @@ app.whenReady().then(() => {
   ipcMain.handle('load-mod-data', async (_event, modName) => {
     const filePath = getModDataPath(modName);
     const raw = await fs.readFile(filePath, 'utf8');
+    return JSON.parse(raw);
+  });
+
+  ipcMain.handle('list-mods', async () => {
+    const manifestPath = getModManifestPath();
+    const raw = await fs.readFile(manifestPath, 'utf8');
     return JSON.parse(raw);
   });
 

@@ -1,44 +1,88 @@
 # PolitiSim Modding Guide
 
-Welcome to the PolitiSim Steam Workshop modding documentation! PolitiSim was rebuilt from the ground up to support extensive data-driven modding. 
+PolitiSim reads scenario data from `public/mods/`. Each scenario lives in its own folder and is listed in `public/mods/manifest.json`, which powers the in-game scenario selector.
 
-You can create entirely new historical elections, futuristic scenarios, or alternate reality maps simply by editing JSON files.
+## Folder Structure
 
-## How Mods Work
+Every playable scenario uses this structure:
 
-The game loads its core data from the `public/mods/` directory. By default, it loads the `vanilla` mod folder. 
+```text
+public/mods/
+  manifest.json
+  vanilla/
+    states.json
+  your-scenario/
+    states.json
+```
 
-To create your own mod:
-1. Copy the `vanilla` folder and rename it (e.g., `1992-election`).
-2. Inside your new folder, you will find `states.json`.
-3. Open `states.json` in any text editor and modify the demographics, election dates, and electoral delegates as you see fit.
+## Adding a Scenario
 
-## `states.json` Schema Reference
+1. Copy an existing scenario folder such as `vanilla`.
+2. Rename the folder to a new scenario id, for example `1992-rematch`.
+3. Add an entry for that id in `public/mods/manifest.json`.
+4. Edit `states.json` to define your map, demographics, delegate totals, and issue priorities.
 
-Each state block in the JSON file looks like this:
+## Manifest Schema
+
+Each scenario entry in `manifest.json` looks like this:
 
 ```json
 {
-  "stateName": "Iowa",
-  "delegatesOrEV": 41,
-  "liberal": 40,
-  "libertarian": 45,
-  "owner": 60,
-  "worker": 70,
-  "religious": 75,
-  "immigrant": 20,
-  "region": "Midwest",
-  "date": "2024-01-15"
+  "id": "vanilla",
+  "name": "Road to 2024",
+  "yearLabel": "2024",
+  "tagline": "The flagship modern campaign scenario.",
+  "description": "Fight through a crowded primary field and a volatile general election on the standard national map.",
+  "challenge": "Competitive",
+  "focus": ["Debates", "Coalition building", "General election"],
+  "official": true
 }
 ```
 
-### Definitions:
-- `delegatesOrEV` (Integer): How many electoral votes (or primary delegates) this state is worth.
-- Demographics (`liberal`, `libertarian`, `owner`, `worker`, `religious`, `immigrant`): These values range from 0 to 100. They represent the concentration or intensity of that demographic block in the state. If you align with these demographics as a candidate, your base polling support in this state will start higher.
-- `region`: (String) Used by the game's Analytics Dashboard to group states.
-- `date`: (YYYY-MM-DD) The date the primary election occurs.
+## `states.json` Schema
 
-## Uploading to Steam Workshop
+Each jurisdiction entry should look like this:
 
-(Coming soon in the Steamworks Update)
-Once you have tested your JSON files locally by placing them in the `/mods/` folder and changing the game's settings to point to your folder name, you will be able to upload the folder directly to the Steam Workshop via the in-game Mod Manager tool.
+```json
+{
+  "stateName": "Pennsylvania",
+  "delegatesOrEV": 19,
+  "demDelegates": 159,
+  "repDelegates": 67,
+  "liberal": 50,
+  "libertarian": 38,
+  "owner": 55,
+  "worker": 72,
+  "religious": 54,
+  "immigrant": 32,
+  "region": "Northeast",
+  "date": "2024-04-23",
+  "baseTurnout": 72.4,
+  "topIssues": ["Economy", "Healthcare", "Education"],
+  "partisanLean": 3
+}
+```
+
+## Field Definitions
+
+- `stateName`: Jurisdiction name shown in the UI.
+- `delegatesOrEV`: General-election electoral votes for that jurisdiction.
+- `demDelegates`: Democratic primary delegates at stake.
+- `repDelegates`: Republican primary delegates at stake.
+- `liberal`, `libertarian`, `owner`, `worker`, `religious`, `immigrant`: Demographic intensity values from `0` to `100`.
+- `region`: Regional bucket used by rivals and some map logic.
+- `date`: Primary date in `YYYY-MM-DD`.
+- `baseTurnout`: Baseline turnout percentage from `0` to `100`.
+- `topIssues`: One or more issue labels used for campaign alignment.
+- `partisanLean`: Positive values lean Democratic, negative values lean Republican.
+
+## Tips
+
+- Keep the map at 51 jurisdictions if you want a full U.S. presidential race.
+- Total electoral votes should add up to `538` unless your scenario intentionally changes the rules.
+- The primary system uses your delegate counts directly, so wildly uneven numbers will change the nomination pace.
+- After editing a scenario, run `npm test` to catch manifest or data-shape mistakes.
+
+## Workshop Support
+
+Steam Workshop upload is not wired in yet. Local scenarios already work in both browser preview and the Electron build as long as they are declared in `manifest.json`.

@@ -46,21 +46,21 @@
     "delegatesOrEV": 11,
     "demDelegates": 72,
     "repDelegates": 43,
-    "liberal": 48,
+    "liberal": 52,
     "libertarian": 60,
-    "owner": 55,
-    "worker": 60,
+    "owner": 59,
+    "worker": 58,
     "religious": 50,
-    "immigrant": 55,
+    "immigrant": 63,
     "region": "West",
     "date": "2024-03-19",
-    "baseTurnout": 73.2,
+    "baseTurnout": 74.8,
     "topIssues": [
-      "Economy",
       "Immigration",
-      "Healthcare"
+      "Housing",
+      "Economy"
     ],
-    "partisanLean": 0
+    "partisanLean": 4
   },
   {
     "stateName": "Arkansas",
@@ -109,21 +109,21 @@
     "delegatesOrEV": 10,
     "demDelegates": 72,
     "repDelegates": 37,
-    "liberal": 62,
+    "liberal": 66,
     "libertarian": 65,
-    "owner": 55,
-    "worker": 55,
+    "owner": 59,
+    "worker": 53,
     "religious": 30,
-    "immigrant": 45,
+    "immigrant": 53,
     "region": "West",
     "date": "2024-03-05",
-    "baseTurnout": 71.4,
+    "baseTurnout": 73,
     "topIssues": [
-      "Economy",
-      "Climate Change",
-      "Immigration"
+      "Immigration",
+      "Housing",
+      "Economy"
     ],
-    "partisanLean": 14
+    "partisanLean": 18
   },
   {
     "stateName": "Connecticut",
@@ -193,42 +193,42 @@
     "delegatesOrEV": 30,
     "demDelegates": 224,
     "repDelegates": 125,
-    "liberal": 45,
+    "liberal": 49,
     "libertarian": 55,
-    "owner": 60,
-    "worker": 60,
+    "owner": 64,
+    "worker": 58,
     "religious": 55,
-    "immigrant": 65,
+    "immigrant": 73,
     "region": "South",
     "date": "2024-03-19",
-    "baseTurnout": 72.3,
+    "baseTurnout": 73.89999999999999,
     "topIssues": [
-      "Economy",
       "Immigration",
-      "Education"
+      "Housing",
+      "Economy"
     ],
-    "partisanLean": -4
+    "partisanLean": -1
   },
   {
     "stateName": "Georgia",
     "delegatesOrEV": 16,
     "demDelegates": 108,
     "repDelegates": 59,
-    "liberal": 45,
+    "liberal": 49,
     "libertarian": 48,
-    "owner": 52,
-    "worker": 65,
+    "owner": 56,
+    "worker": 63,
     "religious": 70,
-    "immigrant": 35,
+    "immigrant": 43,
     "region": "South",
     "date": "2024-03-12",
-    "baseTurnout": 72.2,
+    "baseTurnout": 73.8,
     "topIssues": [
-      "Economy",
-      "Civil Rights",
-      "Healthcare"
+      "Immigration",
+      "Housing",
+      "Economy"
     ],
-    "partisanLean": 0
+    "partisanLean": 4
   },
   {
     "stateName": "Hawaii",
@@ -592,21 +592,21 @@
     "delegatesOrEV": 6,
     "demDelegates": 36,
     "repDelegates": 26,
-    "liberal": 55,
+    "liberal": 59,
     "libertarian": 65,
-    "owner": 52,
-    "worker": 70,
+    "owner": 56,
+    "worker": 68,
     "religious": 25,
-    "immigrant": 65,
+    "immigrant": 73,
     "region": "West",
     "date": "2024-02-06",
-    "baseTurnout": 72.9,
+    "baseTurnout": 74.5,
     "topIssues": [
-      "Economy",
       "Immigration",
-      "Healthcare"
+      "Housing",
+      "Economy"
     ],
-    "partisanLean": 1
+    "partisanLean": 5
   },
   {
     "stateName": "New Hampshire",
@@ -697,21 +697,21 @@
     "delegatesOrEV": 16,
     "demDelegates": 116,
     "repDelegates": 74,
-    "liberal": 45,
+    "liberal": 49,
     "libertarian": 48,
-    "owner": 55,
-    "worker": 65,
+    "owner": 59,
+    "worker": 63,
     "religious": 65,
-    "immigrant": 30,
+    "immigrant": 38,
     "region": "South",
     "date": "2024-03-05",
-    "baseTurnout": 74.2,
+    "baseTurnout": 75.8,
     "topIssues": [
-      "Economy",
-      "Healthcare",
-      "Climate Change"
+      "Immigration",
+      "Housing",
+      "Economy"
     ],
-    "partisanLean": -2
+    "partisanLean": 2
   },
   {
     "stateName": "North Dakota",
@@ -907,21 +907,21 @@
     "delegatesOrEV": 40,
     "demDelegates": 244,
     "repDelegates": 161,
-    "liberal": 42,
+    "liberal": 46,
     "libertarian": 62,
-    "owner": 65,
-    "worker": 60,
+    "owner": 69,
+    "worker": 58,
     "religious": 60,
-    "immigrant": 55,
+    "immigrant": 63,
     "region": "South",
     "date": "2024-03-05",
-    "baseTurnout": 68.8,
+    "baseTurnout": 70.39999999999999,
     "topIssues": [
-      "Economy",
       "Immigration",
-      "Healthcare"
+      "Housing",
+      "Economy"
     ],
-    "partisanLean": -6
+    "partisanLean": 0
   },
   {
     "stateName": "Utah",
@@ -970,21 +970,21 @@
     "delegatesOrEV": 13,
     "demDelegates": 99,
     "repDelegates": 48,
-    "liberal": 55,
+    "liberal": 59,
     "libertarian": 48,
-    "owner": 58,
-    "worker": 60,
+    "owner": 62,
+    "worker": 58,
     "religious": 40,
-    "immigrant": 45,
+    "immigrant": 53,
     "region": "South",
     "date": "2024-03-05",
-    "baseTurnout": 66.7,
+    "baseTurnout": 68.3,
     "topIssues": [
-      "Economy",
       "Immigration",
-      "Education"
+      "Housing",
+      "Economy"
     ],
-    "partisanLean": 10
+    "partisanLean": 14
   },
   {
     "stateName": "Washington",

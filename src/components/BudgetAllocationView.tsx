@@ -13,14 +13,14 @@ export const BudgetAllocationView: React.FC = () => {
 
   // Calculate current efficiency for UI feedback
   const fatigueLevel = fundraisingStreakWeeks + (pacFundraisedThisWeek ? 1 : 0);
-  const efficiency = Math.max(0.2, 1.1 - (fatigueLevel * 0.25));
+  const efficiency = Math.max(0.1, 0.9 - (fatigueLevel * 0.3));
   const donorFatigueActive = fatigueLevel > 0;
 
   return (
     <div className="budget-view">
       <div className="budget-header">
         <h2>Campaign Finance</h2>
-        <p>Manage your war chest. Repeated fundraising within the same week or in consecutive weeks causes donor fatigue.</p>
+        <p>Manage your war chest. Repeated high-dollar fundraising burns through donor goodwill fast, while weekly overhead keeps the pressure on.</p>
         {donorFatigueActive && (
           <div style={{
             display: 'inline-block',
@@ -81,12 +81,12 @@ export const BudgetAllocationView: React.FC = () => {
           <h3>Super PAC Dinner</h3>
           <p>
             Attend a closed-door dinner with Wall Street executives and corporate lobbyists.
-            Yields massive funding, but severely damages your trust with Working Class voters.
+            Yields massive funding, but it cuts deeply into public trust and gets less efficient if you keep going back to the same donor class.
           </p>
           <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '1.5rem', textAlign: 'center' }}>
             <span style={{ color: '#2ea043', fontWeight: 'bold' }}>+${Math.floor(500000 * efficiency / 1000)}K</span>
             <br />
-            <span style={{ color: 'var(--secondary-accent)', fontSize: '0.9rem' }}>-5% Public Trust</span>
+            <span style={{ color: 'var(--secondary-accent)', fontSize: '0.9rem' }}>-8 Public Trust</span>
           </div>
           <button
             className="fund-btn btn-pac"

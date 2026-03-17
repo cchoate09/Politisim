@@ -23,6 +23,92 @@
   gap: 2rem;
 }
 
+.scenario-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.85rem;
+}
+
+.scenario-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 0.95rem;
+  color: var(--text-main);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.scenario-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(56, 189, 248, 0.3);
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.scenario-card-selected {
+  border-color: rgba(56, 189, 248, 0.45);
+  background: rgba(56, 189, 248, 0.12);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.1);
+}
+
+.scenario-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.scenario-card-year {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--primary-accent);
+}
+
+.scenario-card-challenge {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.scenario-card-name {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.scenario-card-tagline {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  margin-bottom: 0.65rem;
+}
+
+.scenario-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.scenario-card-tag {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.07);
+  color: var(--text-muted);
+}
+
+.scenario-empty-state {
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
 /* Left side: Points allocation */
 .traits-panel {
   background: rgba(0,0,0,0.3);
@@ -103,6 +189,28 @@
   justify-content: center;
 }
 
+.scenario-briefing {
+  width: 100%;
+  padding: 1rem 1.1rem;
+  border-radius: 12px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  margin-bottom: 1.5rem;
+}
+
+.scenario-briefing-name {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.25rem;
+  color: var(--primary-accent);
+  margin-bottom: 0.5rem;
+}
+
+.scenario-briefing-copy {
+  color: var(--text-muted);
+  line-height: 1.5;
+  text-align: left;
+}
+
 .summary-title {
   font-size: 1.25rem;
   color: var(--text-muted);
@@ -148,4 +256,18 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+@media (max-width: 1100px) {
+  .creator-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-panel {
+    align-items: stretch;
+  }
+
+  .archetype-desc {
+    max-width: 100%;
+  }
 }

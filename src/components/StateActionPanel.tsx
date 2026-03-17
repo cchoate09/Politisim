@@ -8,7 +8,7 @@ interface Props {
 }
 
 export const StateActionPanel: React.FC<Props> = ({ stateName, onClose }) => {
-  const { states, pollingData, campaignSpending, spendBudget, setSpending, budget, gamePhase, voterParty, stamina } = useGameStore();
+  const { states, pollingData, campaignSpending, spendBudget, setSpending, budget, gamePhase, voterParty, stamina, generalOpponent } = useGameStore();
 
   const stateData = states.find(s => s.stateName.toLowerCase() === stateName.toLowerCase());
   const polls = pollingData[stateData?.stateName || stateName];
@@ -86,7 +86,7 @@ export const StateActionPanel: React.FC<Props> = ({ stateName, onClose }) => {
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '0.9rem' }}>
-          <span>Rival Nominee</span>
+          <span>{gamePhase === 'general' ? (generalOpponent?.shortName ?? generalOpponent?.name ?? 'Opponent') : 'Lead Rival'}</span>
           <span style={{ color: 'var(--secondary-accent)', fontWeight: 'bold' }}>{polls.rival.toFixed(1)}%</span>
         </div>
         <div className="progress-bar-bg" style={{ marginBottom: '0.5rem' }}>
