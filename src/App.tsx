@@ -8,6 +8,7 @@ import { CandidateCreator } from './components/CandidateCreator';
 import { BudgetAllocationView } from './components/BudgetAllocationView';
 import { EventModal } from './components/EventModal';
 import { DebateScreen } from './components/DebateScreen';
+import { ConventionModal } from './components/ConventionModal';
 import { StateActionPanel } from './components/StateActionPanel';
 import { CampaignHQView } from './components/CampaignHQView';
 import { EndGameScreen } from './components/EndGameScreen';
@@ -48,6 +49,7 @@ function App() {
     voterParty,
     activeEvent,
     activeDebate,
+    activeConvention,
     previewDebate,
     generalOpponent,
     rivalAIs,
@@ -79,7 +81,7 @@ function App() {
     : (leadPrimaryRival?.shortName ?? leadPrimaryRival?.name ?? 'Field Leader');
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (!hasStarted || gamePhase === 'ended' || activeEvent || activeDebate) return;
+    if (!hasStarted || gamePhase === 'ended' || activeEvent || activeDebate || activeConvention) return;
     if ((event.target as HTMLElement).tagName === 'INPUT') return;
 
     if (event.code === 'Space') {
@@ -92,7 +94,7 @@ function App() {
       const idx = parseInt(event.key, 10) - 1;
       if (idx < TABS.length) setActiveTab(TABS[idx]);
     }
-  }, [hasStarted, gamePhase, activeEvent, activeDebate, advanceWeek]);
+  }, [hasStarted, gamePhase, activeEvent, activeDebate, activeConvention, advanceWeek]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -123,6 +125,7 @@ function App() {
     <>
       <DebateScreen />
       <EventModal />
+      <ConventionModal />
       {vpSelectionPending && <VPSelectionModal />}
       <div className={`command-center ${voterParty === 'Republican' ? 'republican-theme' : ''}`}>
         <aside className="glass-panel nav-panel">
@@ -298,15 +301,15 @@ function App() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                   <button
                     onClick={() => previewDebate('primary')}
-                    disabled={Boolean(activeDebate)}
-                    style={{ padding: '0.55rem', borderRadius: '8px', background: 'rgba(246,196,83,0.16)', color: '#f6c453', border: '1px solid rgba(246,196,83,0.25)', cursor: activeDebate ? 'not-allowed' : 'pointer', fontSize: '0.8rem', opacity: activeDebate ? 0.5 : 1 }}
+                    disabled={Boolean(activeDebate) || Boolean(activeConvention)}
+                    style={{ padding: '0.55rem', borderRadius: '8px', background: 'rgba(246,196,83,0.16)', color: '#f6c453', border: '1px solid rgba(246,196,83,0.25)', cursor: activeDebate || activeConvention ? 'not-allowed' : 'pointer', fontSize: '0.8rem', opacity: activeDebate || activeConvention ? 0.5 : 1 }}
                   >
                     Primary Debate
                   </button>
                   <button
                     onClick={() => previewDebate('general')}
-                    disabled={Boolean(activeDebate)}
-                    style={{ padding: '0.55rem', borderRadius: '8px', background: 'rgba(56,189,248,0.16)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.25)', cursor: activeDebate ? 'not-allowed' : 'pointer', fontSize: '0.8rem', opacity: activeDebate ? 0.5 : 1 }}
+                    disabled={Boolean(activeDebate) || Boolean(activeConvention)}
+                    style={{ padding: '0.55rem', borderRadius: '8px', background: 'rgba(56,189,248,0.16)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.25)', cursor: activeDebate || activeConvention ? 'not-allowed' : 'pointer', fontSize: '0.8rem', opacity: activeDebate || activeConvention ? 0.5 : 1 }}
                   >
                     General Debate
                   </button>
@@ -316,25 +319,27 @@ function App() {
 
             <button
               onClick={advanceWeek}
-              disabled={vpSelectionPending || Boolean(activeEvent) || Boolean(activeDebate)}
+              disabled={vpSelectionPending || Boolean(activeEvent) || Boolean(activeDebate) || Boolean(activeConvention)}
               title="Space"
-              className={!vpSelectionPending && !activeEvent && !activeDebate ? 'pulse-primary' : ''}
+              className={!vpSelectionPending && !activeEvent && !activeDebate && !activeConvention ? 'pulse-primary' : ''}
               style={{
                 padding: '0.8rem',
                 borderRadius: '8px',
-                background: vpSelectionPending || activeEvent || activeDebate ? 'rgba(255,255,255,0.1)' : 'var(--primary-accent)',
+                background: vpSelectionPending || activeEvent || activeDebate || activeConvention ? 'rgba(255,255,255,0.1)' : 'var(--primary-accent)',
                 color: 'white',
                 border: 'none',
                 fontWeight: 'bold',
-                cursor: vpSelectionPending || activeEvent || activeDebate ? 'not-allowed' : 'pointer',
+                cursor: vpSelectionPending || activeEvent || activeDebate || activeConvention ? 'not-allowed' : 'pointer',
                 fontSize: '1rem',
-                opacity: vpSelectionPending || activeEvent || activeDebate ? 0.5 : 1
+                opacity: vpSelectionPending || activeEvent || activeDebate || activeConvention ? 0.5 : 1
               }}
             >
               {vpSelectionPending
                 ? 'Select VP First'
                 : activeDebate
                   ? 'Finish Debate First'
+                  : activeConvention
+                    ? 'Resolve Convention First'
                   : activeEvent
                     ? 'Resolve Event First'
                     : 'Advance to Next Week'}

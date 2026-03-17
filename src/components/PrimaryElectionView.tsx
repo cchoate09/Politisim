@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import './PrimaryElectionView.css';
 import { useGameStore } from '../store/gameStore';
+import { getPrimaryRuleProfile } from '../core/PrimaryRules';
 
 export const PrimaryElectionView: React.FC = () => {
   const {
@@ -13,7 +14,8 @@ export const PrimaryElectionView: React.FC = () => {
     voterParty,
     rivalAIs,
     playerName,
-    primaryResults
+    primaryResults,
+    activeConvention
   } = useGameStore();
   const [showAll, setShowAll] = useState(false);
 
@@ -49,7 +51,7 @@ export const PrimaryElectionView: React.FC = () => {
     <div className="primary-view">
       <div className="primary-header">
         <h2>Primary Election Tracker</h2>
-        <p>Track the full nomination fight. States resolve in batches, delegates are allocated proportionally, and weak candidates can drop out and endorse.</p>
+        <p>Track the full nomination fight. State rules vary by contest, the field can consolidate, and a deadlocked map can spill into a convention battle.</p>
 
         <div style={{ display: 'flex', gap: '2rem', marginTop: '1rem', alignItems: 'center' }}>
           <div style={{ textAlign: 'center' }}>
@@ -70,6 +72,19 @@ export const PrimaryElectionView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {activeConvention && (
+        <div className="primary-alert">
+          <div>
+            <strong>Convention Floor Open</strong>
+            <p>{activeConvention.leadingRivalName} is leading the deadlock, and the nomination is now being decided ballot by ballot.</p>
+          </div>
+          <div className="primary-alert-meta">
+            <span>Ballot {activeConvention.ballot}</span>
+            <span>{activeConvention.freeDelegates} unbound delegates</span>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
         {fieldStandings.map((candidate) => (
@@ -95,29 +110,50 @@ export const PrimaryElectionView: React.FC = () => {
           const isContested = contestedStates.includes(state.stateName);
           const poll = pollingData[state.stateName];
           const result = primaryResults[state.stateName];
+          const ruleProfile = getPrimaryRuleProfile(state, voterParty);
           const delegatesAtStake = voterParty === 'Democrat' ? state.demDelegates : state.repDelegates;
           const topFieldRows = result?.fieldShares.slice(0, 4) ?? [];
+          const districtWinRows = result
+            ? Object.entries(result.districtWins)
+                .filter(([, wins]) => wins > 0)
+                .sort(([, leftWins], [, rightWins]) => rightWins - leftWins)
+                .slice(0, 3)
+                .map(([candidateId, wins]) => {
+                  const candidateName = candidateId === 'player'
+                    ? playerName
+                    : result.fieldShares.find((share) => share.candidateId === candidateId)?.name ?? 'Rival';
+                  return `${candidateName}: ${wins} district${wins === 1 ? '' : 's'}`;
+                })
+            : [];
 
           return (
             <div key={idx} className={`state-card ${isContested ? 'won' : ''}`}>
               <div className="state-card-header">
-                <span className="state-title">
-                  {state.stateName}
-                  {isContested && (
-                    <span style={{
-                      marginLeft: '0.5rem',
-                      fontSize: '0.7rem',
-                      padding: '0.15rem 0.5rem',
-                      borderRadius: '4px',
-                      background: 'rgba(56, 189, 248, 0.16)',
-                      color: 'var(--primary-accent)'
-                    }}>
-                      CALLED
-                    </span>
-                  )}
-                </span>
-                <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                  {delegatesAtStake} {gamePhaseLabel(voterParty)}
+                <div>
+                  <span className="state-title">
+                    {state.stateName}
+                    {isContested && (
+                      <span style={{
+                        marginLeft: '0.5rem',
+                        fontSize: '0.7rem',
+                        padding: '0.15rem 0.5rem',
+                        borderRadius: '4px',
+                        background: 'rgba(56, 189, 248, 0.16)',
+                        color: 'var(--primary-accent)'
+                      }}>
+                        CALLED
+                      </span>
+                    )}
+                  </span>
+                  <div className="rule-chip">
+                    {isContested ? result?.ruleSummary ?? ruleProfile.summary : ruleProfile.summary}
+                  </div>
+                </div>
+                <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textAlign: 'right' }}>
+                  <div>{delegatesAtStake} {gamePhaseLabel(voterParty)}</div>
+                  <div style={{ fontSize: '0.72rem', marginTop: '0.2rem' }}>
+                    {ruleProfile.districtDelegates} district / {ruleProfile.statewideDelegates} statewide
+                  </div>
                 </div>
               </div>
 
@@ -142,13 +178,20 @@ export const PrimaryElectionView: React.FC = () => {
                         <div key={`${state.stateName}-${candidate.candidateId}`} style={{ padding: '0.45rem 0.55rem', borderRadius: '8px', background: 'rgba(255,255,255,0.03)' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '0.25rem' }}>
                             <strong style={{ color: candidate.candidateId === 'player' ? 'var(--primary-accent)' : 'var(--text-main)' }}>{candidate.name}</strong>
-                            <span>{candidate.share.toFixed(1)}% • {candidate.delegates} Del</span>
+                            <span>{candidate.share.toFixed(1)}% | {candidate.delegates} Del</span>
                           </div>
                           <div className="poll-bar-bg">
                             <div className="poll-bar-fill" style={{ width: `${candidate.share}%`, background: candidate.candidateId === 'player' ? 'var(--primary-accent)' : 'rgba(239,68,68,0.65)' }}></div>
                           </div>
                         </div>
                       ))}
+                      {districtWinRows.length > 0 && (
+                        <div className="district-badges">
+                          {districtWinRows.map((entry) => (
+                            <span key={`${state.stateName}-${entry}`}>{entry}</span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <>
@@ -174,6 +217,13 @@ export const PrimaryElectionView: React.FC = () => {
                         <div className="poll-bar-bg">
                           <div className="poll-bar-fill" style={{ width: `${poll?.rival || 0}%`, background: 'var(--secondary-accent)' }}></div>
                         </div>
+                      </div>
+
+                      <div className="district-badges">
+                        <span>Rule: {ruleProfile.summary}</span>
+                        {ruleProfile.threshold > 0 && (
+                          <span>{ruleProfile.threshold}% viability threshold</span>
+                        )}
                       </div>
                     </>
                   )}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useGameStore } from '../store/gameStore';
+import { getPrimaryRuleProfile } from '../core/PrimaryRules';
 import './StateActionPanel.css';
 
 interface Props {
@@ -38,6 +39,9 @@ export const StateActionPanel: React.FC<Props> = ({ stateName, onClose }) => {
   const delegatesAtStake = gamePhase === 'primary'
     ? voterParty === 'Democrat' ? stateData.demDelegates : stateData.repDelegates
     : stateData.delegatesOrEV;
+  const ruleProfile = gamePhase === 'primary'
+    ? getPrimaryRuleProfile(stateData, voterParty)
+    : null;
   const turnout = polls.turnout || 60;
   
   const handleSpend = (type: keyof typeof spendingVars, baseCost: number, amount: number) => {
@@ -72,6 +76,21 @@ export const StateActionPanel: React.FC<Props> = ({ stateName, onClose }) => {
       <p style={{ margin: '0 0 1rem 0', opacity: 0.7, fontSize: '0.9rem' }}>
         {delegatesAtStake} {gamePhase === 'primary' ? 'Delegates' : 'Electoral Votes'}
       </p>
+
+      {ruleProfile && (
+        <div className="rule-panel">
+          <div className="rule-panel-title">Delegate Rules</div>
+          <p>{ruleProfile.summary}</p>
+          <div className="rule-panel-grid">
+            <span>{ruleProfile.districtDelegates} district delegates</span>
+            <span>{ruleProfile.statewideDelegates} statewide delegates</span>
+            {ruleProfile.threshold > 0 && <span>{ruleProfile.threshold}% viability threshold</span>}
+            {ruleProfile.winnerTakeAllTrigger !== undefined && ruleProfile.winnerTakeAllTrigger > 0 && (
+              <span>{ruleProfile.winnerTakeAllTrigger}% sweep trigger</span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* State Polling Snapshot */}
       <div className="stat-card" style={{ marginBottom: '1.5rem' }}>
