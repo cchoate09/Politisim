@@ -737,6 +737,8 @@ export interface GameState {
   gamePhase: 'primary' | 'general' | 'ended';
   difficulty: 'easy' | 'normal' | 'hard';
   hasStarted: boolean;
+  scenarioId: string;
+  scenarioName: string;
 
   playerName: string;
   budget: number;
@@ -809,7 +811,7 @@ export interface GameState {
   // Persistence
   saveGame: (slot?: number) => void;
   loadGame: (slot?: number) => void;
-  getSaveSlots: () => { slot: number; week: number; phase: string; date: string }[];
+  getSaveSlots: () => { slot: number; week: number; phase: string; date: string; scenarioName: string; difficulty: string; party: string; playerName: string }[];
   setHasStarted: (value: boolean) => void;
   resetGame: () => void;
 }
@@ -835,6 +837,8 @@ const initialState: Omit<GameState, 'initializeCampaign' | 'runSimulation' | 'se
   gamePhase: 'primary',
   difficulty: 'normal',
   hasStarted: false,
+  scenarioId: 'vanilla',
+  scenarioName: 'Modern Presidential Cycle',
 
   playerName: 'Your Candidate',
   budget: 150000,
@@ -1112,6 +1116,8 @@ type PersistedGameState = Pick<GameState,
   | 'calendarPhase'
   | 'gamePhase'
   | 'difficulty'
+  | 'scenarioId'
+  | 'scenarioName'
   | 'playerName'
   | 'budget'
   | 'publicTrust'
@@ -1522,6 +1528,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       calendarPhase: state.calendarPhase,
       gamePhase: state.gamePhase,
       difficulty: state.difficulty,
+      scenarioId: state.scenarioId,
+      scenarioName: state.scenarioName,
       playerName: state.playerName,
       budget: state.budget,
       publicTrust: state.publicTrust,
@@ -1658,12 +1666,21 @@ export const useGameStore = create<GameState>((set, get) => ({
       if (raw) {
         try {
           const parsed = JSON.parse(raw);
-          slots.push({ slot: i, week: parsed.currentWeek, phase: parsed.gamePhase, date: parsed.savedAt || 'Unknown' });
+          slots.push({
+            slot: i,
+            week: parsed.currentWeek,
+            phase: parsed.gamePhase,
+            date: parsed.savedAt || 'Unknown',
+            scenarioName: parsed.scenarioName || 'Unknown Scenario',
+            difficulty: parsed.difficulty || 'normal',
+            party: parsed.voterParty || 'Democrat',
+            playerName: parsed.playerName || 'Candidate'
+          });
         } catch {
-          slots.push({ slot: i, week: 0, phase: 'corrupted', date: 'Error' });
+          slots.push({ slot: i, week: 0, phase: 'corrupted', date: 'Error', scenarioName: 'Corrupted Save', difficulty: '-', party: '-', playerName: '-' });
         }
       } else {
-        slots.push({ slot: i, week: 0, phase: 'empty', date: '' });
+        slots.push({ slot: i, week: 0, phase: 'empty', date: '', scenarioName: '', difficulty: '', party: '', playerName: '' });
       }
     }
     return slots;

@@ -4,13 +4,13 @@ This checklist turns the current competitive review into a working roadmap. The 
 
 ## Current Snapshot
 
-Estimated parity progress: `67%`
+Estimated parity progress: `71%`
 
 - Core election simulation: `84%`
 - Replayability and scenarios: `45%`
-- Presentation and immersion: `54%`
+- Presentation and immersion: `57%`
 - Product shell and Steam readiness: `35%`
-- QA, onboarding, and usability: `34%`
+- QA, onboarding, and usability: `43%`
 
 ## What Is Already Stronger Than Before
 
@@ -115,11 +115,11 @@ Goal: make the game feel like a product people want to stay inside, not just a s
 
 ### 8. Final UX Polish
 
-- [ ] Add a proper tutorial or first-run onboarding
+- [x] Add a proper tutorial or first-run onboarding
   Acceptance: a new player can finish the first 10 minutes without guessing what matters.
-- [ ] Add glossary/help overlays for trust, momentum, delegate rules, turnout, and fatigue
+- [x] Add glossary/help overlays for trust, momentum, delegate rules, turnout, and fatigue
   Acceptance: systems are legible without overexposing formulas.
-- [ ] Improve save/load presentation
+- [x] Improve save/load presentation
   Acceptance: saves show scenario, party, difficulty, and key campaign status at a glance.
 
 ## Milestone 4: Steam Product Parity
@@ -166,11 +166,11 @@ Goal: stop future content passes from quietly breaking the game.
 
 If we want the highest return on effort, tackle these next:
 
-1. Tutorial and glossary
-2. Audio/settings/accessibility
-3. Steam Cloud and final achievement coverage
-4. CI and deeper tests
-5. Donor blocs and media strategy
+1. Audio/settings/accessibility
+2. Steam Cloud and final achievement coverage
+3. CI and deeper tests
+4. Donor blocs and media strategy
+5. Rival identity and personality pass
 
 ## Latest Milestone Notes
 
@@ -178,6 +178,7 @@ If we want the highest return on effort, tackle these next:
 - `2026-03-17`: Added a real endorsement system with party-specific validator rosters, player courtship actions, AI competition for backing, polling and fundraising effects, coalition tracking in Campaign HQ, and convention leverage tied to endorsement strength.
 - `2026-03-17`: Added a dedicated election-night resolution phase with state call waves, hidden polling misses, desk projections, and a final transition into the postgame report only after the map is actually called.
 - `2026-03-17`: Added persistent field offices, volunteer reserves, surrogate deployment, rival field-network AI, and UI surfacing across the state panel, Campaign HQ, primary tracker, and battleground view so campaign organization now functions as a real strategic layer.
+- `2026-03-17`: Added a first-run tutorial, a persistent guide and glossary drawer, phase-sensitive dashboard coaching, and richer save-slot metadata so the product now explains itself much more like a real Steam release instead of expecting genre knowledge.
 
 ## How We Should Track Progress
 

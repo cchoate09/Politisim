@@ -92,7 +92,9 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
       playerIdeology: traits,
       playerName: name || 'Candidate',
       difficulty,
-      playerIssues: selectedIssues
+      playerIssues: selectedIssues,
+      scenarioId: selectedMod,
+      scenarioName: activeScenario?.name ?? selectedMod
     });
 
     useGameStore.getState().initializeCampaign(states);
@@ -297,6 +299,13 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
           <div className="archetype-name">{calculateArchetype()}</div>
           <div className="archetype-desc">
             Your ideology shapes where your coalition starts strong, where debates can rescue you, and which rivals are best positioned to box you out.
+          </div>
+
+          <div className="scenario-briefing" style={{ marginTop: '1rem' }}>
+            <div className="summary-title">First 10 Minutes</div>
+            <div className="scenario-briefing-copy">
+              Pick a few focus states, avoid spending every dollar on one-week ads, and use the in-game guide after launch if you need a refresher on trust, momentum, delegates, or field offices.
+            </div>
           </div>
 
           {modsError && (

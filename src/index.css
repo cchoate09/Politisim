@@ -111,6 +111,23 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 0 12px var(--primary-glow);
 }
 
+.guide-launch-btn {
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  border-radius: 10px;
+  background: rgba(56, 189, 248, 0.09);
+  color: var(--primary-accent);
+  padding: 0.75rem 0.95rem;
+  text-align: left;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.guide-launch-btn.subtle {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+}
+
 /* Center Map View */
 .center-view {
   display: flex;
@@ -245,4 +262,92 @@ h1, h2, h3, h4, h5, h6 {
 
 .pulse-negative {
   animation: pulse-neg 2s infinite;
+}
+
+.quickstart-card {
+  border-color: rgba(56, 189, 248, 0.16);
+  background: rgba(56, 189, 248, 0.06);
+}
+
+.quickstart-heading {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.quickstart-copy {
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.quickstart-meta {
+  margin-top: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.quickstart-link {
+  border: none;
+  background: transparent;
+  color: var(--primary-accent);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.save-slot-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.save-slot-card {
+  padding: 0.65rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.save-slot-top,
+.save-slot-meta,
+.save-slot-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.save-slot-top strong {
+  font-size: 0.8rem;
+  color: var(--text-main);
+}
+
+.save-slot-top span,
+.save-slot-meta span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.save-slot-meta {
+  flex-wrap: wrap;
+  margin-top: 0.35rem;
+}
+
+.save-slot-copy {
+  margin-top: 0.35rem;
+  color: var(--text-main);
+  font-size: 0.78rem;
+}
+
+.save-slot-timestamp {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.save-slot-actions {
+  margin-top: 0.55rem;
 }

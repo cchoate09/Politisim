@@ -15,14 +15,20 @@ import { ElectionNightScreen } from './components/ElectionNightScreen';
 import { EndGameScreen } from './components/EndGameScreen';
 import { VPSelectionModal } from './components/VPSelectionModal';
 import { ActivityLog } from './components/ActivityLog';
+import { CampaignGuideDrawer } from './components/CampaignGuideDrawer';
+import { TutorialModal } from './components/TutorialModal';
 import { useGameStore, computeEVTotals } from './store/gameStore';
 
 const TABS = ['map', 'analytics', 'primary', 'general', 'campaign', 'budget'] as const;
+const TUTORIAL_STORAGE_KEY = 'politisim_tutorial_complete';
 
 function App() {
   const [activeTab, setActiveTab] = useState<string>('map');
   const [selectedState, setSelectedState] = useState<string | undefined>(undefined);
   const [showSaveSlots, setShowSaveSlots] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialSessionId, setTutorialSessionId] = useState(0);
 
   const {
     budget,
@@ -55,6 +61,7 @@ function App() {
     previewDebate,
     generalOpponent,
     rivalAIs,
+    scenarioName,
   } = useGameStore();
 
   const isDev = import.meta.env.DEV;
@@ -81,22 +88,50 @@ function App() {
   const rivalLabel = gamePhase === 'general'
     ? (generalOpponent?.shortName ?? generalOpponent?.name ?? 'Opponent')
     : (leadPrimaryRival?.shortName ?? leadPrimaryRival?.name ?? 'Field Leader');
+  const phaseBriefing = calendarPhase === 'campaigning'
+    ? {
+        title: 'Opening Weeks',
+        body: 'Pick a small number of states to build around, because this is when offices, issue identity, and early coalition signals compound the most.'
+      }
+    : calendarPhase === 'primary'
+      ? {
+          title: 'Primary Season',
+          body: 'Read the delegate rules, protect stamina, and convert good weeks into durable advantages before the field consolidates.'
+        }
+      : calendarPhase === 'convention'
+        ? {
+            title: 'Convention Week',
+            body: 'If the race deadlocks, elite backing and coalition strength matter just as much as raw delegates.'
+          }
+        : calendarPhase === 'general'
+          ? {
+              title: 'General Election',
+              body: 'Build multiple paths through the battleground map. A national lead is not the same thing as an electoral path.'
+            }
+          : {
+              title: 'Election Night',
+              body: 'The final map is about to call state by state. Every durable advantage you built now gets tested.'
+            };
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (!hasStarted || gamePhase === 'ended' || activeEvent || activeDebate || activeConvention || activeElectionNight) return;
+    if (!hasStarted || gamePhase === 'ended') return;
     if ((event.target as HTMLElement).tagName === 'INPUT') return;
 
     if (event.code === 'Space') {
+      if (showGuide || showTutorial || activeEvent || activeDebate || activeConvention || activeElectionNight) return;
       event.preventDefault();
       advanceWeek();
     } else if (event.code === 'Escape') {
       setSelectedState(undefined);
       setShowSaveSlots(false);
+      setShowGuide(false);
+      setShowTutorial(false);
     } else if (event.key >= '1' && event.key <= '6') {
+      if (showGuide || showTutorial) return;
       const idx = parseInt(event.key, 10) - 1;
       if (idx < TABS.length) setActiveTab(TABS[idx]);
     }
-  }, [hasStarted, gamePhase, activeEvent, activeDebate, activeConvention, activeElectionNight, advanceWeek]);
+  }, [hasStarted, gamePhase, showGuide, showTutorial, activeEvent, activeDebate, activeConvention, activeElectionNight, advanceWeek]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -113,8 +148,26 @@ function App() {
     return () => window.removeEventListener('politisim-navigate', handler);
   }, []);
 
+  const openTutorial = () => {
+    setTutorialSessionId((current) => current + 1);
+    setShowTutorial(true);
+  };
+
+  const dismissTutorial = () => {
+    window.localStorage.setItem(TUTORIAL_STORAGE_KEY, 'true');
+    setShowTutorial(false);
+  };
+
+  const handleCampaignStart = () => {
+    setHasStarted(true);
+    const tutorialSeen = window.localStorage.getItem(TUTORIAL_STORAGE_KEY) === 'true';
+    if (!tutorialSeen) {
+      openTutorial();
+    }
+  };
+
   if (!hasStarted) {
-    return <CandidateCreator onComplete={() => setHasStarted(true)} />;
+    return <CandidateCreator onComplete={handleCampaignStart} />;
   }
 
   if (gamePhase === 'ended') {
@@ -133,6 +186,13 @@ function App() {
       <EventModal />
       <ConventionModal />
       {vpSelectionPending && <VPSelectionModal />}
+      <CampaignGuideDrawer isOpen={showGuide} onClose={() => setShowGuide(false)} />
+      <TutorialModal
+        key={`tutorial-${tutorialSessionId}`}
+        isOpen={showTutorial}
+        onClose={dismissTutorial}
+        onOpenGuide={() => setShowGuide(true)}
+      />
       <div className={`command-center ${voterParty === 'Republican' ? 'republican-theme' : ''}`}>
         <aside className="glass-panel nav-panel">
           <h2>PolitiSim Command</h2>
@@ -168,6 +228,22 @@ function App() {
             </div>
           ))}
 
+          <button
+            type="button"
+            className="guide-launch-btn"
+            onClick={() => setShowGuide(true)}
+          >
+            Guide & Glossary
+          </button>
+
+          <button
+            type="button"
+            className="guide-launch-btn subtle"
+            onClick={openTutorial}
+          >
+            Replay Tutorial
+          </button>
+
           <div style={{ flexGrow: 1 }} />
 
           <div className="stat-card" data-tooltip="Total money available for ads, staff, travel, and event recovery.">
@@ -195,6 +271,18 @@ function App() {
         ) : (
           <aside className="glass-panel stats-panel">
             <h3>National Dashboard</h3>
+
+            <div className="stat-card quickstart-card">
+              <div className="stat-card-title">Campaign Playbook</div>
+              <div className="quickstart-heading">{phaseBriefing.title}</div>
+              <p className="quickstart-copy">{phaseBriefing.body}</p>
+              <div className="quickstart-meta">
+                <span>{scenarioName}</span>
+                <button type="button" className="quickstart-link" onClick={() => setShowGuide(true)}>
+                  Open Guide
+                </button>
+              </div>
+            </div>
 
             <div className="stat-card" data-tooltip={gamePhase === 'primary' ? 'Reach the delegate threshold to secure the nomination.' : `Reach ${victoryTarget} electoral votes to win the presidency.`}>
               <div className="stat-card-title">
@@ -281,15 +369,35 @@ function App() {
               </div>
 
               {showSaveSlots && (
-                <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '8px', padding: '0.5rem' }}>
+                <div className="save-slot-list">
                   {saveSlots.map((slot, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        Slot {i + 1}{i === 2 ? ' (Auto)' : ''}: {slot.phase === 'empty' ? 'Empty' : `W${slot.week} ${slot.phase}`}
+                    <div key={i} className="save-slot-card">
+                      <div className="save-slot-top">
+                        <strong>Slot {i + 1}{i === 2 ? ' (Auto)' : ''}</strong>
+                        <span>{slot.phase === 'empty' ? 'Empty' : slot.phase === 'corrupted' ? 'Corrupted' : `W${slot.week} ${slot.phase}`}</span>
                       </div>
-                      <div style={{ display: 'flex', gap: '0.3rem' }}>
+                      {slot.phase !== 'empty' && slot.phase !== 'corrupted' ? (
+                        <>
+                          <div className="save-slot-meta">
+                            <span>{slot.scenarioName}</span>
+                            <span>{slot.party}</span>
+                            <span>{slot.difficulty}</span>
+                          </div>
+                          <div className="save-slot-copy">{slot.playerName}</div>
+                          {slot.date && (
+                            <div className="save-slot-timestamp">
+                              {new Date(slot.date).toLocaleString()}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="save-slot-copy">
+                          {slot.phase === 'corrupted' ? 'This save could not be read.' : 'Use this slot to branch a run before a debate, convention, or big event.'}
+                        </div>
+                      )}
+                      <div className="save-slot-actions">
                         <button onClick={() => { saveGame(i); setShowSaveSlots(false); }} style={{ padding: '0.2rem 0.5rem', borderRadius: '4px', background: 'rgba(46,160,67,0.2)', color: '#2ea043', border: 'none', cursor: 'pointer', fontSize: '0.7rem' }}>Save</button>
-                        {slot.phase !== 'empty' && (
+                        {slot.phase !== 'empty' && slot.phase !== 'corrupted' && (
                           <button onClick={() => { loadGame(i); setShowSaveSlots(false); }} style={{ padding: '0.2rem 0.5rem', borderRadius: '4px', background: 'rgba(56,189,248,0.2)', color: '#38bdf8', border: 'none', cursor: 'pointer', fontSize: '0.7rem' }}>Load</button>
                         )}
                       </div>

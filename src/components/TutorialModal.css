@@ -1,0 +1,117 @@
+.tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(12px);
+}
+
+.tutorial-modal {
+  width: min(760px, 96vw);
+  border-radius: 24px;
+  padding: 1.5rem;
+  background:
+    radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(246, 196, 83, 0.12), transparent 24%),
+    linear-gradient(180deg, rgba(10, 18, 31, 0.96), rgba(6, 11, 20, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.45);
+}
+
+.tutorial-progress-row,
+.tutorial-footer,
+.tutorial-footer-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.tutorial-step-counter,
+.tutorial-eyebrow {
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tutorial-step-counter {
+  color: var(--text-muted);
+}
+
+.tutorial-skip-btn,
+.tutorial-secondary-btn,
+.tutorial-primary-btn {
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.tutorial-skip-btn,
+.tutorial-secondary-btn {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-main);
+}
+
+.tutorial-primary-btn {
+  border: 1px solid rgba(56, 189, 248, 0.24);
+  background: rgba(56, 189, 248, 0.16);
+  color: var(--primary-accent);
+}
+
+.tutorial-secondary-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tutorial-eyebrow {
+  margin-top: 1rem;
+  margin-bottom: 0.35rem;
+  color: var(--primary-accent);
+}
+
+.tutorial-modal h2 {
+  margin: 0 0 0.75rem;
+  font-size: 2rem;
+  line-height: 1.1;
+}
+
+.tutorial-body {
+  margin: 0 0 1rem;
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.tutorial-takeaways {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1.2rem;
+}
+
+.tutorial-takeaway-card {
+  padding: 0.95rem 1rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  color: var(--text-main);
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .tutorial-progress-row,
+  .tutorial-footer,
+  .tutorial-footer-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tutorial-modal h2 {
+    font-size: 1.6rem;
+  }
+}
