@@ -21,6 +21,7 @@ import { SettingsDrawer } from './components/SettingsDrawer';
 import { useGameStore, computeEVTotals } from './store/gameStore';
 import { useSettingsStore } from './store/settingsStore';
 import { audioManager } from './core/AudioManager';
+import { syncCloudSaves, type CloudSyncSummary, type SteamStatus } from './core/SteamSync';
 
 const TABS = ['map', 'analytics', 'primary', 'general', 'campaign', 'budget'] as const;
 const TUTORIAL_STORAGE_KEY = 'politisim_tutorial_complete';
@@ -33,6 +34,9 @@ function App() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [tutorialSessionId, setTutorialSessionId] = useState(0);
+  const [steamStatus, setSteamStatus] = useState<SteamStatus | null>(null);
+  const [cloudSyncSummary, setCloudSyncSummary] = useState<CloudSyncSummary | null>(null);
+  const [cloudSyncBusy, setCloudSyncBusy] = useState(false);
   const settings = useSettingsStore();
 
   const {
@@ -252,6 +256,27 @@ function App() {
     window.localStorage.setItem(TUTORIAL_STORAGE_KEY, 'true');
     setShowTutorial(false);
   };
+
+  const refreshSteamIntegration = useCallback(async (syncCloud: boolean) => {
+    if (!window.electron) return;
+
+    try {
+      setCloudSyncBusy(syncCloud);
+      const status = await window.electron.getSteamStatus();
+      setSteamStatus(status);
+
+      if (syncCloud) {
+        const summary = await syncCloudSaves(window.electron);
+        setCloudSyncSummary(summary);
+      }
+    } finally {
+      setCloudSyncBusy(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshSteamIntegration(true);
+  }, [refreshSteamIntegration]);
 
   const handleCampaignStart = () => {
     setHasStarted(true);
@@ -529,6 +554,44 @@ function App() {
                 </div>
               )}
             </div>
+
+            {window.electron && (
+              <div className="stat-card" style={{ marginBottom: '0.75rem' }}>
+                <div className="stat-card-title">Steam Platform</div>
+                <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+                  {steamStatus?.initialized
+                    ? `Connected${steamStatus.playerName ? ` as ${steamStatus.playerName}` : ''}`
+                    : 'Steam not initialized for this session'}
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+                  {steamStatus?.initialized && steamStatus.cloudEnabledForAccount && steamStatus.cloudEnabledForApp
+                    ? 'Cloud saves are active. Local save slots will reconcile against Steam on launch and can be synced on demand.'
+                    : 'Cloud sync is unavailable until the Steam runtime and app id are both active.'}
+                </div>
+                {cloudSyncSummary && (
+                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '0.55rem' }}>
+                    Last sync: pulled {cloudSyncSummary.pulledSlots.length}, pushed {cloudSyncSummary.pushedSlots.length}, skipped {cloudSyncSummary.skippedSlots.length}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => void refreshSteamIntegration(true)}
+                  disabled={cloudSyncBusy}
+                  style={{
+                    marginTop: '0.7rem',
+                    padding: '0.45rem 0.8rem',
+                    borderRadius: '8px',
+                    background: 'rgba(56,189,248,0.14)',
+                    color: 'var(--primary-accent)',
+                    border: '1px solid rgba(56,189,248,0.2)',
+                    cursor: cloudSyncBusy ? 'wait' : 'pointer',
+                    fontSize: '0.78rem'
+                  }}
+                >
+                  {cloudSyncBusy ? 'Syncing Cloud Saves...' : 'Sync Cloud Saves'}
+                </button>
+              </div>
+            )}
 
             {isDev && (
               <div style={{ display: 'grid', gap: '0.5rem', marginBottom: '0.75rem' }}>

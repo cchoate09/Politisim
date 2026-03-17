@@ -2,6 +2,7 @@ import React from 'react';
 import './GeneralElectionView.css';
 import { useGameStore, computeEVTotals } from '../store/gameStore';
 import { getRivalPersonaLine } from '../core/SimulationEngine';
+import { CandidateIdentityCard } from './CandidateIdentityCard';
 
 export const GeneralElectionView: React.FC = () => {
   const { states, pollingData, playerName, vpPick, voterParty, generalOpponent, fieldOperations, playerIssues } = useGameStore();
@@ -42,24 +43,36 @@ export const GeneralElectionView: React.FC = () => {
       </div>
 
       <div className="head-to-head">
-        <div className="candidate-profile player">
-          <div className="candidate-name">{playerName}</div>
-          <div className="candidate-party">{vpPick ? `Ticket with ${vpPick.name}` : `${voterParty} nominee`}</div>
-          <div className="candidate-summary">Your coalition is trying to lock down enough battlegrounds to cross the national threshold.</div>
-          <div className="candidate-summary" style={{ marginTop: '0.45rem', fontSize: '0.82rem' }}>
-            {playerIssues.length > 0 ? `Issue frame: ${playerIssues.slice(0, 3).join(', ')}` : 'Issue frame still diffuse'}
-          </div>
-          <div className="electoral-votes" style={{ color: 'var(--primary-accent)' }}>{playerEV}</div>
+        <div className="candidate-profile">
+          <CandidateIdentityCard
+            name={playerName}
+            subtitle={vpPick ? `Ticket with ${vpPick.name}` : `${voterParty} nominee`}
+            tagline="Your coalition is trying to lock down enough battlegrounds to cross the national threshold."
+            party={voterParty}
+            accentLabel="ticket"
+            chips={playerIssues}
+            stats={[
+              { label: 'Projected EV', value: `${playerEV}` },
+              { label: 'Target', value: `${generalTarget}` }
+            ]}
+          />
         </div>
 
         <div className="vs-badge">VS</div>
 
-        <div className="candidate-profile opponent">
-          <div className="candidate-name">{opponentName}</div>
-          <div className="candidate-party">{opponentParty} nominee</div>
-          <div className="candidate-summary">{opponentTagline}</div>
-          <div className="candidate-summary" style={{ marginTop: '0.45rem', fontSize: '0.82rem' }}>{opponentPersona}</div>
-          <div className="electoral-votes" style={{ color: 'var(--secondary-accent)' }}>{rivalEV}</div>
+        <div className="candidate-profile">
+          <CandidateIdentityCard
+            name={opponentName}
+            subtitle={`${opponentParty} nominee`}
+            tagline={`${opponentTagline}. ${opponentPersona}`}
+            party={opponentParty}
+            accentLabel="opponent"
+            chips={generalOpponent?.issueBrands ?? []}
+            stats={[
+              { label: 'Projected EV', value: `${rivalEV}` },
+              { label: 'Target', value: `${generalTarget}` }
+            ]}
+          />
         </div>
       </div>
 

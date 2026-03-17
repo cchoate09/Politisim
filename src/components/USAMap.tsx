@@ -3,6 +3,7 @@ import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
 import './USAMap.css';
 import { useGameStore } from '../store/gameStore';
 import { useSettingsStore } from '../store/settingsStore';
+import type { PrimaryStateProjection } from '../core/SimulationEngine';
 
 const geoUrl = new URL('./geo/us-states-10m.json', window.location.href).toString();
 
@@ -16,6 +17,10 @@ interface MapGeography {
 interface USAMapProps {
   onStateClick: (stateName: string) => void;
   activeStateName?: string;
+}
+
+function isPrimaryProjection(poll: unknown): poll is PrimaryStateProjection {
+  return Boolean(poll && typeof poll === 'object' && 'allFieldShares' in poll);
 }
 
 const USAMapComponent: React.FC<USAMapProps> = ({ onStateClick, activeStateName }) => {
@@ -93,8 +98,11 @@ const USAMapComponent: React.FC<USAMapProps> = ({ onStateClick, activeStateName 
                     const state = states.find(s => s.stateName === stateName);
                     const poll = state ? pollingData[state.stateName] : null;
                     if (poll) {
+                      const fieldSummary = isPrimaryProjection(poll)
+                        ? ` | Field: ${poll.allFieldShares.slice(0, 3).map((entry) => `${entry.name} ${entry.share.toFixed(1)}%`).join(' • ')}`
+                        : '';
                       setTooltip({
-                        content: `${stateName}: Support ${poll.player.toFixed(1)}% | Turnout ${poll.turnout.toFixed(1)}%`,
+                        content: `${stateName}: Support ${poll.player.toFixed(1)}% | Turnout ${poll.turnout.toFixed(1)}%${fieldSummary}`,
                         x: 0, y: 0 // Will update on move
                       });
                     }

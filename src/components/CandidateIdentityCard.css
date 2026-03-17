@@ -1,0 +1,140 @@
+.identity-card {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 1rem;
+  align-items: stretch;
+  padding: 1rem;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    rgba(8, 10, 16, 0.78);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+}
+
+.identity-card-compact {
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 0.85rem;
+  padding: 0.85rem;
+}
+
+.identity-card-portrait {
+  position: relative;
+}
+
+.identity-card-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.identity-card-initials {
+  position: absolute;
+  left: 0.7rem;
+  bottom: 0.7rem;
+  min-width: 2.2rem;
+  height: 2.2rem;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  background: rgba(8, 10, 16, 0.76);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.identity-card-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.identity-card-topline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.45rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(248, 250, 252, 0.62);
+}
+
+.identity-card h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  line-height: 1.05;
+}
+
+.identity-card-subtitle {
+  margin-top: 0.35rem;
+  font-size: 0.84rem;
+  color: rgba(248, 250, 252, 0.72);
+}
+
+.identity-card-tagline {
+  margin: 0.6rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: rgba(248, 250, 252, 0.88);
+}
+
+.identity-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.7rem;
+}
+
+.identity-card-chip {
+  padding: 0.32rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(248, 250, 252, 0.88);
+}
+
+.identity-card-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 0.55rem;
+  margin-top: auto;
+  padding-top: 0.85rem;
+}
+
+.identity-card-stat {
+  padding: 0.55rem 0.65rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.identity-card-stat span {
+  display: block;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(248, 250, 252, 0.56);
+}
+
+.identity-card-stat strong {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 720px) {
+  .identity-card,
+  .identity-card-compact {
+    grid-template-columns: 1fr;
+  }
+
+  .identity-card-portrait {
+    max-width: 132px;
+  }
+}

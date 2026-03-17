@@ -22,6 +22,13 @@ test('democratic proportional allocation enforces the viability threshold', () =
     turnout: 67,
     leaderId: 'player',
     leaderName: 'Player',
+    allFieldShares: [
+      { candidateId: 'player', name: 'Player', share: 41, delegates: 0, status: 'player' },
+      { candidateId: rivals[0].id, name: rivals[0].name, share: 27, delegates: 0, status: 'active' },
+      { candidateId: rivals[1].id, name: rivals[1].name, share: 18, delegates: 0, status: 'active' },
+      { candidateId: rivals[2].id, name: rivals[2].name, share: 10, delegates: 0, status: 'active' },
+      { candidateId: rivals[3].id, name: rivals[3].name, share: 0, delegates: 0, status: 'active' }
+    ],
     fieldShares: [
       { candidateId: rivals[0].id, name: rivals[0].name, share: 27, delegates: 0, status: 'active' },
       { candidateId: rivals[1].id, name: rivals[1].name, share: 18, delegates: 0, status: 'active' },
@@ -60,6 +67,13 @@ test('republican winner-take-all states award every delegate to the statewide le
     turnout: 70,
     leaderId: rivals[0].id,
     leaderName: rivals[0].name,
+    allFieldShares: [
+      { candidateId: rivals[0].id, name: rivals[0].name, share: 38, delegates: 0, status: 'active' },
+      { candidateId: 'player', name: 'Player', share: 31, delegates: 0, status: 'player' },
+      { candidateId: rivals[1].id, name: rivals[1].name, share: 18, delegates: 0, status: 'active' },
+      { candidateId: rivals[2].id, name: rivals[2].name, share: 10, delegates: 0, status: 'active' },
+      { candidateId: rivals[3].id, name: rivals[3].name, share: 0, delegates: 0, status: 'active' }
+    ],
     fieldShares: [
       { candidateId: rivals[0].id, name: rivals[0].name, share: 38, delegates: 0, status: 'active' },
       { candidateId: rivals[1].id, name: rivals[1].name, share: 18, delegates: 0, status: 'active' },

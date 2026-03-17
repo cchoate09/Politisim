@@ -58,10 +58,27 @@ function createWindow() {
 app.whenReady().then(() => {
   // Initialize Steam API Bridge
   steamManager.initializeSteam();
+  steamManager.enableOverlay();
 
   // Handle IPC requests from React to unlock achievements
   ipcMain.handle('unlock-achievement', (_event, achievementId) => {
     return steamManager.unlockAchievement(achievementId);
+  });
+
+  ipcMain.handle('steam-status', () => {
+    return steamManager.getSteamStatus();
+  });
+
+  ipcMain.handle('cloud-read-file', (_event, fileName) => {
+    return steamManager.readCloudFile(fileName);
+  });
+
+  ipcMain.handle('cloud-write-file', (_event, fileName, content) => {
+    return steamManager.writeCloudFile(fileName, content);
+  });
+
+  ipcMain.handle('cloud-list-files', () => {
+    return steamManager.listCloudFiles();
   });
 
   ipcMain.handle('load-mod-data', async (_event, modName) => {

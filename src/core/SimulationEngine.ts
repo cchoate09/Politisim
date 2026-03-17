@@ -70,6 +70,7 @@ export interface PrimaryStateProjection extends PollingData {
   leaderId: string;
   leaderName: string;
   fieldShares: PrimaryFieldShare[];
+  allFieldShares: PrimaryFieldShare[];
 }
 
 interface RivalProfile {
@@ -451,6 +452,9 @@ function getRivalPassiveFinance(rival: RivalAI) {
 }
 
 function getRegionalBonus(stateData: StateElectionData, homeRegion: string): number {
+  if (!homeRegion || homeRegion === 'National') {
+    return 0;
+  }
   return stateData.region === homeRegion ? 18 : 0;
 }
 
@@ -964,7 +968,9 @@ export class SimulationEngine {
     globalStaffDiv = 2.0,
     globalVisitMult = 1.0,
     playerIssues: string[] = [],
-    playerParty: 'Democrat' | 'Republican' = 'Democrat'
+    playerParty: 'Democrat' | 'Republican' = 'Democrat',
+    playerName = 'Player',
+    playerHomeRegion = 'National'
   ): PrimaryStateProjection {
     const activeRivals = rivals.length > 0 ? rivals : [SimulationEngine.createRivalAI('normal')];
     const trustMultiplier = 0.45 + (publicTrust / 100) * 0.85;
@@ -979,7 +985,7 @@ export class SimulationEngine {
       trustMultiplier,
       playerMomentum,
       12,
-      stateData.region
+      playerHomeRegion
     ) * playerEndorsementEffect.scoreMultiplier * playerFieldEffect.scoreMultiplier * playerMediaEffect.scoreMultiplier;
 
     const rivalScores = activeRivals.map((rival) => {
@@ -1031,6 +1037,20 @@ export class SimulationEngine {
     const scoreSum = playerScore + rivalScores.reduce((sum, entry) => sum + entry.score, 0);
 
     if (scoreSum <= 0) {
+      const rivalFallbackShares = activeRivals.map((rival) => ({
+        candidateId: rival.id,
+        name: rival.name,
+        share: 25,
+        delegates: 0,
+        status: rival.status
+      }));
+      const fallbackPlayer = {
+        candidateId: 'player',
+        name: playerName,
+        share: 25,
+        delegates: 0,
+        status: 'player' as const
+      };
       return {
         player: 25,
         rival: 25,
@@ -1038,13 +1058,8 @@ export class SimulationEngine {
         turnout,
         leaderId: activeRivals[0].id,
         leaderName: activeRivals[0].name,
-        fieldShares: activeRivals.map((rival) => ({
-          candidateId: rival.id,
-          name: rival.name,
-          share: 25,
-          delegates: 0,
-          status: rival.status
-        }))
+        fieldShares: rivalFallbackShares,
+        allFieldShares: [fallbackPlayer, ...rivalFallbackShares]
       };
     }
 
@@ -1059,6 +1074,16 @@ export class SimulationEngine {
     }));
     fieldShares.sort((a, b) => b.share - a.share);
     const leadRival = fieldShares[0];
+    const allFieldShares = [
+      {
+        candidateId: 'player',
+        name: playerName,
+        share: clampPercentage(playerShare),
+        delegates: 0,
+        status: 'player' as const
+      },
+      ...fieldShares
+    ].sort((a, b) => b.share - a.share);
 
     return {
       player: clampPercentage(playerShare),
@@ -1067,7 +1092,8 @@ export class SimulationEngine {
       turnout,
       leaderId: leadRival?.candidateId ?? activeRivals[0].id,
       leaderName: leadRival?.name ?? activeRivals[0].name,
-      fieldShares
+      fieldShares,
+      allFieldShares
     };
   }
 
@@ -1087,7 +1113,8 @@ export class SimulationEngine {
     globalStaffDiv = 2.0,
     globalVisitMult = 1.0,
     playerIssues: string[] = [],
-    playerParty: 'Democrat' | 'Republican' = 'Democrat'
+    playerParty: 'Democrat' | 'Republican' = 'Democrat',
+    playerHomeRegion = 'National'
   ): PollingData & { turnout: number } {
     const playerTrustMultiplier = 0.4 + (publicTrust / 100) * 0.9;
     const playerScore = buildCandidateScore(
@@ -1101,7 +1128,7 @@ export class SimulationEngine {
       playerTrustMultiplier,
       playerMomentum,
       12,
-      stateData.region
+      playerHomeRegion
     ) * playerEndorsementEffect.scoreMultiplier * playerFieldEffect.scoreMultiplier * playerMediaEffect.scoreMultiplier;
 
     const rivalScore = buildCandidateScore(

@@ -3,11 +3,13 @@ import './CandidateCreator.css';
 import { useGameStore } from '../store/gameStore';
 import { CampaignDataParser, type ModManifestEntry } from '../core/CampaignDataParser';
 import type { PlayerDemographics } from '../core/ElectionMath';
+import { CandidateIdentityCard } from './CandidateIdentityCard';
 
 const MAX_POINTS = 300;
+const HOME_REGIONS = ['National', 'Northeast', 'Midwest', 'South', 'West'] as const;
 
 export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
-  const { playerIdeology, voterParty } = useGameStore();
+  const { playerIdeology, voterParty, playerHomeRegion } = useGameStore();
 
   const [name, setName] = useState('');
   const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
@@ -91,6 +93,7 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
     useGameStore.setState({
       playerIdeology: traits,
       playerName: name || 'Candidate',
+      playerHomeRegion,
       difficulty,
       playerIssues: selectedIssues,
       scenarioId: selectedMod,
@@ -229,6 +232,35 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
             </div>
           </div>
 
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              Regional Base
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '0.45rem' }}>
+              {HOME_REGIONS.map((region) => (
+                <button
+                  key={region}
+                  type="button"
+                  onClick={() => useGameStore.setState({ playerHomeRegion: region })}
+                  style={{
+                    padding: '0.55rem',
+                    borderRadius: '8px',
+                    border: playerHomeRegion === region ? '2px solid var(--primary-accent)' : '1px solid rgba(255,255,255,0.15)',
+                    background: playerHomeRegion === region ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255,255,255,0.05)',
+                    color: playerHomeRegion === region ? 'var(--primary-accent)' : 'var(--text-main)',
+                    cursor: 'pointer',
+                    fontWeight: playerHomeRegion === region ? 'bold' : 'normal'
+                  }}
+                >
+                  {region}
+                </button>
+              ))}
+            </div>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>
+              Your regional base now matters. It shapes where the campaign starts warm and where rivals can still box you out early.
+            </p>
+          </div>
+
           <div style={{ marginBottom: '2rem' }}>
             <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
               Focus Issues (Select 3)
@@ -287,6 +319,20 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
         </div>
 
         <div className="summary-panel">
+          <CandidateIdentityCard
+            name={name || 'Candidate'}
+            subtitle={playerHomeRegion === 'National' ? `${voterParty} national launch` : `${voterParty} base in the ${playerHomeRegion}`}
+            tagline={activeScenario?.tagline ?? 'Presidential campaign launch'}
+            party={voterParty}
+            accentLabel={difficulty}
+            chips={[calculateArchetype(), ...selectedIssues]}
+            stats={[
+              { label: 'Points left', value: pointsRemaining.toString() },
+              { label: 'Issues', value: `${selectedIssues.length}/3` },
+              { label: 'Scenario', value: activeScenario?.yearLabel ?? '2024' }
+            ]}
+          />
+
           {activeScenario && (
             <div className="scenario-briefing">
               <div className="summary-title">Scenario Briefing</div>

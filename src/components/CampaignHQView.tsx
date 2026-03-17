@@ -43,6 +43,7 @@ export const CampaignHQView: React.FC = () => {
     playerDelegates,
     delegateTarget,
     playerIdeology,
+    playerHomeRegion,
     endorsements,
     rivalAIs,
     primaryResults,
@@ -85,7 +86,7 @@ export const CampaignHQView: React.FC = () => {
       delegateTarget,
       stateWins: playerStats.stateWins,
       recentWins: playerStats.recentWins,
-      homeRegion: 'National',
+      homeRegion: playerHomeRegion,
       supportBase: 14,
       status: 'player'
     };
@@ -109,7 +110,7 @@ export const CampaignHQView: React.FC = () => {
     });
 
     return [playerSnapshot, ...rivalSnapshots];
-  }, [currentWeek, delegateTarget, momentum, playerDelegates, playerIdeology, playerName, primaryResults, publicTrust, rivalAIs]);
+  }, [currentWeek, delegateTarget, momentum, playerDelegates, playerHomeRegion, playerIdeology, playerName, primaryResults, publicTrust, rivalAIs]);
 
   const playerCoalition = getCandidateEndorsementSummary(endorsements, 'player');
   const playerBackers = endorsements.filter((endorsement) => endorsement.endorsedCandidateId === 'player');

@@ -4,12 +4,12 @@ This checklist turns the current competitive review into a working roadmap. The 
 
 ## Current Snapshot
 
-Estimated parity progress: `82%`
+Estimated parity progress: `89%`
 
-- Core election simulation: `89%`
+- Core election simulation: `92%`
 - Replayability and scenarios: `45%`
-- Presentation and immersion: `72%`
-- Product shell and Steam readiness: `55%`
+- Presentation and immersion: `84%`
+- Product shell and Steam readiness: `74%`
 - QA, onboarding, and usability: `70%`
 
 ## What Is Already Stronger Than Before
@@ -99,9 +99,9 @@ Goal: make the game feel like a product people want to stay inside, not just a s
 
 - [ ] Add richer debate aftermath
   Acceptance: debates produce spin-room headlines, subgroup reactions, fundraising swings, and rival effects.
-- [ ] Add candidate portraits or visual identity cards
+- [x] Add candidate portraits or visual identity cards
   Acceptance: the player and rivals are visually distinct across the primary and general.
-- [ ] Add better event staging
+- [x] Add better event staging
   Acceptance: major scandals, endorsements, and crisis moments feel different from ordinary popups.
 
 ### 7. Audio and Atmosphere
@@ -128,9 +128,9 @@ Goal: ship like a credible Steam game, not just a functioning build.
 
 ### 9. Steam Features
 
-- [ ] Finish full achievement coverage
+- [x] Finish full achievement coverage
   Acceptance: every visible achievement has a matching unlock path and is testable.
-- [ ] Add Steam Cloud save support
+- [x] Add Steam Cloud save support
   Acceptance: saves persist across installs and machines.
 - [ ] Add proper app metadata, icons, splash assets, and installer polish
   Acceptance: packaged builds look release-ready.
@@ -166,11 +166,11 @@ Goal: stop future content passes from quietly breaking the game.
 
 If we want the highest return on effort, tackle these next:
 
-1. Audio/settings/accessibility
-2. Steam Cloud and final achievement coverage
-3. Candidate portraits and event staging
-4. More official scenarios and scenario-specific flavor
-5. Packaged Electron smoke tests and release checklist
+1. Packaged Electron smoke tests and release checklist
+2. More official scenarios and scenario-specific flavor
+3. Oppo research consequences
+4. Proper app metadata, icons, splash assets, and installer polish
+5. Debate aftermath depth and subgroup spin
 
 ## Latest Milestone Notes
 
@@ -180,6 +180,7 @@ If we want the highest return on effort, tackle these next:
 - `2026-03-17`: Added persistent field offices, volunteer reserves, surrogate deployment, rival field-network AI, and UI surfacing across the state panel, Campaign HQ, primary tracker, and battleground view so campaign organization now functions as a real strategic layer.
 - `2026-03-17`: Added a first-run tutorial, a persistent guide and glossary drawer, phase-sensitive dashboard coaching, and richer save-slot metadata so the product now explains itself much more like a real Steam release instead of expecting genre knowledge.
 - `2026-03-17`: Added a full settings and accessibility drawer with audio controls, UI scale, motion tuning, high-contrast panels, and colorblind-safe map palettes; added procedural soundtrack and scene-aware sound effects; deepened the finance layer with donor blocs and channel-based media strategy; gave rivals stronger personality, style, and weekly campaign beats; and added CI plus behavior tests for primary rules, strategy systems, rival identity, and save/load persistence.
+- `2026-03-17`: Added real Steam platform plumbing in Electron with status reporting, overlay enablement, cloud-file IPC, browser-safe save reconciliation, and cloud-backed save uploads; broadened achievement coverage beyond the end screen; added reusable candidate identity cards and portrait-style presentation across the campaign; upgraded campaign-event staging into a more premium crisis/war-room presentation; and exposed the full multi-candidate primary field nationally and by state with regional starting variation tied to the player's selected home base.
 
 ## How We Should Track Progress
 

@@ -6,10 +6,31 @@ import {
 import './AnalyticsDashboard.css';
 import { useGameStore } from '../store/gameStore';
 import type { PlayerDemographics } from '../core/ElectionMath';
+import { CandidateIdentityCard } from './CandidateIdentityCard';
 
 export const AnalyticsDashboard: React.FC = () => {
-  const { nationalPollingHistory, states, pollingData, playerIdeology, gamePhase, voterParty } = useGameStore();
+  const { nationalPollingHistory, primaryFieldHistory, primaryFieldAverages, states, pollingData, playerIdeology, gamePhase, voterParty, rivalAIs, playerName } = useGameStore();
   const latestNationalSnapshot = nationalPollingHistory[nationalPollingHistory.length - 1];
+  const fieldPalette = ['#38bdf8', '#f97316', '#f43f5e', '#34d399', '#f6c453'];
+  const lineCandidates = primaryFieldAverages.length > 0
+    ? primaryFieldAverages
+    : [
+        { candidateId: 'player', name: playerName, share: 0, delegates: 0, status: 'player' as const },
+        ...rivalAIs.slice(0, 4).map((rival) => ({
+          candidateId: rival.id,
+          name: rival.name,
+          share: 0,
+          delegates: 0,
+          status: rival.status
+        }))
+      ];
+  const fieldChartData = primaryFieldHistory.map((entry) => {
+    const chartRow: Record<string, number | string> = { week: entry.week };
+    lineCandidates.forEach((candidate) => {
+      chartRow[candidate.candidateId] = entry.standings.find((standing) => standing.candidateId === candidate.candidateId)?.share ?? 0;
+    });
+    return chartRow;
+  });
 
   // Calculate ACTUAL weighted national support by demographic trait
   // For each trait, average the player polling in states where that trait is above 50 (strong presence)
@@ -77,6 +98,66 @@ export const AnalyticsDashboard: React.FC = () => {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {gamePhase === 'primary' && lineCandidates.length > 0 && (
+        <>
+          <div className="chart-card" style={{ marginTop: '2rem' }}>
+            <h3>National Primary Field</h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '-0.4rem', marginBottom: '0.9rem' }}>
+              Weighted by delegates at stake, so crowded-state polling now reflects the full field instead of a single rival proxy.
+            </p>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={fieldChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="week" stroke="var(--text-muted)" />
+                <YAxis stroke="var(--text-muted)" domain={[0, 60]} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: 'var(--bg-color)', border: '1px solid rgba(255,255,255,0.1)' }}
+                  itemStyle={{ color: 'var(--text-main)' }}
+                />
+                <Legend />
+                {lineCandidates.map((candidate, index) => (
+                  <Line
+                    key={candidate.candidateId}
+                    type="monotone"
+                    dataKey={candidate.candidateId}
+                    name={candidate.name}
+                    stroke={fieldPalette[index % fieldPalette.length]}
+                    strokeWidth={candidate.candidateId === 'player' ? 3 : 2}
+                    dot={{ r: candidate.candidateId === 'player' ? 4 : 2 }}
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="chart-card" style={{ marginTop: '1.5rem' }}>
+            <h3>Current Candidate Standing</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+              {lineCandidates.map((candidate) => {
+                const rival = rivalAIs.find((entry) => entry.id === candidate.candidateId);
+                return (
+                  <CandidateIdentityCard
+                    key={candidate.candidateId}
+                    name={candidate.name}
+                    subtitle={candidate.candidateId === 'player' ? 'Your campaign' : rival?.tagline ?? 'Primary rival'}
+                    tagline={candidate.candidateId === 'player'
+                      ? 'National field average and delegate-weighted standing'
+                      : rival?.strengths[0] ?? 'Crowded field contender'}
+                    party={voterParty}
+                    compact
+                    chips={candidate.candidateId === 'player' ? [] : (rival?.issueBrands ?? []).slice(0, 2)}
+                    stats={[
+                      { label: 'National avg', value: `${candidate.share.toFixed(1)}%` },
+                      { label: 'Status', value: candidate.status === 'player' ? 'Active' : candidate.status }
+                    ]}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Pathway to Victory (New Section) */}
       <div className="chart-card" style={{ marginTop: '2rem', background: 'rgba(56, 189, 248, 0.03)', border: '1px solid rgba(56, 189, 248, 0.1)' }}>

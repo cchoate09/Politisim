@@ -1,12 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import './EndGameScreen.css';
 import { useGameStore, computeEVTotals } from '../store/gameStore';
-
-interface AchievementEntry {
-  label: string;
-  achievementId: string;
-  unlocked: boolean;
-}
+import { ACHIEVEMENT_CATALOG, getUnlockedAchievements, unlockAchievements, type AchievementId } from '../core/Achievements';
 
 export const EndGameScreen: React.FC = () => {
   const {
@@ -38,53 +33,26 @@ export const EndGameScreen: React.FC = () => {
   const hasWon = endReason === 'general_win';
   const opponentName = generalOpponent?.name ?? 'Opposition Nominee';
 
-  const achievements = useMemo<AchievementEntry[]>(() => {
+  const endgameAchievementIds = useMemo<AchievementId[]>(() => {
     if (endedInPrimary) {
-      return [{
-        label: 'Campaign Setback - You failed to secure enough delegates to win the nomination.',
-        achievementId: 'ACH_PRIMARY_LOSS',
-        unlocked: true
-      }];
+      return ['ACH_PRIMARY_LOSS'];
     }
 
     return [
-      {
-        label: hasWon ? 'Victory - You won the presidency.' : 'Defeat - Better luck next election cycle.',
-        achievementId: hasWon ? 'ACH_WIN' : 'ACH_LOSE',
-        unlocked: true
-      },
-      {
-        label: 'Landslide Victory - Win 400 or more electoral votes.',
-        achievementId: 'ACH_LANDSLIDE',
-        unlocked: hasWon && playerEV >= 400
-      },
-      {
-        label: 'Shoestring Budget - Win with less than $100K remaining.',
-        achievementId: 'ACH_SHOESTRING',
-        unlocked: hasWon && budget < 100000
-      },
-      {
-        label: 'Hard Mode Champion - Win on hard difficulty.',
-        achievementId: 'ACH_HARD_MODE',
-        unlocked: hasWon && difficulty === 'hard'
-      },
-      {
-        label: 'Full Staff - Hire all three staff roles.',
-        achievementId: 'ACH_FULL_STAFF',
-        unlocked: hiredStaff.length >= 3
-      },
-      {
-        label: vpPick ? `Running Mate - Complete the ticket with ${vpPick.name}.` : 'Running Mate - Complete the ticket with a vice presidential pick.',
-        achievementId: 'ACH_RUNNING_MATE',
-        unlocked: Boolean(vpPick)
-      },
-      {
-        label: 'Electoral Cushion - Win with a comfortable map above the minimum threshold.',
-        achievementId: 'ACH_EARLY_CLINCH',
-        unlocked: hasWon && playerEV >= generalTarget + 25
-      }
+      hasWon ? 'ACH_WIN' : 'ACH_LOSE',
+      ...(hasWon && playerEV >= 400 ? ['ACH_LANDSLIDE' as const] : []),
+      ...(hasWon && budget < 100000 ? ['ACH_SHOESTRING' as const] : []),
+      ...(hasWon && difficulty === 'hard' ? ['ACH_HARD_MODE' as const] : []),
+      ...(hiredStaff.length >= 3 ? ['ACH_FULL_STAFF' as const] : []),
+      ...(vpPick ? ['ACH_RUNNING_MATE' as const] : []),
+      ...(hasWon && playerEV >= generalTarget + 25 ? ['ACH_EARLY_CLINCH' as const] : [])
     ];
   }, [budget, difficulty, endedInPrimary, generalTarget, hasWon, hiredStaff.length, playerEV, vpPick]);
+
+  const achievementEntries = useMemo(() => {
+    const unlockedSet = new Set<AchievementId>([...getUnlockedAchievements(), ...endgameAchievementIds]);
+    return ACHIEVEMENT_CATALOG.filter((entry) => unlockedSet.has(entry.id));
+  }, [endgameAchievementIds]);
 
   const stateHighlights = useMemo(() => {
     if (endedInPrimary) return [];
@@ -121,18 +89,8 @@ export const EndGameScreen: React.FC = () => {
   const closingMoments = useMemo(() => activityLog.slice(-4).reverse(), [activityLog]);
 
   useEffect(() => {
-    if (endedInPrimary || !window.electron) return;
-
-    const unlockAchievements = async () => {
-      for (const achievement of achievements) {
-        if (achievement.unlocked) {
-          await window.electron?.unlockAchievement(achievement.achievementId);
-        }
-      }
-    };
-
-    void unlockAchievements();
-  }, [achievements, endedInPrimary]);
+    unlockAchievements(endgameAchievementIds);
+  }, [endgameAchievementIds]);
 
   return (
     <div className="endgame-screen">
@@ -194,10 +152,10 @@ export const EndGameScreen: React.FC = () => {
 
         <div className="endgame-grid">
           <div className="endgame-panel">
-            <h3>{endedInPrimary ? 'Campaign Summary' : 'Achievements Unlocked'}</h3>
-            {achievements.filter((achievement) => achievement.unlocked).map((achievement) => (
-              <div key={achievement.achievementId} className="endgame-list-item">
-                {achievement.label}
+            <h3>{endedInPrimary ? 'Campaign Summary' : 'Campaign Achievements'}</h3>
+            {achievementEntries.map((achievement) => (
+              <div key={achievement.id} className="endgame-list-item">
+                <strong>{achievement.title}</strong> - {achievement.description}
               </div>
             ))}
           </div>

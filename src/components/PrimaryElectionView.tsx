@@ -5,6 +5,7 @@ import { getPrimaryRuleProfile } from '../core/PrimaryRules';
 import { getCandidateEndorsementSummary } from '../core/EndorsementData';
 import { getFieldNetworkSummary } from '../core/FieldOperations';
 import { getRivalPersonaLine } from '../core/SimulationEngine';
+import { CandidateIdentityCard } from './CandidateIdentityCard';
 
 export const PrimaryElectionView: React.FC = () => {
   const {
@@ -21,7 +22,9 @@ export const PrimaryElectionView: React.FC = () => {
     activeConvention,
     endorsements,
     fieldOperations,
-    volunteerReserve
+    volunteerReserve,
+    primaryFieldAverages,
+    playerHomeRegion
   } = useGameStore();
   const [showAll, setShowAll] = useState(false);
 
@@ -32,8 +35,19 @@ export const PrimaryElectionView: React.FC = () => {
   const displayStates = showAll ? sortedStates : sortedStates.slice(0, 12);
 
   const fieldStandings = useMemo(() => {
+    const fieldAverageMap = new Map(primaryFieldAverages.map((entry) => [entry.candidateId, entry]));
     return [
-      { id: 'player', name: playerName, delegates: playerDelegates, momentum: null, tagline: 'Your campaign', status: 'active', persona: 'National coalition | define your issue lane and protect trust', vulnerabilities: [] as string[] },
+      {
+        id: 'player',
+        name: playerName,
+        delegates: playerDelegates,
+        momentum: null,
+        tagline: 'Your campaign',
+        status: 'active',
+        persona: `${playerHomeRegion} base | define your issue lane and protect trust`,
+        vulnerabilities: [] as string[],
+        share: fieldAverageMap.get('player')?.share ?? 0
+      },
       ...[...rivalAIs]
         .sort((a, b) => {
           if (a.status !== b.status) return a.status === 'withdrawn' ? 1 : -1;
@@ -50,10 +64,11 @@ export const PrimaryElectionView: React.FC = () => {
             : rival.tagline,
           status: rival.status,
           persona: getRivalPersonaLine(rival),
-          vulnerabilities: rival.vulnerabilities
+          vulnerabilities: rival.vulnerabilities,
+          share: fieldAverageMap.get(rival.id)?.share ?? 0
         }))
     ];
-  }, [playerDelegates, playerName, rivalAIs]);
+  }, [playerDelegates, playerHomeRegion, playerName, primaryFieldAverages, rivalAIs]);
   const organizationSummary = useMemo(() => getFieldNetworkSummary(fieldOperations), [fieldOperations]);
 
   return (
@@ -102,17 +117,34 @@ export const PrimaryElectionView: React.FC = () => {
         <span>{organizationSummary.activeSurrogates} surrogate stops active</span>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div className="primary-alert" style={{ marginBottom: '1.5rem' }}>
+        <div>
+          <strong>National Field Average</strong>
+          <p>These weighted standings track the entire nomination field, not just the front-runner duel.</p>
+        </div>
+        <div className="primary-alert-meta">
+          <span>{fieldStandings.length} active candidates</span>
+          <span>{primaryFieldAverages.length > 0 ? `${primaryFieldAverages[0].name} leads nationally` : 'Early field still forming'}</span>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
         {fieldStandings.map((candidate) => (
-          <div key={candidate.id} className="state-card" style={{ minHeight: 'unset', borderColor: candidate.status === 'withdrawn' ? 'rgba(255,255,255,0.06)' : undefined, opacity: candidate.status === 'withdrawn' ? 0.72 : 1 }}>
-            <div className="state-card-header" style={{ marginBottom: '0.75rem' }}>
-              <span className="state-title" style={{ fontSize: '1rem' }}>{candidate.name}</span>
-              <span style={{ color: candidate.id === 'player' ? 'var(--primary-accent)' : 'var(--secondary-accent)', fontWeight: 'bold' }}>
-                {candidate.delegates} Del
-              </span>
-            </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.6rem' }}>{candidate.tagline}</div>
-            <div className="candidate-persona-line">{candidate.persona}</div>
+          <div key={candidate.id} style={{ opacity: candidate.status === 'withdrawn' ? 0.72 : 1 }}>
+            <CandidateIdentityCard
+              name={candidate.name}
+              subtitle={candidate.id === 'player' ? 'Your campaign' : candidate.tagline}
+              tagline={candidate.persona}
+              party={voterParty}
+              accentLabel={candidate.status === 'withdrawn' ? 'withdrawn' : candidate.id === 'player' ? 'player' : 'rival'}
+              compact
+              chips={candidate.vulnerabilities.length > 0 ? [candidate.vulnerabilities[0]] : []}
+              stats={[
+                { label: 'National avg', value: `${candidate.share.toFixed(1)}%` },
+                { label: 'Delegates', value: `${candidate.delegates}` },
+                ...(candidate.momentum !== null ? [{ label: 'Momentum', value: `${candidate.momentum}` }] : [])
+              ]}
+            />
             {(() => {
               const coalition = getCandidateEndorsementSummary(endorsements, candidate.id);
               if (coalition.count === 0) return null;
@@ -123,11 +155,6 @@ export const PrimaryElectionView: React.FC = () => {
                 </div>
               );
             })()}
-            {candidate.momentum !== null && (
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-main)' }}>
-                Momentum <strong>{candidate.momentum}</strong>
-              </div>
-            )}
             {candidate.vulnerabilities.length > 0 && (
               <div className="candidate-vulnerability-line">
                 Watch for: {candidate.vulnerabilities[0]}
@@ -145,6 +172,9 @@ export const PrimaryElectionView: React.FC = () => {
           const ruleProfile = getPrimaryRuleProfile(state, voterParty);
           const delegatesAtStake = voterParty === 'Democrat' ? state.demDelegates : state.repDelegates;
           const topFieldRows = result?.fieldShares.slice(0, 4) ?? [];
+          const projectedFieldRows = !isContested && poll && 'allFieldShares' in poll
+            ? poll.allFieldShares.slice(0, 5)
+            : [];
           const districtWinRows = result
             ? Object.entries(result.districtWins)
                 .filter(([, wins]) => wins > 0)
@@ -201,7 +231,7 @@ export const PrimaryElectionView: React.FC = () => {
 
                 <div className="polls-list">
                   <h4 style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', fontSize: '0.8rem', textTransform: 'uppercase' }}>
-                    {isContested ? 'Final Delegate Split' : 'Projected Front-Runner Race'}
+                    {isContested ? 'Final Delegate Split' : 'Projected Full Field'}
                   </h4>
 
                   {isContested && result ? (
@@ -224,6 +254,26 @@ export const PrimaryElectionView: React.FC = () => {
                           ))}
                         </div>
                       )}
+                    </div>
+                  ) : projectedFieldRows.length > 0 ? (
+                    <div style={{ display: 'grid', gap: '0.45rem' }}>
+                      {projectedFieldRows.map((candidate) => (
+                        <div key={`${state.stateName}-${candidate.candidateId}`} style={{ padding: '0.45rem 0.55rem', borderRadius: '8px', background: 'rgba(255,255,255,0.03)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '0.25rem' }}>
+                            <strong style={{ color: candidate.candidateId === 'player' ? 'var(--primary-accent)' : 'var(--text-main)' }}>{candidate.name}</strong>
+                            <span>{candidate.share.toFixed(1)}%</span>
+                          </div>
+                          <div className="poll-bar-bg">
+                            <div className="poll-bar-fill" style={{ width: `${candidate.share}%`, background: candidate.candidateId === 'player' ? 'var(--primary-accent)' : 'rgba(239,68,68,0.65)' }}></div>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="district-badges">
+                        <span>Rule: {ruleProfile.summary}</span>
+                        {ruleProfile.threshold > 0 && (
+                          <span>{ruleProfile.threshold}% viability threshold</span>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <>
