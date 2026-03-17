@@ -5,15 +5,17 @@ import {
 } from 'recharts';
 import './AnalyticsDashboard.css';
 import { useGameStore } from '../store/gameStore';
+import type { PlayerDemographics } from '../core/ElectionMath';
 
 export const AnalyticsDashboard: React.FC = () => {
-  const { nationalPollingHistory, states, pollingData, playerIdeology } = useGameStore();
+  const { nationalPollingHistory, states, pollingData, playerIdeology, gamePhase, voterParty } = useGameStore();
+  const latestNationalSnapshot = nationalPollingHistory[nationalPollingHistory.length - 1];
 
   // Calculate ACTUAL weighted national support by demographic trait
   // For each trait, average the player polling in states where that trait is above 50 (strong presence)
-  const traitNames: (keyof typeof playerIdeology)[] = ['worker', 'owner', 'religious', 'libertarian', 'liberal', 'immigrant'];
+  const traitNames: Array<keyof PlayerDemographics> = ['worker', 'owner', 'religious', 'libertarian', 'liberal', 'immigrant'];
   const demographicData = traitNames.map(trait => {
-    const relevantStates = states.filter(s => (s as any)[trait] > 50);
+    const relevantStates = states.filter(s => s[trait] > 50);
     if (relevantStates.length === 0) return { name: trait, support: playerIdeology[trait] };
 
     const totalEV = relevantStates.reduce((sum, s) => sum + s.delegatesOrEV, 0);
@@ -101,9 +103,12 @@ export const AnalyticsDashboard: React.FC = () => {
                 .map(s => {
                   const poll = pollingData[s.stateName];
                   const margin = poll.player - poll.rival;
+                  const stateValue = gamePhase === 'primary'
+                    ? voterParty === 'Democrat' ? s.demDelegates : s.repDelegates
+                    : s.delegatesOrEV;
                   return (
                     <div key={s.stateName} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.6rem', background: 'rgba(255,255,255,0.03)', borderRadius: '6px' }}>
-                      <span>{s.stateName} <span style={{ fontSize: '0.7rem', opacity: 0.6 }}>({s.delegatesOrEV} Del)</span></span>
+                      <span>{s.stateName} <span style={{ fontSize: '0.7rem', opacity: 0.6 }}>({stateValue} {gamePhase === 'primary' ? 'Del' : 'EV'})</span></span>
                       <span style={{ color: margin >= 0 ? 'var(--primary-accent)' : 'var(--secondary-accent)', fontWeight: 'bold' }}>
                         {margin >= 0 ? '+' : ''}{margin.toFixed(1)}%
                       </span>
@@ -116,9 +121,9 @@ export const AnalyticsDashboard: React.FC = () => {
           <div style={{ padding: '1rem', background: 'rgba(56, 189, 248, 0.05)', borderRadius: '12px' }}>
             <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--primary-accent)' }}>Strategic Summary</h4>
             <p style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>
-              {nationalPollingHistory.length > 0 && nationalPollingHistory[0].player > nationalPollingHistory[0].rival 
-                ? "You currently hold a national lead. Focus on defending 'Lean' states in the Midwest and South to secure your delegate floor."
-                : "The race is tightening. To overcome the rival lead, prioritize high-EV swing states like Florida and Pennsylvania where your 'worker' demographic support is trending upward."
+              {latestNationalSnapshot && latestNationalSnapshot.player > latestNationalSnapshot.rival
+                ? "You currently hold a national lead. Focus on defending your narrowest advantage states before the map swings back."
+                : "The race is tightening. Prioritize your closest high-value states first and shore up thematically aligned regions before the opposition hardens." 
               }
             </p>
           </div>

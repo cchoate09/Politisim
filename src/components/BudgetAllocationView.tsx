@@ -3,7 +3,7 @@ import './BudgetAllocationView.css';
 import { useGameStore } from '../store/gameStore';
 
 export const BudgetAllocationView: React.FC = () => {
-  const { budget, publicTrust, addBudget, fundraisingStreakWeeks } = useGameStore();
+  const { budget, publicTrust, addBudget, fundraisingStreakWeeks, pacFundraisedThisWeek } = useGameStore();
 
   const formattedBudget = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -12,14 +12,16 @@ export const BudgetAllocationView: React.FC = () => {
   }).format(budget);
 
   // Calculate current efficiency for UI feedback
-  const efficiency = Math.max(0.2, 1.1 - (fundraisingStreakWeeks * 0.25));
+  const fatigueLevel = fundraisingStreakWeeks + (pacFundraisedThisWeek ? 1 : 0);
+  const efficiency = Math.max(0.2, 1.1 - (fatigueLevel * 0.25));
+  const donorFatigueActive = fatigueLevel > 0;
 
   return (
     <div className="budget-view">
       <div className="budget-header">
         <h2>Campaign Finance</h2>
         <p>Manage your war chest. Repeated fundraising within the same week or in consecutive weeks causes donor fatigue.</p>
-        {fundraisingStreakWeeks > 0 && (
+        {donorFatigueActive && (
           <div style={{
             display: 'inline-block',
             background: 'rgba(210, 153, 34, 0.2)',

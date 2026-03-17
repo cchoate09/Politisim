@@ -2,6 +2,16 @@ import { create } from 'zustand';
 import type { PlayerDemographics } from '../core/ElectionMath';
 import type { StateElectionData, CampaignSpendingData } from '../core/CampaignDataParser';
 import { CampaignDataParser, type CalendarWeek } from '../core/CampaignDataParser';
+import {
+  applyDebateStanding,
+  createActiveDebate,
+  EMPTY_DEBATE_STANDING,
+  getDebateScheduleForWeek,
+  mergeDebateStanding,
+  type ActiveDebate,
+  type DebatePhase,
+  type DebateStanding
+} from '../core/DebateData';
 import { SimulationEngine, type PollingData, type RivalAI } from '../core/SimulationEngine';
 
 // ─── EVENT DEFINITIONS ────────────────────────────────────────────────
@@ -472,7 +482,7 @@ const POSSIBLE_EVENTS: CampaignEvent[] = [
 ];
 
 // ─── HIGH-STAKES DEBATE EVENTS ──────────────────────────────────────
-const DEBATE_EVENTS: CampaignEvent[] = [
+export const DEBATE_EVENTS: CampaignEvent[] = [
   {
     title: "Opening Statement Moment",
     description: "The moderator gives you 90 seconds to define your candidacy. The nation is watching.",
@@ -572,6 +582,8 @@ export interface ActivityLogEntry {
   type: 'info' | 'positive' | 'negative' | 'event';
 }
 
+type GameEndReason = 'primary_loss' | null;
+
 // ─── GAME STATE ──────────────────────────────────────────────────────
 export interface GameState {
   currentWeek: number;
@@ -594,8 +606,11 @@ export interface GameState {
   contestedStates: string[];
   vpPick: VPCandidate | null;
   vpSelectionPending: boolean;
+  endReason: GameEndReason;
   // Events
   activeEvent: CampaignEvent | null;
+  activeDebate: ActiveDebate | null;
+  debateStanding: DebateStanding;
 
   // Simulation
   states: StateElectionData[];
@@ -612,6 +627,7 @@ export interface GameState {
 
   // Fundraising cooldown
   fundraisingStreakWeeks: number;
+  pacFundraisedThisWeek: boolean;
 
   // Actions
   initializeCampaign: (statesData: StateElectionData[]) => void;
@@ -625,6 +641,9 @@ export interface GameState {
   spendBudget: (amount: number) => boolean;
   addMomentum: (amount: number) => void;
   resolveEvent: (choiceIndex: number) => void;
+  answerDebateQuestion: (choiceIndex: number) => void;
+  advanceDebate: () => void;
+  previewDebate: (phase: DebatePhase) => void;
 
   // Persistence
   saveGame: (slot?: number) => void;
@@ -648,7 +667,7 @@ function computeEVTotals(states: StateElectionData[], pollingData: Record<string
   return { playerEV, rivalEV };
 }
 
-const initialState: Omit<GameState, 'initializeCampaign' | 'runSimulation' | 'setSpending' | 'hireStaff' | 'selectVP' | 'advanceWeek' | 'addBudget' | 'spendBudget' | 'addMomentum' | 'resolveEvent' | 'saveGame' | 'loadGame' | 'getSaveSlots' | 'setHasStarted' | 'resetGame'> = {
+const initialState: Omit<GameState, 'initializeCampaign' | 'runSimulation' | 'setSpending' | 'hireStaff' | 'selectVP' | 'advanceWeek' | 'addBudget' | 'spendBudget' | 'addMomentum' | 'resolveEvent' | 'answerDebateQuestion' | 'advanceDebate' | 'previewDebate' | 'saveGame' | 'loadGame' | 'getSaveSlots' | 'setHasStarted' | 'resetGame'> = {
   currentWeek: 1,
   calendar: [] as CalendarWeek[],
   calendarPhase: 'campaigning',
@@ -676,7 +695,10 @@ const initialState: Omit<GameState, 'initializeCampaign' | 'runSimulation' | 'se
   contestedStates: [] as string[],
   vpPick: null as VPCandidate | null,
   vpSelectionPending: false,
+  endReason: null,
   activeEvent: null as CampaignEvent | null,
+  activeDebate: null as ActiveDebate | null,
+  debateStanding: { ...EMPTY_DEBATE_STANDING },
 
   states: [] as StateElectionData[],
   campaignSpending: {} as Record<string, CampaignSpendingData>,
@@ -689,12 +711,92 @@ const initialState: Omit<GameState, 'initializeCampaign' | 'runSimulation' | 'se
 
   activityLog: [] as ActivityLogEntry[],
   fundraisingStreakWeeks: 0,
+  pacFundraisedThisWeek: false,
 };
 
 // Helper to cap log length
 function capLog(log: ActivityLogEntry[], max = 100): ActivityLogEntry[] {
   return log.length > max ? log.slice(log.length - max) : log;
 }
+
+function clampStat(value: number, min = 0, max = 100): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function scalePositiveDebateValue(value: number, multiplier = 0.6): number {
+  if (value <= 0) return value;
+  return Math.max(1, Math.round(value * multiplier));
+}
+
+function scalePositiveDebateGroups(groupEffects: Partial<PlayerDemographics>): Partial<PlayerDemographics> {
+  const scaledEffects: Partial<PlayerDemographics> = {};
+
+  for (const [group, value] of Object.entries(groupEffects) as Array<[keyof PlayerDemographics, number]>) {
+    scaledEffects[group] = scalePositiveDebateValue(value);
+  }
+
+  return scaledEffects;
+}
+
+function decayDebateStanding(standing: DebateStanding): DebateStanding {
+  const nextStanding = { ...standing };
+
+  for (const group of Object.keys(nextStanding) as Array<keyof DebateStanding>) {
+    const currentValue = nextStanding[group];
+    if (currentValue > 0) {
+      nextStanding[group] = Math.max(0, currentValue - 4);
+    } else if (currentValue < 0) {
+      nextStanding[group] = Math.min(0, currentValue + 2);
+    }
+  }
+
+  return nextStanding;
+}
+
+function getOrderedRivals(rivals: RivalAI[]): RivalAI[] {
+  return [...rivals].sort((a, b) => b.momentum - a.momentum);
+}
+
+function getLeadRival(rivals: RivalAI[], difficulty: 'easy' | 'normal' | 'hard'): RivalAI {
+  return getOrderedRivals(rivals)[0] ?? SimulationEngine.createRivalAI(difficulty);
+}
+
+type PersistedGameState = Pick<GameState,
+  | 'hasStarted'
+  | 'currentWeek'
+  | 'calendar'
+  | 'calendarPhase'
+  | 'gamePhase'
+  | 'difficulty'
+  | 'playerName'
+  | 'budget'
+  | 'publicTrust'
+  | 'playerIdeology'
+  | 'momentum'
+  | 'stamina'
+  | 'playerDelegates'
+  | 'rivalDelegates'
+  | 'delegateTarget'
+  | 'contestedStates'
+  | 'vpPick'
+  | 'vpSelectionPending'
+  | 'endReason'
+  | 'activeDebate'
+  | 'debateStanding'
+  | 'states'
+  | 'campaignSpending'
+  | 'pollingData'
+  | 'nationalPollingHistory'
+  | 'hiredStaff'
+  | 'playerIssues'
+  | 'rivalAIs'
+  | 'voterParty'
+  | 'activityLog'
+  | 'fundraisingStreakWeeks'
+  | 'pacFundraisedThisWeek'
+> & {
+  savedAt: string;
+};
 
 export { VP_CANDIDATES, computeEVTotals };
 export type { VPCandidate as VPCandidateType };
@@ -725,9 +827,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       SimulationEngine.createRivalAI(state.difficulty),
       SimulationEngine.createRivalAI(state.difficulty)
     ];
-    opponents[0].name = "Rival A";
-    opponents[1].name = "Rival B";
-    opponents[2].name = "Rival C";
+    opponents[0].name = "Gov. Rebecca Sloan";
+    opponents[1].name = "Sen. Marcus Reed";
+    opponents[2].name = "Sec. Daniel Mercer";
     
     // Give them slightly different starting momentums to simulate varied positions
     opponents[0].momentum = 15;
@@ -743,6 +845,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       gamePhase: 'primary',
       stamina: 100,
       fundraisingStreakWeeks: 0,
+      pacFundraisedThisWeek: false,
+      endReason: null,
+      activeEvent: null,
+      activeDebate: null,
+      debateStanding: { ...EMPTY_DEBATE_STANDING },
       rivalAIs: opponents,
       activityLog: [{ week: 1, message: `Campaign launched — July 2023. ${statesData.length} states in play. You are facing 3 major primary opponents.`, type: 'info' }]
     });
@@ -764,13 +871,12 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (state.hiredStaff.includes('data_analyst')) staffDiv = 1.5;
     if (state.hiredStaff.includes('field_organizer')) visitMult = 2.0;
 
-    for (const s of state.states) {
-      // For now, if multiple rivals, we pick the strongest one for the 'rival' slot in polling
-      // to keep the UI compatible, but rivals will be handled more distinctly in future.
-      const rival = state.rivalAIs[0] || SimulationEngine.createRivalAI(state.difficulty);
+    const effectivePlayerIdeology = applyDebateStanding(state.playerIdeology, state.debateStanding);
+    const rival = getLeadRival(state.rivalAIs, state.difficulty);
 
+    for (const s of state.states) {
       const poll = SimulationEngine.generateStatePolling(
-        state.playerIdeology,
+        effectivePlayerIdeology,
         s,
         state.campaignSpending[s.stateName] || { intAds: 0, tvAds: 0, mailers: 0, staff1: 0, staff2: 0, staff3: 0, visits: 0, groundGame: 0, research: 0, socialMedia: 0 },
         state.momentum,
@@ -843,10 +949,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   selectVP: (vp: VPCandidate) => {
     const state = get();
     const newIdeology = { ...state.playerIdeology };
-    for (const [key, val] of Object.entries(vp.bonuses)) {
-      if (key in newIdeology) {
-        (newIdeology as any)[key] = Math.max(0, Math.min(100, (newIdeology as any)[key] + (val || 0)));
-      }
+    for (const [key, val] of Object.entries(vp.bonuses) as Array<[keyof PlayerDemographics, number | undefined]>) {
+      newIdeology[key] = Math.max(0, Math.min(100, newIdeology[key] + (val ?? 0)));
     }
     set({
       vpPick: vp,
@@ -861,27 +965,39 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   saveGame: (slot = 0) => {
     const state = get();
-    const saveData = {
+    const saveData: PersistedGameState = {
       hasStarted: true,
-      playerName: state.playerName,
       currentWeek: state.currentWeek,
+      calendar: state.calendar,
+      calendarPhase: state.calendarPhase,
       gamePhase: state.gamePhase,
       difficulty: state.difficulty,
+      playerName: state.playerName,
       budget: state.budget,
       publicTrust: state.publicTrust,
       playerIdeology: state.playerIdeology,
       momentum: state.momentum,
+      stamina: state.stamina,
       playerDelegates: state.playerDelegates,
       rivalDelegates: state.rivalDelegates,
       delegateTarget: state.delegateTarget,
+      contestedStates: state.contestedStates,
       vpPick: state.vpPick,
+      vpSelectionPending: state.vpSelectionPending,
+      endReason: state.endReason,
+      activeDebate: state.activeDebate,
+      debateStanding: state.debateStanding,
       states: state.states,
       campaignSpending: state.campaignSpending,
       pollingData: state.pollingData,
       nationalPollingHistory: state.nationalPollingHistory,
       hiredStaff: state.hiredStaff,
+      playerIssues: state.playerIssues,
       rivalAIs: state.rivalAIs,
+      voterParty: state.voterParty,
       activityLog: state.activityLog,
+      fundraisingStreakWeeks: state.fundraisingStreakWeeks,
+      pacFundraisedThisWeek: state.pacFundraisedThisWeek,
       savedAt: new Date().toISOString()
     };
     localStorage.setItem(`politisim_save_${slot}`, JSON.stringify(saveData));
@@ -892,8 +1008,25 @@ export const useGameStore = create<GameState>((set, get) => ({
     const saveDataStr = localStorage.getItem(`politisim_save_${slot}`);
     if (saveDataStr) {
       try {
-        const parsed = JSON.parse(saveDataStr);
-        set({ ...parsed, hasStarted: true, activeEvent: null, vpSelectionPending: false, fundraisingStreakWeeks: 0 });
+        const parsed = JSON.parse(saveDataStr) as Partial<PersistedGameState>;
+        const restoredCalendar = CampaignDataParser.generateCalendar();
+        const restoredWeek = parsed.currentWeek ?? initialState.currentWeek;
+        const restoredCalendarPhase = restoredCalendar[restoredWeek - 1]?.phase ?? parsed.calendarPhase ?? initialState.calendarPhase;
+
+        set({
+          ...initialState,
+          ...parsed,
+          hasStarted: true,
+          calendar: restoredCalendar,
+          calendarPhase: restoredCalendarPhase,
+          activeEvent: null,
+          activeDebate: parsed.activeDebate ?? null,
+          debateStanding: parsed.debateStanding ?? { ...EMPTY_DEBATE_STANDING },
+          vpSelectionPending: parsed.vpSelectionPending ?? false,
+          endReason: parsed.endReason ?? null,
+          fundraisingStreakWeeks: parsed.fundraisingStreakWeeks ?? 0,
+          pacFundraisedThisWeek: parsed.pacFundraisedThisWeek ?? false,
+        });
         console.log(`Game Loaded from Slot ${slot}.`);
       } catch (e) {
         console.error("Save file corrupted", e);
@@ -936,8 +1069,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     const state = get();
     if (state.gamePhase === 'ended') return;
 
-    // VP selection blocks advance
-    if (state.vpSelectionPending) return;
+    // Modals block advance
+    if (state.vpSelectionPending || state.activeEvent || state.activeDebate) return;
 
     const newLog: ActivityLogEntry[] = [...state.activityLog];
     const nextWeek = state.currentWeek + 1;
@@ -951,36 +1084,61 @@ export const useGameStore = create<GameState>((set, get) => ({
     const prevCalendarEntry = state.calendar[state.currentWeek - 1];
     const newCalendarPhase = calendarEntry.phase;
     const phaseChanged = prevCalendarEntry.phase !== newCalendarPhase;
+    const scheduledDebate = getDebateScheduleForWeek(nextWeek);
 
     // ── Phase transition announcements ──
     let nextGamePhase: GameState['gamePhase'] = state.gamePhase;
     let triggerVPSelection = false;
     let newPlayerDelegates = state.playerDelegates;
     let newRivalDelegates = state.rivalDelegates;
-    let newContested = [...state.contestedStates];
+    let nextDelegateTarget = state.delegateTarget;
+    let nextEndReason: GameEndReason = state.endReason;
+    const newContested = [...state.contestedStates];
 
     if (phaseChanged) {
       if (newCalendarPhase === 'primary') {
         newLog.push({ week: nextWeek, message: `🗳️ Primary season begins! Iowa caucuses are approaching.`, type: 'info' });
       } else if (newCalendarPhase === 'convention') {
         // End of primary → convention
-        nextGamePhase = 'general';
-        triggerVPSelection = true;
-        const totalEV = state.states.reduce((sum, s) => sum + s.delegatesOrEV, 0);
-        const newTarget = Math.floor(totalEV / 2) + 1;
-        const won = newPlayerDelegates > newRivalDelegates;
-        newLog.push({ week: nextWeek, message: won
+        const wonPrimary = newPlayerDelegates >= state.delegateTarget;
+        if (wonPrimary) {
+          nextGamePhase = 'general';
+          triggerVPSelection = true;
+          const totalEV = state.states.reduce((sum, s) => sum + s.delegatesOrEV, 0);
+          nextDelegateTarget = Math.floor(totalEV / 2) + 1;
+          newLog.push({
+            week: nextWeek,
+            message: `PRIMARY WON! You secured the nomination with ${newPlayerDelegates} delegates.`,
+            type: 'positive'
+          });
+          newLog.push({
+            week: nextWeek,
+            message: `Convention week! Choose your running mate. General election target: ${nextDelegateTarget} EVs.`,
+            type: 'info'
+          });
+        } else {
+          nextGamePhase = 'ended';
+          nextEndReason = 'primary_loss';
+          newLog.push({
+            week: nextWeek,
+            message: `Primary season is over. You fell short of the nomination with ${newPlayerDelegates} delegates.`,
+            type: 'negative'
+          });
+        }
+        /*
           ? `🎉 PRIMARY WON! You secured the nomination with ${newPlayerDelegates} delegates.`
           : `😬 Narrow primary win — you squeaked through with ${newPlayerDelegates} delegates.`,
           type: 'positive' });
         newLog.push({ week: nextWeek, message: `🏛️ Convention week! Choose your running mate. General election target: ${newTarget} EVs.`, type: 'info' });
         // Update delegate target to EV target for general
         set({ delegateTarget: newTarget });
+        */
       } else if (newCalendarPhase === 'general') {
         newLog.push({ week: nextWeek, message: `The General Election campaign begins. Election Day: November 5, 2024.`, type: 'info' });
       } else if (newCalendarPhase === 'election_day') {
         // ── ELECTION DAY — resolve all states at once ──
         nextGamePhase = 'ended';
+        nextEndReason = null;
         newLog.push({ week: nextWeek, message: `🗳️ ELECTION DAY — November 5, 2024. All polls are closed.`, type: 'event' });
       }
     }
@@ -1009,7 +1167,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     // ── Trust decay (-1% per week) — Phase 4 #1 ──
-    let newTrust = Math.max(0, state.publicTrust - 1);
+    const newTrust = Math.max(0, state.publicTrust - 1);
 
     // ── Stamina decay (Phase 4 #5 - slowed down) ──
     let newStamina = state.stamina;
@@ -1059,11 +1217,20 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     // ── Pick event (or debate if scheduled) ──
     let randomEvent: CampaignEvent | null = null;
+    let nextActiveDebate: ActiveDebate | null = null;
     if (nextGamePhase !== 'ended') {
-      if (calendarEntry.isDebateWeek) {
-        // Force a debate event
-        randomEvent = DEBATE_EVENTS[Math.floor(Math.random() * DEBATE_EVENTS.length)];
-        newLog.push({ week: nextWeek, message: `📺 DEBATE NIGHT — ${calendarEntry.label}`, type: 'event' });
+      if (scheduledDebate) {
+        const rivalNames = getOrderedRivals(updatedRivals).map((rival) => rival.name);
+        const debate = createActiveDebate(scheduledDebate, state.playerName, rivalNames);
+        nextActiveDebate = debate;
+        const debateStage = scheduledDebate.phase === 'primary'
+          ? `Primary Debate ${scheduledDebate.sequence}`
+          : `General Debate ${scheduledDebate.sequence}`;
+        newLog.push({
+          week: nextWeek,
+          message: `Debate night: ${debateStage} at ${debate.venue}.`,
+          type: 'event'
+        });
       } else {
         const phaseEvents = POSSIBLE_EVENTS.filter(e => !e.phase || e.phase === 'any' || e.phase === state.gamePhase);
         const eventChance = newCalendarPhase === 'general' ? 0.65 : newCalendarPhase === 'primary' ? 0.55 : 0.40;
@@ -1082,8 +1249,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     // Log rival activity
     if (nextGamePhase !== 'ended') {
-      const mainRival = updatedRivals[0];
-      const prevMainRival = state.rivalAIs[0];
+      const mainRival = getLeadRival(updatedRivals, state.difficulty);
+      const prevMainRival = getLeadRival(state.rivalAIs, state.difficulty);
       if (mainRival && prevMainRival && mainRival.momentum > prevMainRival.momentum) {
         newLog.push({ week: nextWeek, message: `Rival campaign is gaining momentum (${mainRival.momentum}/100)`, type: 'negative' });
       }
@@ -1110,24 +1277,33 @@ export const useGameStore = create<GameState>((set, get) => ({
     // I'll assume it's reset in advanceWeek if no fundraising happened.
     // I'll use a local tracker inside advanceWeek if needed.
     // Actually, I'll just leave it and fix the set() call.
+    const nextFundraisingStreakWeeks = state.pacFundraisedThisWeek
+      ? state.fundraisingStreakWeeks + 1
+      : 0;
+    const nextDebateStanding = decayDebateStanding(state.debateStanding);
 
     set({
       currentWeek: nextWeek,
       gamePhase: nextGamePhase,
       calendarPhase: newCalendarPhase,
+      delegateTarget: nextDelegateTarget,
       momentum: Math.max(0, Math.min(100, state.momentum - momentumLoss + conventionBounce)),
       stamina: newStamina,
       budget: state.budget + passiveIncome,
-      campaignSpending: newSpending, // Use newSpending
-      activeEvent: nextGamePhase === 'ended' ? null : randomEvent,
+      campaignSpending: newSpending,
+      activeEvent: nextGamePhase === 'ended' || nextActiveDebate ? null : randomEvent,
+      activeDebate: nextGamePhase === 'ended' ? null : nextActiveDebate,
       playerDelegates: newPlayerDelegates,
       rivalDelegates: newRivalDelegates,
       contestedStates: newContested,
-      rivalAIs: updatedRivals, // Use updatedRivals
+      rivalAIs: updatedRivals,
+      debateStanding: nextDebateStanding,
       activityLog: capLog(newLog),
-      fundraisingStreakWeeks: state.fundraisingStreakWeeks, // Streak persists, addBudget incremented it
+      fundraisingStreakWeeks: nextFundraisingStreakWeeks,
+      pacFundraisedThisWeek: false,
       vpSelectionPending: triggerVPSelection,
-      publicTrust: newTrust, // Apply newTrust
+      publicTrust: newTrust,
+      endReason: nextEndReason,
     });
 
     if (nextGamePhase !== 'ended') get().runSimulation();
@@ -1138,6 +1314,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!state.activeEvent) return;
 
     const choice = state.activeEvent.choices[choiceIndex];
+    if (!choice) return;
     const newLog = [...state.activityLog, {
       week: state.currentWeek,
       message: `Resolved "${state.activeEvent.title}" — ${choice.text}`,
@@ -1146,20 +1323,109 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     set({
       budget: Math.max(0, state.budget + choice.moneyEffect),
-      momentum: Math.max(0, Math.min(100, state.momentum + choice.momentumEffect)),
-      publicTrust: Math.max(0, Math.min(100, state.publicTrust + choice.trustEffect)),
+      momentum: clampStat(state.momentum + choice.momentumEffect),
+      publicTrust: clampStat(state.publicTrust + choice.trustEffect),
       activeEvent: null,
       activityLog: capLog(newLog)
     });
     get().runSimulation();
   },
 
+  answerDebateQuestion: (choiceIndex: number) => {
+    const state = get();
+    const debate = state.activeDebate;
+    if (!debate || debate.selectedChoiceIndex !== null) return;
+
+    const question = debate.questions[debate.currentQuestionIndex];
+    const choice = question?.choices[choiceIndex];
+    if (!question || !choice) return;
+    const scaledGroupEffects = scalePositiveDebateGroups(choice.groupEffects);
+
+    const newLog = [...state.activityLog, {
+      week: state.currentWeek,
+      message: `Debate answer on ${question.topic}: ${choice.text}`,
+      type: 'event' as const
+    }];
+
+    set({
+      activeDebate: {
+        ...debate,
+        selectedChoiceIndex: choiceIndex,
+        latestReaction: choice.reaction
+      },
+      debateStanding: mergeDebateStanding(state.debateStanding, scaledGroupEffects),
+      momentum: clampStat(state.momentum + scalePositiveDebateValue(choice.momentumEffect)),
+      publicTrust: clampStat(state.publicTrust + scalePositiveDebateValue(choice.trustEffect)),
+      activityLog: capLog(newLog)
+    });
+  },
+
+  advanceDebate: () => {
+    const state = get();
+    const debate = state.activeDebate;
+    if (!debate || debate.selectedChoiceIndex === null) return;
+
+    const nextQuestionIndex = debate.currentQuestionIndex + 1;
+    if (nextQuestionIndex >= debate.questions.length) {
+      const newLog = [...state.activityLog, {
+        week: state.currentWeek,
+        message: `Debate concluded: ${debate.title}.`,
+        type: 'event' as const
+      }];
+
+      set({
+        activeDebate: null,
+        activityLog: capLog(newLog)
+      });
+      get().runSimulation();
+      return;
+    }
+
+    set({
+      activeDebate: {
+        ...debate,
+        currentQuestionIndex: nextQuestionIndex,
+        selectedChoiceIndex: null,
+        latestReaction: null
+      }
+    });
+  },
+
+  previewDebate: (phase: DebatePhase) => {
+    const state = get();
+    if (state.activeDebate) return;
+
+    const calendarDebateWeek = phase === 'primary'
+      ? state.calendar.find((entry) => entry.debatePhase === 'primary')?.week
+      : state.calendar.find((entry) => entry.debatePhase === 'general')?.week;
+    const debateEntry = getDebateScheduleForWeek(calendarDebateWeek ?? (phase === 'primary' ? 20 : 60));
+
+    if (!debateEntry) return;
+
+    const rivalNames = getOrderedRivals(state.rivalAIs).map((rival) => rival.name);
+    const previewDebate = createActiveDebate(debateEntry, state.playerName, rivalNames);
+
+    const newLog = [...state.activityLog, {
+      week: state.currentWeek,
+      message: `Previewed ${phase === 'primary' ? 'primary' : 'general'} debate scene.`,
+      type: 'event' as const
+    }];
+
+    set({
+      activeEvent: null,
+      activeDebate: previewDebate,
+      activityLog: capLog(newLog)
+    });
+  },
+
   addBudget: (amount: number, fromPAC: boolean) => {
     const state = get();
-    // Donor Fatigue: Repeated fundraising makes it harder (Phase 4 #2)
+    const fatigueLevel = fromPAC
+      ? state.fundraisingStreakWeeks + (state.pacFundraisedThisWeek ? 1 : 0)
+      : 0;
     let efficiency = 1.0;
     if (fromPAC) {
-      efficiency = Math.max(0.2, 1.1 - (state.fundraisingStreakWeeks * 0.25));
+      efficiency = Math.max(0.2, 1.1 - (fatigueLevel * 0.25));
     }
     
     const actualAmount = Math.floor(amount * efficiency);
@@ -1176,7 +1442,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({
       budget: state.budget + actualAmount,
       publicTrust: fromPAC ? Math.max(0, state.publicTrust - 5) : state.publicTrust,
-      fundraisingStreakWeeks: fromPAC ? state.fundraisingStreakWeeks + 1 : state.fundraisingStreakWeeks,
+      pacFundraisedThisWeek: fromPAC ? true : state.pacFundraisedThisWeek,
       activityLog: capLog(newLog)
     });
   },

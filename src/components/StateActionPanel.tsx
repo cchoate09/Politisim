@@ -8,11 +8,22 @@ interface Props {
 }
 
 export const StateActionPanel: React.FC<Props> = ({ stateName, onClose }) => {
-  const { states, pollingData, campaignSpending, spendBudget, setSpending, budget, gamePhase } = useGameStore();
+  const { states, pollingData, campaignSpending, spendBudget, setSpending, budget, gamePhase, voterParty, stamina } = useGameStore();
 
   const stateData = states.find(s => s.stateName.toLowerCase() === stateName.toLowerCase());
   const polls = pollingData[stateData?.stateName || stateName];
-  const spendingVars = campaignSpending[stateName] || { intAds: 0, tvAds: 0, mailers: 0, staff1: 0, staff2: 0, staff3: 0, visits: 0 };
+  const spendingVars = campaignSpending[stateName] || {
+    intAds: 0,
+    tvAds: 0,
+    mailers: 0,
+    staff1: 0,
+    staff2: 0,
+    staff3: 0,
+    visits: 0,
+    groundGame: 0,
+    socialMedia: 0,
+    research: 0
+  };
   const costMultiplier = 0.5 + (stateData ? stateData.delegatesOrEV : 10) / 15.0;
 
   if (!stateData || !polls) {
@@ -23,11 +34,21 @@ export const StateActionPanel: React.FC<Props> = ({ stateName, onClose }) => {
       </aside>
     );
   }
+
+  const delegatesAtStake = gamePhase === 'primary'
+    ? voterParty === 'Democrat' ? stateData.demDelegates : stateData.repDelegates
+    : stateData.delegatesOrEV;
+  const turnout = polls.turnout || 60;
   
   const handleSpend = (type: keyof typeof spendingVars, baseCost: number, amount: number) => {
     const finalCost = Math.round(baseCost * costMultiplier);
     if (spendBudget(finalCost)) {
       setSpending(stateName, { [type]: spendingVars[type as keyof typeof spendingVars] + amount });
+      if (type === 'visits') {
+        useGameStore.setState((current) => ({
+          stamina: Math.max(0, current.stamina - 5)
+        }));
+      }
     }
   };
 
@@ -49,7 +70,7 @@ export const StateActionPanel: React.FC<Props> = ({ stateName, onClose }) => {
       </div>
       
       <p style={{ margin: '0 0 1rem 0', opacity: 0.7, fontSize: '0.9rem' }}>
-        {stateData.delegatesOrEV} {gamePhase === 'primary' ? 'Delegates' : 'Electoral Votes'}
+        {delegatesAtStake} {gamePhase === 'primary' ? 'Delegates' : 'Electoral Votes'}
       </p>
 
       {/* State Polling Snapshot */}
@@ -80,11 +101,11 @@ export const StateActionPanel: React.FC<Props> = ({ stateName, onClose }) => {
         <div style={{ marginTop: '1rem', paddingTop: '0.8rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
             <span>Projected Turnout</span>
-            <span style={{ color: 'var(--text-main)', fontWeight: 'bold' }}>{(polls as any).turnout?.toFixed(1) || 60}%</span>
+            <span style={{ color: 'var(--text-main)', fontWeight: 'bold' }}>{turnout.toFixed(1)}%</span>
           </div>
           <div className="progress-bar-bg">
             <div className="progress-bar-fill" style={{ 
-              width: `${(polls as any).turnout || 60}%`, 
+              width: `${turnout}%`, 
               background: 'linear-gradient(90deg, #d29922, #2ea043)' 
             }}></div>
           </div>
@@ -127,7 +148,7 @@ export const StateActionPanel: React.FC<Props> = ({ stateName, onClose }) => {
 
         <button 
           className="spend-btn" 
-          disabled={budget < (20000 * costMultiplier)}
+          disabled={budget < (20000 * costMultiplier) || stamina < 5}
           onClick={() => handleSpend('visits', 20000, 1)}
         >
           <div className="spend-info">

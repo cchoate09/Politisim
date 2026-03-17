@@ -17,12 +17,12 @@ export class ElectionMath {
     stateData: StateElectionData,
     playerIssues: string[] = [] // New: Player's focus issues
   ): number {
-    let score = Math.max(0, playerStats.liberal * stateData.liberal) + 
-                  Math.max(0, playerStats.libertarian * stateData.libertarian) + 
-                  Math.max(0, playerStats.owner * stateData.owner) + 
-                  Math.max(0, playerStats.worker * stateData.worker) + 
-                  Math.max(0, playerStats.religious * stateData.religious) + 
-                  Math.max(0, playerStats.immigrant * stateData.immigrant);
+    const score = Math.max(0, playerStats.liberal * stateData.liberal) + 
+                    Math.max(0, playerStats.libertarian * stateData.libertarian) + 
+                    Math.max(0, playerStats.owner * stateData.owner) + 
+                    Math.max(0, playerStats.worker * stateData.worker) + 
+                    Math.max(0, playerStats.religious * stateData.religious) + 
+                    Math.max(0, playerStats.immigrant * stateData.immigrant);
     
     // Issue Alignment Bonus (Phase 1 #2)
     let issueBonus = 1.0;

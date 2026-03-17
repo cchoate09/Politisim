@@ -3,7 +3,7 @@ import './PrimaryElectionView.css';
 import { useGameStore } from '../store/gameStore';
 
 export const PrimaryElectionView: React.FC = () => {
-  const { states, pollingData, playerDelegates, rivalDelegates, delegateTarget, contestedStates } = useGameStore();
+  const { states, pollingData, playerDelegates, rivalDelegates, delegateTarget, contestedStates, voterParty } = useGameStore();
   const [showAll, setShowAll] = useState(false);
 
   // Sort states by date, mark contested ones
@@ -18,7 +18,7 @@ export const PrimaryElectionView: React.FC = () => {
     <div className="primary-view">
       <div className="primary-header">
         <h2>Primary Election Tracker</h2>
-        <p>Track delegate allocation across all 50 states. States are contested every 4 weeks in date order.</p>
+        <p>Track delegate allocation across all 50 states. States are contested every 2 weeks in date order.</p>
 
         {/* Delegate Summary Bar */}
         <div style={{ display: 'flex', gap: '2rem', marginTop: '1rem', alignItems: 'center' }}>
@@ -48,6 +48,7 @@ export const PrimaryElectionView: React.FC = () => {
           const isContested = contestedStates.includes(state.stateName);
           const poll = pollingData[state.stateName];
           const playerWon = poll && poll.player > poll.rival;
+          const allocatedDelegates = voterParty === 'Democrat' ? state.demDelegates : state.repDelegates;
 
           return (
             <div key={idx} className={`state-card ${isContested ? (playerWon ? 'won' : 'lost') : ''}`}>
@@ -75,7 +76,7 @@ export const PrimaryElectionView: React.FC = () => {
                   </div>
                   {isContested && (
                     <span className="state-delegates-allocated" style={{ color: playerWon ? 'var(--primary-accent)' : 'var(--secondary-accent)', marginLeft: '1rem' }}>
-                      {playerWon ? `+${state.delegatesOrEV}` : `-${state.delegatesOrEV}`}
+                      {playerWon ? `+${allocatedDelegates}` : `-${allocatedDelegates}`}
                     </span>
                   )}
                 </div>

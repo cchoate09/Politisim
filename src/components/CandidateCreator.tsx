@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import './CandidateCreator.css';
 import { useGameStore } from '../store/gameStore';
+import { CampaignDataParser } from '../core/CampaignDataParser';
 import type { PlayerDemographics } from '../core/ElectionMath';
 
 const MAX_POINTS = 300;
@@ -11,13 +12,11 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
   const [name, setName] = useState('');
   const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
   const [traits, setTraits] = useState<PlayerDemographics>(playerIdeology);
-  const [pointsRemaining, setPointsRemaining] = useState(0);
   const [selectedIssues, setSelectedIssues] = useState<string[]>([]);
-
-  useEffect(() => {
-    const totalSpent = Object.values(traits).reduce((acc, val) => acc + val, 0);
-    setPointsRemaining(MAX_POINTS - totalSpent);
-  }, [traits]);
+  const pointsRemaining = useMemo(
+    () => MAX_POINTS - Object.values(traits).reduce((acc, val) => acc + val, 0),
+    [traits]
+  );
 
   const adjustTrait = (key: keyof PlayerDemographics, amount: number) => {
     setTraits(prev => {
@@ -53,7 +52,6 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
       difficulty: difficulty,
       playerIssues: selectedIssues
     });
-    const { CampaignDataParser } = await import('../core/CampaignDataParser');
     const states = await CampaignDataParser.loadModData('vanilla');
     useGameStore.getState().initializeCampaign(states);
     onComplete();

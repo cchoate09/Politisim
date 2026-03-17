@@ -1,3 +1,5 @@
+import { getDebateScheduleForWeek, type DebatePhase } from './DebateData';
+
 export interface StateElectionData {
   stateName: string;
   delegatesOrEV: number; // For General Election
@@ -35,7 +37,11 @@ export class CampaignDataParser {
    */
   static async loadModData(modName: string = 'vanilla'): Promise<StateElectionData[]> {
     try {
-      const response = await fetch(`/mods/${modName}/states.json`);
+      if (window.electron) {
+        return await window.electron.loadModData(modName);
+      }
+
+      const response = await fetch(new URL(`./mods/${modName}/states.json`, window.location.href).toString());
       if (!response.ok) {
         throw new Error(`Failed to load mod data for [${modName}]`);
       }
@@ -55,12 +61,13 @@ export class CampaignDataParser {
     const weeks: CalendarWeek[] = [];
     
     // Start date: July 1, 2023
-    let currentDate = new Date(2023, 6, 1); // Month is 0-indexed
+    const currentDate = new Date(2023, 6, 1); // Month is 0-indexed
     
     for (let w = 1; w <= 70; w++) {
       const month = currentDate.getMonth(); // 0-11
       const year = currentDate.getFullYear();
       const monthNum = month + 1; // 1-12
+      const debateEntry = getDebateScheduleForWeek(w);
       
       let phase: CalendarWeek['phase'];
       if (w <= 26) {
@@ -75,8 +82,8 @@ export class CampaignDataParser {
         phase = 'election_day'; // Nov 5, 2024
       }
 
-      // Debate weeks (fixed schedule)
-      const isDebateWeek = [35, 60, 63, 66].includes(w);
+      // Debate weeks
+      const isDebateWeek = debateEntry !== null;
 
       weeks.push({
         week: w,
@@ -85,7 +92,10 @@ export class CampaignDataParser {
         year,
         label: `${MONTH_NAMES[month]} ${year} — Week ${w}`,
         phase,
-        isDebateWeek
+        isDebateWeek,
+        debateId: debateEntry?.debateId ?? null,
+        debatePhase: debateEntry?.phase ?? null,
+        debateSequence: debateEntry?.sequence ?? null
       });
       
       // Advance by 7 days
@@ -104,5 +114,7 @@ export interface CalendarWeek {
   label: string;
   phase: 'campaigning' | 'primary' | 'convention' | 'general' | 'election_day';
   isDebateWeek: boolean;
+  debateId: string | null;
+  debatePhase: DebatePhase | null;
+  debateSequence: number | null;
 }
-

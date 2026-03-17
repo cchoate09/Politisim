@@ -7,6 +7,7 @@ import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { CandidateCreator } from './components/CandidateCreator';
 import { BudgetAllocationView } from './components/BudgetAllocationView';
 import { EventModal } from './components/EventModal';
+import { DebateScreen } from './components/DebateScreen';
 import { StateActionPanel } from './components/StateActionPanel';
 import { CampaignHQView } from './components/CampaignHQView';
 import { EndGameScreen } from './components/EndGameScreen';
@@ -25,8 +26,10 @@ function App() {
     budget, currentWeek, advanceWeek, momentum, saveGame, loadGame, getSaveSlots,
     gamePhase, calendarPhase, calendar, publicTrust, stamina, states, pollingData,
     playerDelegates, rivalDelegates, delegateTarget, vpSelectionPending,
-    playerIdeology, playerName, hasStarted, setHasStarted, voterParty
+    playerIdeology, playerName, hasStarted, setHasStarted, voterParty, activeEvent, activeDebate,
+    previewDebate
   } = useGameStore();
+  const isDev = import.meta.env.DEV;
 
   // Current calendar entry
   const calendarEntry = calendar.length > 0 && currentWeek <= calendar.length
@@ -43,10 +46,11 @@ function App() {
 
   // Compute real EV totals from simulation data
   const { playerEV, rivalEV } = computeEVTotals(states, pollingData);
+  const victoryTarget = Math.max(1, delegateTarget);
 
   // ── Keyboard Shortcuts ──
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (!hasStarted || gamePhase === 'ended') return;
+    if (!hasStarted || gamePhase === 'ended' || activeEvent || activeDebate) return;
     if ((e.target as HTMLElement).tagName === 'INPUT') return;
 
     if (e.code === 'Space') {
@@ -59,7 +63,7 @@ function App() {
       const idx = parseInt(e.key) - 1;
       if (idx < TABS.length) setActiveTab(TABS[idx]);
     }
-  }, [hasStarted, gamePhase, advanceWeek]);
+  }, [hasStarted, gamePhase, activeEvent, activeDebate, advanceWeek]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -91,6 +95,7 @@ function App() {
 
   return (
     <>
+      <DebateScreen />
       <EventModal />
       {vpSelectionPending && <VPSelectionModal />}
       <div className={`command-center ${voterParty === 'Republican' ? 'republican-theme' : ''}`}>
@@ -159,17 +164,17 @@ function App() {
         <aside className="glass-panel stats-panel">
           <h3>National Dashboard</h3>
 
-        <div className="stat-card" data-tooltip={gamePhase === 'primary' ? 'Reach the target to secure your party nomination.' : 'Target 270 EVs to win the Presidency.'}>
+        <div className="stat-card" data-tooltip={gamePhase === 'primary' ? 'Reach the target to secure your party nomination.' : `Reach ${victoryTarget} electoral votes to win the Presidency.`}>
           <div className="stat-card-title">
             {gamePhase === 'primary' ? 'Delegate Count' : 'Projected Electoral Votes'}
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
             <div className="stat-card-value" style={{ color: 'var(--primary-accent)' }}>{gamePhase === 'primary' ? playerDelegates : playerEV}</div>
-            <div style={{ opacity: 0.5, fontSize: '0.9rem' }}>/ {gamePhase === 'primary' ? delegateTarget : 270} to win</div>
+            <div style={{ opacity: 0.5, fontSize: '0.9rem' }}>/ {victoryTarget} to win</div>
           </div>
           <div className="progress-bar-bg">
             <div className="progress-bar-fill" style={{
-              width: `${gamePhase === 'primary' ? (playerDelegates / delegateTarget * 100) : (playerEV / 270 * 100)}%`
+              width: `${gamePhase === 'primary' ? (playerDelegates / victoryTarget * 100) : (playerEV / victoryTarget * 100)}%`
             }}></div>
           </div>
           {/* Show rival count */}
@@ -263,24 +268,54 @@ function App() {
           )}
         </div>
 
+        {isDev && (
+          <div style={{ display: 'grid', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Debate Preview
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+              <button
+                onClick={() => previewDebate('primary')}
+                disabled={Boolean(activeDebate)}
+                style={{ padding: '0.55rem', borderRadius: '8px', background: 'rgba(246,196,83,0.16)', color: '#f6c453', border: '1px solid rgba(246,196,83,0.25)', cursor: activeDebate ? 'not-allowed' : 'pointer', fontSize: '0.8rem', opacity: activeDebate ? 0.5 : 1 }}
+              >
+                Primary Debate
+              </button>
+              <button
+                onClick={() => previewDebate('general')}
+                disabled={Boolean(activeDebate)}
+                style={{ padding: '0.55rem', borderRadius: '8px', background: 'rgba(56,189,248,0.16)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.25)', cursor: activeDebate ? 'not-allowed' : 'pointer', fontSize: '0.8rem', opacity: activeDebate ? 0.5 : 1 }}
+              >
+                General Debate
+              </button>
+            </div>
+          </div>
+        )}
+
         <button
           onClick={advanceWeek}
-          disabled={vpSelectionPending}
+          disabled={vpSelectionPending || Boolean(activeEvent) || Boolean(activeDebate)}
           title="Space"
-          className={!vpSelectionPending ? "pulse-primary" : ""}
+          className={!vpSelectionPending && !activeEvent && !activeDebate ? "pulse-primary" : ""}
           style={{
             padding: '0.8rem',
             borderRadius: '8px',
-            background: vpSelectionPending ? 'rgba(255,255,255,0.1)' : 'var(--primary-accent)',
+            background: vpSelectionPending || activeEvent || activeDebate ? 'rgba(255,255,255,0.1)' : 'var(--primary-accent)',
             color: 'white',
             border: 'none',
             fontWeight: 'bold',
-            cursor: vpSelectionPending ? 'not-allowed' : 'pointer',
+            cursor: vpSelectionPending || activeEvent || activeDebate ? 'not-allowed' : 'pointer',
             fontSize: '1rem',
-            opacity: vpSelectionPending ? 0.5 : 1
+            opacity: vpSelectionPending || activeEvent || activeDebate ? 0.5 : 1
           }}
         >
-          {vpSelectionPending ? 'Select VP First' : `Advance to Next Week`}
+          {vpSelectionPending
+            ? 'Select VP First'
+            : activeDebate
+              ? 'Finish Debate First'
+              : activeEvent
+                ? 'Resolve Event First'
+                : 'Advance to Next Week'}
         </button>
 
         </aside>

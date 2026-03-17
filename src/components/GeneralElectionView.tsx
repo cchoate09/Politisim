@@ -5,6 +5,7 @@ import { useGameStore, computeEVTotals } from '../store/gameStore';
 export const GeneralElectionView: React.FC = () => {
   const { states, pollingData, playerName, vpPick, voterParty } = useGameStore();
   const { playerEV, rivalEV } = computeEVTotals(states, pollingData);
+  const generalTarget = Math.floor(states.reduce((sum, state) => sum + state.delegatesOrEV, 0) / 2) + 1;
 
   // Find the closest-margin swing states
   const swingStates = [...states]
@@ -25,10 +26,10 @@ export const GeneralElectionView: React.FC = () => {
 
   return (
     <div className="general-view">
-      <div className="general-header">
-        <h2>General Election Map</h2>
-        <p>The race to 270 Electoral Votes. Review the tightest battleground states.</p>
-      </div>
+        <div className="general-header">
+          <h2>General Election Map</h2>
+          <p>The race to {generalTarget} Electoral Votes. Review the tightest battleground states.</p>
+        </div>
 
       <div className="head-to-head">
         <div className="candidate-profile player">
@@ -49,12 +50,12 @@ export const GeneralElectionView: React.FC = () => {
       <div className="swing-states-section">
         <h3 className="swing-states-header">Key Battlegrounds (Closest Margins)</h3>
 
-        {swingStates.map((state, idx) => {
+        {swingStates.map((state) => {
           const total = state.playerPoll + state.oppPoll;
           const playerWidth = total > 0 ? (state.playerPoll / total) * 100 : 50;
 
           return (
-            <div key={idx} className="swing-state-card">
+            <div key={state.name} className="swing-state-card">
               <div className="swing-state-info">
                 <div className="swing-state-name">{state.name}</div>
                 <div className="swing-state-ev">{state.ev} Electoral Votes</div>

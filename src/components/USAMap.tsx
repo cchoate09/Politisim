@@ -5,6 +5,13 @@ import { useGameStore } from '../store/gameStore';
 
 const geoUrl = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
 
+interface MapGeography {
+  rsmKey: string;
+  properties: {
+    name: string;
+  };
+}
+
 interface USAMapProps {
   onStateClick: (stateName: string) => void;
   activeStateName?: string;
@@ -36,8 +43,8 @@ const USAMapComponent: React.FC<USAMapProps> = ({ onStateClick, activeStateName 
     <div className="usa-map-container">
       <ComposableMap projection="geoAlbersUsa" projectionConfig={{ scale: 1000 }}>
         <Geographies geography={geoUrl}>
-          {({ geographies }: { geographies: any[] }) =>
-            geographies.map((geo: any) => {
+          {({ geographies }: { geographies: MapGeography[] }) =>
+            geographies.map((geo) => {
               const stateName = geo.properties.name;
               const isActive = stateName === activeStateName;
 
@@ -46,7 +53,7 @@ const USAMapComponent: React.FC<USAMapProps> = ({ onStateClick, activeStateName 
                   key={geo.rsmKey}
                   geography={geo}
                   onClick={() => onStateClick(stateName)}
-                  onMouseEnter={(_e: React.MouseEvent) => {
+                  onMouseEnter={() => {
                     const state = states.find(s => s.stateName === stateName);
                     const poll = state ? pollingData[state.stateName] : null;
                     if (poll) {
