@@ -1,24 +1,27 @@
 .campaign-hq-view {
   display: flex;
   flex-direction: column;
+  gap: 1.5rem;
   height: 100%;
   padding: 2rem;
   overflow-y: auto;
 }
 
 .hq-header {
-  margin-bottom: 2rem;
+  margin-bottom: 0.25rem;
 }
 
 .hq-header h2 {
+  margin: 0 0 0.55rem 0;
   font-size: 2rem;
-  margin: 0 0 0.5rem 0;
   text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
 }
 
 .hq-header p {
+  max-width: 60rem;
   color: var(--text-muted);
-  font-size: 1.1rem;
+  font-size: 1.05rem;
+  line-height: 1.55;
   margin: 0 0 1rem 0;
 }
 
@@ -27,37 +30,118 @@
   background: rgba(46, 160, 67, 0.2);
   color: #2ea043;
   padding: 0.5rem 1rem;
-  border-radius: 20px;
+  border-radius: 999px;
   border: 1px solid rgba(46, 160, 67, 0.5);
-  font-weight: bold;
+  font-weight: 700;
+}
+
+.hq-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.summary-card {
+  padding: 1rem 1.1rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.summary-card span {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.summary-card strong {
+  display: block;
+  font-size: 1.9rem;
+  color: var(--text-main);
+}
+
+.summary-card p {
+  margin: 0.4rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.hq-columns {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 1.25rem;
+}
+
+.hq-panel {
+  padding: 1.25rem;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.26);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.panel-header h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.2rem;
+}
+
+.panel-header p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.subsection-label {
+  margin: 1rem 0 0.65rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
 }
 
 .staff-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .staff-card {
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.1rem;
   display: flex;
-  gap: 1.5rem;
+  gap: 1rem;
   transition: all 0.2s ease;
 }
 
 .staff-card.hired {
-  background: rgba(56, 189, 248, 0.05);
-  border-color: var(--primary-accent);
+  background: rgba(56, 189, 248, 0.06);
+  border-color: rgba(56, 189, 248, 0.35);
 }
 
 .staff-icon {
-  font-size: 3rem;
-  line-height: 1;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 14px;
   display: flex;
   align-items: center;
+  justify-content: center;
+  background: rgba(56, 189, 248, 0.12);
+  font-weight: 700;
+  color: var(--primary-accent);
 }
 
 .staff-details {
@@ -67,16 +151,16 @@
 }
 
 .staff-details h3 {
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.35rem 0;
   color: var(--text-main);
-  font-size: 1.2rem;
+  font-size: 1.02rem;
 }
 
 .staff-desc {
   color: var(--text-muted);
-  font-size: 0.9rem;
-  line-height: 1.4;
-  margin: 0 0 1rem 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  margin: 0 0 0.85rem 0;
   flex: 1;
 }
 
@@ -84,36 +168,259 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
   margin-top: auto;
 }
 
 .staff-cost {
-  font-weight: bold;
+  font-weight: 700;
   color: var(--secondary-accent);
+}
+
+.hire-btn,
+.court-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  cursor: pointer;
+  font-weight: 700;
+  transition: all 0.2s ease;
 }
 
 .hire-btn {
   background: rgba(255, 255, 255, 0.1);
   color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: all 0.2s ease;
 }
 
-.hire-btn:hover:not(:disabled) {
+.hire-btn:hover:not(:disabled),
+.court-btn:hover:not(:disabled) {
   background: var(--primary-accent);
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+  color: white;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
 }
 
-.hire-btn:disabled {
+.hire-btn:disabled,
+.court-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 .staff-card.hired .hire-btn {
-  background: var(--primary-accent);
-  opacity: 1;
+  background: rgba(56, 189, 248, 0.18);
+  color: var(--primary-accent);
+}
+
+.empty-state-card {
+  padding: 1rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.endorsement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.endorsement-grid.compact {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.endorsement-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-height: 260px;
+  padding: 1rem;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(10, 18, 31, 0.86), rgba(7, 12, 22, 0.94));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.endorsement-card.committed {
+  min-height: 220px;
+  border-color: rgba(46, 160, 67, 0.28);
+  background: linear-gradient(180deg, rgba(7, 25, 17, 0.9), rgba(6, 18, 13, 0.96));
+}
+
+.endorsement-card.locked {
+  opacity: 0.82;
+}
+
+.endorsement-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+
+.endorsement-icon {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: rgba(246, 196, 83, 0.12);
+  color: #f6c453;
+  font-weight: 700;
+}
+
+.endorsement-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.endorsement-subtitle {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.endorsement-status {
+  margin-left: auto;
+  padding: 0.32rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.endorsement-status.strong {
+  background: rgba(46, 160, 67, 0.16);
+  color: #2ea043;
+}
+
+.endorsement-status.lean {
+  background: rgba(56, 189, 248, 0.16);
+  color: #38bdf8;
+}
+
+.endorsement-status.competitive {
+  background: rgba(210, 153, 34, 0.16);
+  color: #d29922;
+}
+
+.endorsement-status.cold {
+  background: rgba(248, 81, 73, 0.16);
+  color: #f85149;
+}
+
+.endorsement-copy {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.endorsement-tags,
+.rival-coalition-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.endorsement-tags span,
+.rival-coalition-tags span {
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-muted);
+  font-size: 0.74rem;
+}
+
+.endorsement-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  color: var(--text-main);
+  font-size: 0.8rem;
+}
+
+.endorsement-meter {
+  margin-top: auto;
+  padding: 0.8rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.endorsement-meter-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 0.35rem;
+  color: var(--text-main);
+  font-size: 0.82rem;
+}
+
+.endorsement-meter-copy {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.court-btn {
+  margin-top: 0.15rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+.rival-coalition-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.rival-coalition-card {
+  padding: 0.9rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.rival-coalition-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: baseline;
+  margin-bottom: 0.55rem;
+}
+
+.rival-coalition-header strong {
+  color: var(--text-main);
+}
+
+.rival-coalition-header span {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+@media (max-width: 1080px) {
+  .hq-summary-grid,
+  .hq-columns {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .campaign-hq-view {
+    padding: 1.2rem;
+  }
+
+  .hq-summary-grid,
+  .hq-columns,
+  .endorsement-grid,
+  .endorsement-grid.compact {
+    grid-template-columns: 1fr;
+  }
+
+  .staff-footer,
+  .rival-coalition-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }

@@ -1,0 +1,287 @@
+.election-night-screen {
+  min-height: 100vh;
+  padding: 1.5rem;
+  background:
+    radial-gradient(circle at top, rgba(56, 189, 248, 0.16), transparent 28%),
+    linear-gradient(180deg, #07111f, #030711 75%);
+  color: var(--text-main);
+}
+
+.election-night-shell {
+  width: min(1240px, 100%);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.election-night-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1.4rem 1.5rem;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.election-night-kicker {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #8bdcff;
+}
+
+.election-night-header h1 {
+  margin: 0.25rem 0 0.45rem;
+  font-size: clamp(2.2rem, 4vw, 3.4rem);
+}
+
+.election-night-header p {
+  margin: 0;
+  max-width: 52rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.election-night-round {
+  min-width: 220px;
+  padding: 1rem;
+  border-radius: 18px;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.16);
+  text-align: right;
+}
+
+.election-night-round span {
+  display: block;
+  color: #8bdcff;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.election-night-round strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 1.35rem;
+}
+
+.election-night-scoreboard {
+  display: grid;
+  grid-template-columns: 1fr 220px 1fr;
+  gap: 1rem;
+}
+
+.night-score,
+.night-target,
+.summary-blurb,
+.night-panel {
+  padding: 1.1rem 1.2rem;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.night-score {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.night-score.player {
+  border-color: rgba(56, 189, 248, 0.2);
+}
+
+.night-score.rival {
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.night-score span,
+.night-target span {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.night-score strong,
+.night-target strong {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.night-score small,
+.night-target small {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.night-target {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+
+.election-night-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.summary-blurb strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--text-main);
+}
+
+.summary-blurb p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.election-night-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.9fr;
+  gap: 1rem;
+}
+
+.night-panel.timeline {
+  padding-top: 1rem;
+}
+
+.night-panel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: baseline;
+  margin-bottom: 0.9rem;
+}
+
+.night-panel-header h3 {
+  margin: 0;
+  font-size: 1.12rem;
+}
+
+.night-panel-header span {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.night-call-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.night-call-card {
+  padding: 0.9rem;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.night-call-card.compact {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.night-call-card strong {
+  display: block;
+  margin-bottom: 0.15rem;
+}
+
+.night-call-card span {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.night-call-card p {
+  margin: 0.55rem 0 0;
+  color: var(--text-muted);
+  line-height: 1.45;
+  font-size: 0.84rem;
+}
+
+.night-call-winner {
+  margin-top: 0.45rem;
+  font-weight: 700;
+}
+
+.night-call-winner.player {
+  color: var(--primary-accent);
+}
+
+.night-call-winner.rival {
+  color: var(--secondary-accent);
+}
+
+.night-outstanding-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  align-items: flex-end;
+}
+
+.night-empty {
+  padding: 1rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted);
+}
+
+.night-timeline {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.night-timeline-entry {
+  padding: 0.8rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.night-actions {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 1rem;
+}
+
+.night-action-btn {
+  min-width: 240px;
+  padding: 0.95rem 1.2rem;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 18px 38px rgba(14, 165, 233, 0.24);
+}
+
+@media (max-width: 900px) {
+  .election-night-scoreboard,
+  .election-night-summary,
+  .election-night-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .election-night-header,
+  .night-call-card.compact {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .election-night-round,
+  .night-outstanding-meta {
+    text-align: left;
+    align-items: flex-start;
+  }
+}

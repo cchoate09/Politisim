@@ -1,5 +1,6 @@
 import { ElectionMath, type PlayerDemographics } from './ElectionMath';
 import type { CampaignSpendingData, StateElectionData } from './CampaignDataParser';
+import type { CandidateStateEndorsementEffect } from './EndorsementData';
 
 export interface PollingData {
   player: number;
@@ -19,6 +20,7 @@ export interface RivalAI {
   budget: number;
   difficulty: 'easy' | 'normal' | 'hard';
   momentum: number;
+  trust: number;
   delegates: number;
   spending: Record<string, CampaignSpendingData>;
   ideology: PlayerDemographics;
@@ -50,6 +52,7 @@ interface RivalProfile {
   homeRegion: string;
   supportBase: number;
   momentum: number;
+  trust: number;
   ideology: PlayerDemographics;
 }
 
@@ -75,6 +78,7 @@ const DEMOCRAT_PRIMARY_PROFILES: RivalProfile[] = [
     homeRegion: 'South',
     supportBase: 10,
     momentum: 30,
+    trust: 58,
     ideology: { liberal: 60, libertarian: 35, owner: 55, worker: 62, religious: 42, immigrant: 68 }
   },
   {
@@ -85,6 +89,7 @@ const DEMOCRAT_PRIMARY_PROFILES: RivalProfile[] = [
     homeRegion: 'Midwest',
     supportBase: 12,
     momentum: 36,
+    trust: 56,
     ideology: { liberal: 55, libertarian: 28, owner: 35, worker: 84, religious: 46, immigrant: 48 }
   },
   {
@@ -95,6 +100,7 @@ const DEMOCRAT_PRIMARY_PROFILES: RivalProfile[] = [
     homeRegion: 'Northeast',
     supportBase: 9,
     momentum: 40,
+    trust: 52,
     ideology: { liberal: 48, libertarian: 42, owner: 58, worker: 51, religious: 40, immigrant: 55 }
   },
   {
@@ -105,6 +111,7 @@ const DEMOCRAT_PRIMARY_PROFILES: RivalProfile[] = [
     homeRegion: 'West',
     supportBase: 11,
     momentum: 34,
+    trust: 54,
     ideology: { liberal: 82, libertarian: 34, owner: 42, worker: 64, religious: 30, immigrant: 78 }
   }
 ];
@@ -118,6 +125,7 @@ const REPUBLICAN_PRIMARY_PROFILES: RivalProfile[] = [
     homeRegion: 'South',
     supportBase: 10,
     momentum: 32,
+    trust: 56,
     ideology: { liberal: 18, libertarian: 66, owner: 84, worker: 42, religious: 70, immigrant: 18 }
   },
   {
@@ -128,6 +136,7 @@ const REPUBLICAN_PRIMARY_PROFILES: RivalProfile[] = [
     homeRegion: 'Midwest',
     supportBase: 12,
     momentum: 38,
+    trust: 58,
     ideology: { liberal: 14, libertarian: 44, owner: 62, worker: 58, religious: 82, immigrant: 14 }
   },
   {
@@ -138,6 +147,7 @@ const REPUBLICAN_PRIMARY_PROFILES: RivalProfile[] = [
     homeRegion: 'South',
     supportBase: 11,
     momentum: 42,
+    trust: 54,
     ideology: { liberal: 10, libertarian: 36, owner: 54, worker: 56, religious: 90, immigrant: 10 }
   },
   {
@@ -148,6 +158,7 @@ const REPUBLICAN_PRIMARY_PROFILES: RivalProfile[] = [
     homeRegion: 'West',
     supportBase: 9,
     momentum: 35,
+    trust: 50,
     ideology: { liberal: 20, libertarian: 88, owner: 72, worker: 40, religious: 50, immigrant: 16 }
   }
 ];
@@ -162,6 +173,7 @@ const GENERAL_OPPONENTS: Record<'Democrat' | 'Republican', RivalProfile[]> = {
       homeRegion: 'West',
       supportBase: 14,
       momentum: 54,
+      trust: 60,
       ideology: { liberal: 76, libertarian: 32, owner: 42, worker: 68, religious: 34, immigrant: 80 }
     },
     {
@@ -172,6 +184,7 @@ const GENERAL_OPPONENTS: Record<'Democrat' | 'Republican', RivalProfile[]> = {
       homeRegion: 'Northeast',
       supportBase: 12,
       momentum: 50,
+      trust: 58,
       ideology: { liberal: 58, libertarian: 38, owner: 56, worker: 54, religious: 44, immigrant: 62 }
     }
   ],
@@ -184,6 +197,7 @@ const GENERAL_OPPONENTS: Record<'Democrat' | 'Republican', RivalProfile[]> = {
       homeRegion: 'South',
       supportBase: 14,
       momentum: 54,
+      trust: 60,
       ideology: { liberal: 18, libertarian: 68, owner: 82, worker: 46, religious: 78, immigrant: 18 }
     },
     {
@@ -194,6 +208,7 @@ const GENERAL_OPPONENTS: Record<'Democrat' | 'Republican', RivalProfile[]> = {
       homeRegion: 'Midwest',
       supportBase: 13,
       momentum: 52,
+      trust: 57,
       ideology: { liberal: 16, libertarian: 50, owner: 64, worker: 60, religious: 74, immigrant: 14 }
     }
   ]
@@ -260,6 +275,7 @@ export class SimulationEngine {
       budget: getBudgetByDifficulty(level),
       difficulty: level,
       momentum: 26,
+      trust: 50,
       delegates: 0,
       spending: {},
       ideology: {
@@ -292,6 +308,7 @@ export class SimulationEngine {
       budget: getBudgetByDifficulty(level),
       difficulty: level,
       momentum: profile.momentum + (level === 'hard' ? 4 : level === 'easy' ? -3 : 0),
+      trust: profile.trust + (level === 'easy' ? -3 : 0),
       delegates: 0,
       spending: {},
       ideology: { ...profile.ideology },
@@ -319,6 +336,7 @@ export class SimulationEngine {
       budget: getBudgetByDifficulty(level) + (level === 'hard' ? 600000 : 250000),
       difficulty: level,
       momentum: profile.momentum + (level === 'hard' ? 6 : 0),
+      trust: profile.trust + (level === 'easy' ? -2 : 0),
       delegates: 0,
       spending: {},
       ideology: { ...profile.ideology },
@@ -333,17 +351,18 @@ export class SimulationEngine {
     rival: RivalAI,
     states: StateElectionData[],
     currentPolling: Record<string, PollingData>,
-    difficulty: 'easy' | 'normal' | 'hard'
+    difficulty: 'easy' | 'normal' | 'hard',
+    coalitionFundraisingBonus = 0
   ): RivalAI {
     if (rival.status === 'withdrawn') {
       return {
         ...rival,
-        budget: Math.max(0, rival.budget + Math.floor(getWeeklyIncomeByDifficulty(rival.difficulty) * 0.15)),
+        budget: Math.max(0, rival.budget + Math.floor((getWeeklyIncomeByDifficulty(rival.difficulty) + coalitionFundraisingBonus) * 0.15)),
         momentum: Math.max(0, rival.momentum - 1)
       };
     }
 
-    const weeklyIncome = getWeeklyIncomeByDifficulty(rival.difficulty);
+    const weeklyIncome = getWeeklyIncomeByDifficulty(rival.difficulty) + coalitionFundraisingBonus;
     const nextBudgetPool = rival.budget + weeklyIncome;
     let newBudget = nextBudgetPool;
 
@@ -388,11 +407,13 @@ export class SimulationEngine {
     }
 
     const momentumGain = difficulty === 'hard' ? 3 : difficulty === 'normal' ? 1 : 0;
+    const trustShift = newBudget > rival.budget ? 1 : -1;
 
     return {
       ...rival,
       budget: Math.max(0, newBudget),
       momentum: Math.min(100, rival.momentum + momentumGain),
+      trust: clampPercentage(rival.trust + trustShift),
       spending: newSpending
     };
   }
@@ -404,6 +425,8 @@ export class SimulationEngine {
     playerMomentum: number,
     publicTrust: number,
     rivals: RivalAI[],
+    playerEndorsementEffect: CandidateStateEndorsementEffect = { scoreMultiplier: 1, turnoutBonus: 0 },
+    rivalEndorsementEffects: Record<string, CandidateStateEndorsementEffect> = {},
     globalStaffDiv = 2.0,
     globalVisitMult = 1.0,
     playerIssues: string[] = [],
@@ -423,10 +446,11 @@ export class SimulationEngine {
       playerMomentum,
       12,
       stateData.region
-    );
+    ) * playerEndorsementEffect.scoreMultiplier;
 
     const rivalScores = activeRivals.map((rival) => {
       const statusPenalty = rival.status === 'withdrawn' ? 0.18 : 1;
+      const endorsementEffect = rivalEndorsementEffects[rival.id] ?? { scoreMultiplier: 1, turnoutBonus: 0 };
       const score = buildCandidateScore(
         rival.ideology,
         stateData,
@@ -435,12 +459,12 @@ export class SimulationEngine {
         1.0,
         [],
         rival.party,
-        0.85,
+        0.4 + (rival.trust / 100) * 0.9,
         rival.momentum,
         rival.supportBase,
         rival.homeRegion,
         statusPenalty
-      );
+      ) * endorsementEffect.scoreMultiplier;
 
       return { rival, score };
     });
@@ -448,7 +472,7 @@ export class SimulationEngine {
     const totalGroundGame = (playerSpending.groundGame || 0) +
       rivalScores.reduce((sum, entry) => sum + (entry.rival.spending[stateData.stateName]?.groundGame || 0), 0);
     const totalMomentum = playerMomentum + rivalScores.reduce((sum, entry) => sum + entry.rival.momentum, 0);
-    const turnout = ElectionMath.calculateTurnout(stateData, totalGroundGame, totalMomentum);
+    const turnout = clampPercentage(ElectionMath.calculateTurnout(stateData, totalGroundGame, totalMomentum) + playerEndorsementEffect.turnoutBonus);
 
     const undecided = Math.max(4, Math.min(12, 12 - Math.floor(totalMomentum / 45)));
     const scoreSum = playerScore + rivalScores.reduce((sum, entry) => sum + entry.score, 0);
@@ -501,6 +525,8 @@ export class SimulationEngine {
     playerMomentum: number,
     publicTrust: number,
     rivalAI: RivalAI,
+    playerEndorsementEffect: CandidateStateEndorsementEffect = { scoreMultiplier: 1, turnoutBonus: 0 },
+    rivalEndorsementEffect: CandidateStateEndorsementEffect = { scoreMultiplier: 1, turnoutBonus: 0 },
     globalStaffDiv = 2.0,
     globalVisitMult = 1.0,
     playerIssues: string[] = [],
@@ -519,7 +545,7 @@ export class SimulationEngine {
       playerMomentum,
       12,
       stateData.region
-    );
+    ) * playerEndorsementEffect.scoreMultiplier;
 
     const rivalScore = buildCandidateScore(
       rivalAI.ideology,
@@ -529,17 +555,17 @@ export class SimulationEngine {
       1.0,
       [],
       rivalAI.party,
-      0.92,
+      0.42 + (rivalAI.trust / 100) * 0.88,
       rivalAI.momentum,
       rivalAI.supportBase,
       rivalAI.homeRegion
-    );
+    ) * rivalEndorsementEffect.scoreMultiplier;
 
-    const stateTurnout = ElectionMath.calculateTurnout(
+    const stateTurnout = clampPercentage(ElectionMath.calculateTurnout(
       stateData,
       (playerSpending.groundGame || 0) + (rivalAI.spending[stateData.stateName]?.groundGame || 0),
       playerMomentum + rivalAI.momentum
-    );
+    ) + playerEndorsementEffect.turnoutBonus + (rivalEndorsementEffect.turnoutBonus * 0.7));
 
     const totalScore = playerScore + rivalScore;
     if (totalScore <= 0) {

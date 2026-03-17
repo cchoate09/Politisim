@@ -4,11 +4,11 @@ This checklist turns the current competitive review into a working roadmap. The 
 
 ## Current Snapshot
 
-Estimated parity progress: `51%`
+Estimated parity progress: `61%`
 
-- Core election simulation: `66%`
+- Core election simulation: `80%`
 - Replayability and scenarios: `45%`
-- Presentation and immersion: `44%`
+- Presentation and immersion: `50%`
 - Product shell and Steam readiness: `35%`
 - QA, onboarding, and usability: `32%`
 
@@ -19,6 +19,8 @@ Estimated parity progress: `51%`
 - [x] Dropouts and endorsements exist
 - [x] State-by-state delegate rules now vary by party and contest
 - [x] Brokered conventions can now decide a deadlocked nomination
+- [x] Public endorsements now function as a live coalition system with AI competition and weekly campaign effects
+- [x] Election night now resolves through a dedicated state-calling sequence instead of an instant EV jump
 - [x] Debate stage is a bespoke screen with policy-choice consequences
 - [x] Scenario selector exists
 - [x] Three official scenarios exist
@@ -34,13 +36,13 @@ Goal: make the game feel strategically deep enough that players want multiple fu
 
 - [x] Add state-specific delegate rules
   Acceptance: some states are proportional, some have thresholds, and some award bonus delegates or partial winner-take-all by party/state logic.
-- [ ] Add endorsements as a real campaign system
+- [x] Add endorsements as a real campaign system
   Acceptance: unions, governors, former presidents, local machines, activists, and media figures can endorse based on ideology, trust, momentum, or state performance.
 - [ ] Add rival suspensions and consolidation logic with more nuance
   Acceptance: rivals do not just drop mechanically; they suspend based on money, trust, bad debate nights, weak polling, or missed delegate paths.
 - [x] Add convention drama
   Acceptance: a close nomination can trigger contested-convention style events, unity decisions, or negotiated momentum/trust outcomes.
-- [ ] Add a true election-night resolution layer
+- [x] Add a true election-night resolution layer
   Acceptance: the general election ends with states calling over time, not only a static EV summary.
 
 ### 2. Rival Identity
@@ -164,17 +166,17 @@ Goal: stop future content passes from quietly breaking the game.
 
 If we want the highest return on effort, tackle these next:
 
-1. Endorsement system
-2. Election-night resolution screen
-3. Field offices and volunteers
-4. Tutorial and glossary
-5. Audio/settings/accessibility
-6. Steam Cloud and final achievement coverage
-7. CI and deeper tests
+1. Field offices and volunteers
+2. Tutorial and glossary
+3. Audio/settings/accessibility
+4. Steam Cloud and final achievement coverage
+5. CI and deeper tests
 
 ## Latest Milestone Notes
 
 - `2026-03-16`: Added state-by-state delegate allocation rules for both parties, surfaced those rules in the UI, and introduced brokered conventions with ballot-by-ballot strategic resolution when no candidate reaches a delegate majority.
+- `2026-03-17`: Added a real endorsement system with party-specific validator rosters, player courtship actions, AI competition for backing, polling and fundraising effects, coalition tracking in Campaign HQ, and convention leverage tied to endorsement strength.
+- `2026-03-17`: Added a dedicated election-night resolution phase with state call waves, hidden polling misses, desk projections, and a final transition into the postgame report only after the map is actually called.
 
 ## How We Should Track Progress
 

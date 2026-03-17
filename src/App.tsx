@@ -11,6 +11,7 @@ import { DebateScreen } from './components/DebateScreen';
 import { ConventionModal } from './components/ConventionModal';
 import { StateActionPanel } from './components/StateActionPanel';
 import { CampaignHQView } from './components/CampaignHQView';
+import { ElectionNightScreen } from './components/ElectionNightScreen';
 import { EndGameScreen } from './components/EndGameScreen';
 import { VPSelectionModal } from './components/VPSelectionModal';
 import { ActivityLog } from './components/ActivityLog';
@@ -50,6 +51,7 @@ function App() {
     activeEvent,
     activeDebate,
     activeConvention,
+    activeElectionNight,
     previewDebate,
     generalOpponent,
     rivalAIs,
@@ -81,7 +83,7 @@ function App() {
     : (leadPrimaryRival?.shortName ?? leadPrimaryRival?.name ?? 'Field Leader');
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (!hasStarted || gamePhase === 'ended' || activeEvent || activeDebate || activeConvention) return;
+    if (!hasStarted || gamePhase === 'ended' || activeEvent || activeDebate || activeConvention || activeElectionNight) return;
     if ((event.target as HTMLElement).tagName === 'INPUT') return;
 
     if (event.code === 'Space') {
@@ -94,7 +96,7 @@ function App() {
       const idx = parseInt(event.key, 10) - 1;
       if (idx < TABS.length) setActiveTab(TABS[idx]);
     }
-  }, [hasStarted, gamePhase, activeEvent, activeDebate, activeConvention, advanceWeek]);
+  }, [hasStarted, gamePhase, activeEvent, activeDebate, activeConvention, activeElectionNight, advanceWeek]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -117,6 +119,10 @@ function App() {
 
   if (gamePhase === 'ended') {
     return <EndGameScreen />;
+  }
+
+  if (activeElectionNight) {
+    return <ElectionNightScreen />;
   }
 
   const saveSlots = getSaveSlots();

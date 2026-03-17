@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import './PrimaryElectionView.css';
 import { useGameStore } from '../store/gameStore';
 import { getPrimaryRuleProfile } from '../core/PrimaryRules';
+import { getCandidateEndorsementSummary } from '../core/EndorsementData';
 
 export const PrimaryElectionView: React.FC = () => {
   const {
@@ -15,7 +16,8 @@ export const PrimaryElectionView: React.FC = () => {
     rivalAIs,
     playerName,
     primaryResults,
-    activeConvention
+    activeConvention,
+    endorsements
   } = useGameStore();
   const [showAll, setShowAll] = useState(false);
 
@@ -96,6 +98,16 @@ export const PrimaryElectionView: React.FC = () => {
               </span>
             </div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.6rem' }}>{candidate.tagline}</div>
+            {(() => {
+              const coalition = getCandidateEndorsementSummary(endorsements, candidate.id);
+              if (coalition.count === 0) return null;
+              return (
+                <div className="field-endorsement-row">
+                  <span>{coalition.count} backers</span>
+                  <span>{coalition.prestige} leverage</span>
+                </div>
+              );
+            })()}
             {candidate.momentum !== null && (
               <div style={{ fontSize: '0.8rem', color: 'var(--text-main)' }}>
                 Momentum <strong>{candidate.momentum}</strong>

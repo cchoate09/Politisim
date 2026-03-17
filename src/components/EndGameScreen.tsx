@@ -23,11 +23,14 @@ export const EndGameScreen: React.FC = () => {
     delegateTarget,
     generalOpponent,
     activityLog,
+    activeElectionNight,
   } = useGameStore();
 
   const { playerEV, rivalEV } = useMemo(
-    () => computeEVTotals(states, pollingData),
-    [states, pollingData]
+    () => activeElectionNight
+      ? { playerEV: activeElectionNight.playerEV, rivalEV: activeElectionNight.rivalEV }
+      : computeEVTotals(states, pollingData),
+    [activeElectionNight, states, pollingData]
   );
 
   const generalTarget = Math.floor(states.reduce((sum, state) => sum + state.delegatesOrEV, 0) / 2) + 1;
@@ -86,27 +89,34 @@ export const EndGameScreen: React.FC = () => {
   const stateHighlights = useMemo(() => {
     if (endedInPrimary) return [];
 
-    const calledStates = states
-      .map((state) => {
-        const poll = pollingData[state.stateName];
-        if (!poll) return null;
+    const calledStates = activeElectionNight
+      ? activeElectionNight.results.map((result) => ({
+          name: result.stateName,
+          value: result.electoralVotes,
+          margin: result.margin,
+          playerWon: result.winnerId === 'player'
+        }))
+      : states
+          .map((state) => {
+            const poll = pollingData[state.stateName];
+            if (!poll) return null;
 
-        const playerWon = poll.player >= poll.rival;
-        return {
-          name: state.stateName,
-          value: state.delegatesOrEV,
-          margin: Math.abs(poll.player - poll.rival),
-          playerWon
-        };
-      })
-      .filter(Boolean) as { name: string; value: number; margin: number; playerWon: boolean }[];
+            const playerWon = poll.player >= poll.rival;
+            return {
+              name: state.stateName,
+              value: state.delegatesOrEV,
+              margin: Math.abs(poll.player - poll.rival),
+              playerWon
+            };
+          })
+          .filter(Boolean) as { name: string; value: number; margin: number; playerWon: boolean }[];
 
     const highlights = calledStates
       .sort((a, b) => b.value - a.value)
       .slice(0, 6);
 
     return highlights;
-  }, [endedInPrimary, pollingData, states]);
+  }, [activeElectionNight, endedInPrimary, pollingData, states]);
 
   const closingMoments = useMemo(() => activityLog.slice(-4).reverse(), [activityLog]);
 

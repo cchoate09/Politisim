@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import './CampaignHQView.css';
 import { useGameStore } from '../store/gameStore';
+import { evaluateEndorsement, getCandidateEndorsementSummary, type ActiveEndorsement, type CandidateEndorsementSnapshot } from '../core/EndorsementData';
+import type { PlayerDemographics } from '../core/ElectionMath';
 
 const AVAILABLE_STAFF = [
   {
@@ -27,48 +29,348 @@ const AVAILABLE_STAFF = [
 ];
 
 export const CampaignHQView: React.FC = () => {
-  const { hiredStaff, hireStaff, budget } = useGameStore();
+  const {
+    hiredStaff,
+    hireStaff,
+    budget,
+    stamina,
+    currentWeek,
+    publicTrust,
+    momentum,
+    playerName,
+    playerDelegates,
+    delegateTarget,
+    playerIdeology,
+    endorsements,
+    rivalAIs,
+    primaryResults,
+    gamePhase,
+    activeConvention,
+    courtEndorsement
+  } = useGameStore();
 
   const formattedBudget = new Intl.NumberFormat('en-US', {
     style: 'currency', currency: 'USD', maximumFractionDigits: 0
   }).format(budget);
 
+  const candidateSnapshots = useMemo(() => {
+    const getWinStats = (candidateId: string) => {
+      return Object.values(primaryResults).reduce((totals, result) => {
+        const winnerId = result.fieldShares[0]?.candidateId;
+        if (winnerId !== candidateId) return totals;
+        totals.stateWins += 1;
+        if (result.week >= Math.max(1, currentWeek - 6)) totals.recentWins += 1;
+        return totals;
+      }, { stateWins: 0, recentWins: 0 });
+    };
+
+    const playerStats = getWinStats('player');
+    const playerSnapshot: CandidateEndorsementSnapshot = {
+      id: 'player',
+      name: playerName,
+      ideology: playerIdeology,
+      momentum,
+      trust: publicTrust,
+      delegates: playerDelegates,
+      delegateTarget,
+      stateWins: playerStats.stateWins,
+      recentWins: playerStats.recentWins,
+      homeRegion: 'National',
+      supportBase: 14,
+      status: 'player'
+    };
+
+    const rivalSnapshots = rivalAIs.map((rival) => {
+      const winStats = getWinStats(rival.id);
+      return {
+        id: rival.id,
+        name: rival.name,
+        ideology: rival.ideology,
+        momentum: rival.momentum,
+        trust: rival.trust,
+        delegates: rival.delegates,
+        delegateTarget,
+        stateWins: winStats.stateWins,
+        recentWins: winStats.recentWins,
+        homeRegion: rival.homeRegion,
+        supportBase: rival.supportBase,
+        status: rival.status === 'nominee' ? 'nominee' : rival.status
+      } satisfies CandidateEndorsementSnapshot;
+    });
+
+    return [playerSnapshot, ...rivalSnapshots];
+  }, [currentWeek, delegateTarget, momentum, playerDelegates, playerIdeology, playerName, primaryResults, publicTrust, rivalAIs]);
+
+  const playerCoalition = getCandidateEndorsementSummary(endorsements, 'player');
+  const playerBackers = endorsements.filter((endorsement) => endorsement.endorsedCandidateId === 'player');
+  const unresolvedEndorsements = endorsements
+    .filter((endorsement) => !endorsement.endorsedCandidateId)
+    .map((endorsement) => ({
+      endorsement,
+      evaluation: evaluateEndorsement(endorsement, candidateSnapshots, currentWeek)
+    }))
+    .sort((left, right) => {
+      const leftAvailable = currentWeek >= left.endorsement.availableWeek ? 1 : 0;
+      const rightAvailable = currentWeek >= right.endorsement.availableWeek ? 1 : 0;
+      if (leftAvailable !== rightAvailable) return rightAvailable - leftAvailable;
+      return right.evaluation.standings[0]?.score - left.evaluation.standings[0]?.score;
+    });
+  const rivalCoalitions = rivalAIs
+    .map((rival) => ({
+      rival,
+      summary: getCandidateEndorsementSummary(endorsements, rival.id),
+      backers: endorsements.filter((endorsement) => endorsement.endorsedCandidateId === rival.id)
+    }))
+    .filter((entry) => entry.summary.count > 0)
+    .sort((left, right) => {
+      if (left.summary.prestige !== right.summary.prestige) return right.summary.prestige - left.summary.prestige;
+      return right.rival.delegates - left.rival.delegates;
+    })
+    .slice(0, 3);
+
   return (
     <div className="campaign-hq-view">
       <div className="hq-header">
-        <h2>Campaign HQ & Staff</h2>
-        <p>Recruit senior staff to stabilize the operation, sharpen your targeting, and survive the pressure of a long national race.</p>
+        <h2>Campaign HQ & Coalition</h2>
+        <p>Manage the staff, validators, and interest-group lanes that can turn a strong polling operation into a durable nomination coalition.</p>
         <div className="hq-budget">Campaign Funds: {formattedBudget}</div>
       </div>
 
-      <div className="staff-grid">
-        {AVAILABLE_STAFF.map((staff) => {
-          const isHired = hiredStaff.includes(staff.id);
-          const canAfford = budget >= staff.cost;
-
-          return (
-            <div key={staff.id} className={`staff-card ${isHired ? 'hired' : ''}`}>
-              <div className="staff-icon">{staff.icon}</div>
-              <div className="staff-details">
-                <h3>{staff.name}</h3>
-                <p className="staff-desc">{staff.desc}</p>
-                <div className="staff-footer">
-                  <span className="staff-cost">
-                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(staff.cost)}
-                  </span>
-                  <button
-                    className="hire-btn"
-                    disabled={isHired || !canAfford}
-                    onClick={() => hireStaff(staff.id, staff.cost)}
-                  >
-                    {isHired ? 'Employed' : canAfford ? 'Hire Staff' : 'Insufficient Funds'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+      <div className="hq-summary-grid">
+        <SummaryCard label="Endorsements Held" value={playerCoalition.count.toString()} detail="Committed public validators currently backing you." />
+        <SummaryCard label="Coalition Finance" value={`$${Math.round(playerCoalition.weeklyFundraising / 1000)}K`} detail="Approximate weekly network fundraising unlocked by endorsements." />
+        <SummaryCard label="Convention Weight" value={playerCoalition.conventionWeight.toString()} detail="Broker leverage if the nomination reaches a contested floor." />
+        <SummaryCard label="Candidate Stamina" value={`${stamina}/100`} detail="Courtship costs stamina as well as money, so not every meeting fits every week." />
       </div>
+
+      <div className="hq-columns">
+        <section className="hq-panel">
+          <div className="panel-header">
+            <div>
+              <h3>Senior Staff</h3>
+              <p>Operational hires that stabilize the campaign before the coalition race gets ugly.</p>
+            </div>
+          </div>
+
+          <div className="staff-grid">
+            {AVAILABLE_STAFF.map((staff) => {
+              const isHired = hiredStaff.includes(staff.id);
+              const canAfford = budget >= staff.cost;
+
+              return (
+                <div key={staff.id} className={`staff-card ${isHired ? 'hired' : ''}`}>
+                  <div className="staff-icon">{staff.icon}</div>
+                  <div className="staff-details">
+                    <h3>{staff.name}</h3>
+                    <p className="staff-desc">{staff.desc}</p>
+                    <div className="staff-footer">
+                      <span className="staff-cost">
+                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(staff.cost)}
+                      </span>
+                      <button
+                        className="hire-btn"
+                        disabled={isHired || !canAfford}
+                        onClick={() => hireStaff(staff.id, staff.cost)}
+                      >
+                        {isHired ? 'Employed' : canAfford ? 'Hire Staff' : 'Insufficient Funds'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="hq-panel">
+          <div className="panel-header">
+            <div>
+              <h3>Your Coalition</h3>
+              <p>These public validators now carry your message into unions, donor rooms, activist networks, and state party machinery.</p>
+            </div>
+          </div>
+
+          {playerBackers.length === 0 ? (
+            <div className="empty-state-card">
+              No major endorsers have committed yet. Use cash and stamina to court blocs before rivals lock them down.
+            </div>
+          ) : (
+            <div className="endorsement-grid compact">
+              {playerBackers.map((endorsement) => (
+                <EndorsementCard key={endorsement.id} endorsement={endorsement} mode="committed" />
+              ))}
+            </div>
+          )}
+
+          {rivalCoalitions.length > 0 && (
+            <>
+              <div className="subsection-label">Rival Blocs</div>
+              <div className="rival-coalition-list">
+                {rivalCoalitions.map(({ rival, summary, backers }) => (
+                  <div key={rival.id} className="rival-coalition-card">
+                    <div className="rival-coalition-header">
+                      <strong>{rival.name}</strong>
+                      <span>{summary.count} backers | {summary.prestige} prestige</span>
+                    </div>
+                    <div className="rival-coalition-tags">
+                      {backers.slice(0, 3).map((endorsement) => (
+                        <span key={endorsement.id}>{endorsement.name}</span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </section>
+      </div>
+
+      <section className="hq-panel">
+        <div className="panel-header">
+          <div>
+            <h3>Open Endorsement Board</h3>
+            <p>Track who is available, what they care about, and whether they are leaning toward your campaign or drifting to a rival.</p>
+          </div>
+        </div>
+
+        <div className="endorsement-grid">
+          {unresolvedEndorsements.map(({ endorsement, evaluation }) => {
+            const availableNow = currentWeek >= endorsement.availableWeek;
+            const canCourt = gamePhase === 'primary'
+              && availableNow
+              && !activeConvention
+              && budget >= endorsement.courtingCost
+              && stamina >= endorsement.staminaCost
+              && endorsement.lastContactWeek !== currentWeek;
+
+            return (
+              <div key={endorsement.id} className={`endorsement-card ${availableNow ? '' : 'locked'}`}>
+                <div className="endorsement-top">
+                  <div className="endorsement-icon">{endorsement.icon}</div>
+                  <div>
+                    <div className="endorsement-title">{endorsement.name}</div>
+                    <div className="endorsement-subtitle">{endorsement.title}</div>
+                  </div>
+                  <div className={`endorsement-status ${evaluation.playerLean}`}>
+                    {availableNow ? getLeanLabel(evaluation.playerLean) : `Opens W${endorsement.availableWeek}`}
+                  </div>
+                </div>
+
+                <p className="endorsement-copy">{endorsement.description}</p>
+
+                <div className="endorsement-tags">
+                  <span>{endorsement.category.replace('_', ' ')}</span>
+                  {endorsement.regions.slice(0, 2).map((region) => <span key={`${endorsement.id}-${region}`}>{region}</span>)}
+                  {describePriorityTags(endorsement.priorities).map((tag) => <span key={`${endorsement.id}-${tag}`}>{tag}</span>)}
+                </div>
+
+                <div className="endorsement-meta">
+                  <span>Courtship cost: {formatCompactDollars(endorsement.courtingCost)}</span>
+                  <span>Stamina: -{endorsement.staminaCost}</span>
+                </div>
+
+                <div className="endorsement-meter">
+                  <div className="endorsement-meter-row">
+                    <span>Field leader</span>
+                    <strong>{evaluation.standings[0]?.name ?? 'Unclear'}</strong>
+                  </div>
+                  <div className="endorsement-meter-copy">
+                    {availableNow
+                      ? `Threshold to decide: ${Math.round(evaluation.threshold)}. This endorsement currently reads as ${getLeanSentence(evaluation.playerLean)}.`
+                      : `Still frozen early. This bloc will not move publicly until week ${endorsement.availableWeek}.`}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="court-btn"
+                  disabled={!canCourt}
+                  onClick={() => courtEndorsement(endorsement.id)}
+                >
+                  {!availableNow
+                    ? `Available Week ${endorsement.availableWeek}`
+                    : activeConvention
+                      ? 'Resolve Convention First'
+                      : endorsement.lastContactWeek === currentWeek
+                        ? 'Already Courted This Week'
+                        : gamePhase !== 'primary'
+                          ? 'Primary Season Only'
+                          : budget < endorsement.courtingCost || stamina < endorsement.staminaCost
+                            ? 'Need Cash or Stamina'
+                            : 'Court Endorsement'}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </section>
     </div>
   );
 };
+
+function SummaryCard({ label, value, detail }: { label: string; value: string; detail: string }) {
+  return (
+    <div className="summary-card">
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <p>{detail}</p>
+    </div>
+  );
+}
+
+function EndorsementCard({ endorsement, mode }: { endorsement: ActiveEndorsement; mode: 'committed' }) {
+  return (
+    <div className={`endorsement-card ${mode}`}>
+      <div className="endorsement-top">
+        <div className="endorsement-icon">{endorsement.icon}</div>
+        <div>
+          <div className="endorsement-title">{endorsement.name}</div>
+          <div className="endorsement-subtitle">{endorsement.title}</div>
+        </div>
+      </div>
+      <p className="endorsement-copy">{endorsement.description}</p>
+      <div className="endorsement-tags">
+        {endorsement.homeStates.slice(0, 3).map((state) => <span key={`${endorsement.id}-${state}`}>{state}</span>)}
+        {describePriorityTags(endorsement.priorities).map((tag) => <span key={`${endorsement.id}-${tag}`}>{tag}</span>)}
+      </div>
+      <div className="endorsement-meta">
+        <span>Finance lane: {formatCompactDollars(endorsement.effects.weeklyFundraising)}/wk</span>
+        <span>Convention weight: {endorsement.effects.conventionWeight}</span>
+      </div>
+    </div>
+  );
+}
+
+function describePriorityTags(priorities: Partial<PlayerDemographics>): string[] {
+  return Object.entries(priorities)
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, 2)
+    .map(([key]) => {
+      if (key === 'owner') return 'Business';
+      if (key === 'worker') return 'Working class';
+      return key.charAt(0).toUpperCase() + key.slice(1);
+    });
+}
+
+function getLeanLabel(lean: 'strong' | 'lean' | 'competitive' | 'cold') {
+  if (lean === 'strong') return 'Leaning to you';
+  if (lean === 'lean') return 'Open to you';
+  if (lean === 'competitive') return 'Contested';
+  return 'Leaning rival';
+}
+
+function getLeanSentence(lean: 'strong' | 'lean' | 'competitive' | 'cold') {
+  if (lean === 'strong') return 'close to breaking your way';
+  if (lean === 'lean') return 'persuadable if you keep investing';
+  if (lean === 'competitive') return 'a live fight between campaigns';
+  return 'a difficult chase unless the race changes';
+}
+
+function formatCompactDollars(value: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    notation: 'compact',
+    maximumFractionDigits: 1
+  }).format(value);
+}
