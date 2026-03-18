@@ -14,7 +14,7 @@ function readJson(filePath) {
 test('mod manifest exists and references real scenarios', () => {
   assert.ok(fs.existsSync(manifestPath), 'Expected public/mods/manifest.json to exist');
   const manifest = readJson(manifestPath);
-  assert.ok(Array.isArray(manifest) && manifest.length >= 3, 'Expected at least three scenarios in the manifest');
+  assert.ok(Array.isArray(manifest) && manifest.length >= 5, 'Expected at least five scenarios in the manifest');
 
   const ids = new Set();
   for (const entry of manifest) {

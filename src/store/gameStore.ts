@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { PlayerDemographics } from '../core/ElectionMath';
 import type { StateElectionData, CampaignSpendingData } from '../core/CampaignDataParser';
+import type { CampaignEvent, CampaignEventChoice } from '../core/CampaignTypes';
 import { CampaignDataParser, type CalendarWeek } from '../core/CampaignDataParser';
 import {
   applyDebateStanding,
@@ -31,6 +32,10 @@ import {
   type PrimaryStateProjection,
   type RivalAI
 } from '../core/SimulationEngine';
+import {
+  getScenarioEventDeck,
+  getScenarioVPCandidates
+} from '../core/ScenarioContent';
 import {
   applyAICourtshipPressure,
   applyPlayerCourtship,
@@ -94,30 +99,6 @@ import { unlockAchievement } from '../core/Achievements';
 import { getCloudSaveFileName } from '../core/SteamSync';
 
 // ─── EVENT DEFINITIONS ────────────────────────────────────────────────
-export interface CampaignEventChoice {
-  text: string;
-  moneyEffect: number;
-  momentumEffect: number;
-  trustEffect: number;
-  staminaEffect?: number;
-  volunteerEffect?: number;
-  donorEffects?: Array<{ blocId: DonorBlocId; relationshipDelta: number; energyDelta: number }>;
-  mediaEffects?: Array<{ channelId: MediaChannelId; intensityDelta: number }>;
-  rivalId?: string | null;
-  rivalMomentumEffect?: number;
-  rivalTrustEffect?: number;
-  rivalBudgetEffect?: number;
-  tags?: string[];
-  logLine?: string;
-}
-
-export interface CampaignEvent {
-  title: string;
-  description: string;
-  phase?: 'primary' | 'general' | 'any';
-  choices: CampaignEventChoice[];
-}
-
 const POSSIBLE_EVENTS: CampaignEvent[] = [
   // ── Scandals ──
   {
@@ -711,43 +692,29 @@ export const DEBATE_EVENTS: CampaignEvent[] = [
 
 // ─── VP CANDIDATE DEFINITIONS ────────────────────────────────────────
 export interface VPCandidate {
+  id: string;
   name: string;
+  title: string;
   description: string;
+  party: 'Democrat' | 'Republican';
+  homeRegion: string;
+  homeStates: string[];
+  issueFocus: string[];
+  strengths: string[];
+  liabilities: string[];
   bonuses: Partial<PlayerDemographics>;
   momentumBonus: number;
   trustBonus: number;
+  budgetBonus: number;
+  volunteerBonus: number;
+  turnoutBonus: number;
+  debateBonus: number;
+  regionalLift: number;
+  battlegroundLift: number;
+  donorLanes: DonorBlocId[];
+  mediaLanes: MediaChannelId[];
+  surrogatePower?: number;
 }
-
-const VP_CANDIDATES: VPCandidate[] = [
-  {
-    name: "Sen. Maria Torres",
-    description: "A fiery progressive senator from New Mexico. Massively boosts immigrant and liberal appeal.",
-    bonuses: { liberal: 15, immigrant: 20, worker: 5 },
-    momentumBonus: 10,
-    trustBonus: 5
-  },
-  {
-    name: "Gov. James Mitchell",
-    description: "A moderate southern governor. Strong with religious and business demographics.",
-    bonuses: { religious: 15, owner: 15, libertarian: 5 },
-    momentumBonus: 5,
-    trustBonus: 10
-  },
-  {
-    name: "Fmr. Gen. Sarah Chen",
-    description: "A retired four-star general. Massive trust and momentum, but alienates the libertarian base.",
-    bonuses: { worker: 10, religious: 5, libertarian: -10 },
-    momentumBonus: 20,
-    trustBonus: 15
-  },
-  {
-    name: "Rep. David Park",
-    description: "A young tech-savvy congressman. Appeals to libertarians and young workers.",
-    bonuses: { libertarian: 15, worker: 10, liberal: 10 },
-    momentumBonus: 15,
-    trustBonus: 0
-  }
-];
 
 // ─── ACTIVITY LOG ────────────────────────────────────────────────────
 export interface ActivityLogEntry {
@@ -786,6 +753,7 @@ export interface GameState {
   hasStarted: boolean;
   scenarioId: string;
   scenarioName: string;
+  scenarioElectionYear: number;
 
   playerName: string;
   playerHomeRegion: PlayerHomeRegion;
@@ -896,6 +864,7 @@ const initialState: Omit<GameState, 'initializeCampaign' | 'runSimulation' | 'se
   hasStarted: false,
   scenarioId: 'vanilla',
   scenarioName: 'Modern Presidential Cycle',
+  scenarioElectionYear: 2024,
 
   playerName: 'Your Candidate',
   playerHomeRegion: 'National' as PlayerHomeRegion,
@@ -1187,38 +1156,8 @@ function applyRivalEventEffects(
 
   return {
     rivalAIs: rivalAIs.map((rival) => rival.id === choice.rivalId ? applyToRival(rival) : rival),
-    generalOpponent: generalOpponent?.id === choice.rivalId ? applyToRival(generalOpponent) : generalOpponent
+    generalOpponent: generalOpponent && generalOpponent.id === choice.rivalId ? applyToRival(generalOpponent) : generalOpponent
   };
-}
-
-function pickEndorsementTarget(
-  playerIdeology: PlayerDemographics,
-  playerId: string,
-  rivals: RivalAI[],
-  withdrawingRival: RivalAI
-): string {
-  const activeTargets = rivals.filter((rival) => rival.id !== withdrawingRival.id && rival.status !== 'withdrawn');
-  const playerDistance = Object.keys(playerIdeology).reduce((sum, key) => {
-    const trait = key as keyof PlayerDemographics;
-    return sum + Math.abs(playerIdeology[trait] - withdrawingRival.ideology[trait]);
-  }, 0);
-
-  let bestTargetId = playerId;
-  let bestDistance = playerDistance;
-
-  for (const rival of activeTargets) {
-    const distance = Object.keys(rival.ideology).reduce((sum, key) => {
-      const trait = key as keyof PlayerDemographics;
-      return sum + Math.abs(rival.ideology[trait] - withdrawingRival.ideology[trait]);
-    }, 0);
-
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      bestTargetId = rival.id;
-    }
-  }
-
-  return bestTargetId;
 }
 
 function getTotalPartyDelegates(states: StateElectionData[], party: 'Democrat' | 'Republican'): number {
@@ -1244,6 +1183,116 @@ function getCandidateWinStats(
     }
     return totals;
   }, { stateWins: 0, recentWins: 0 });
+}
+
+function getIdeologyDistance(left: PlayerDemographics, right: PlayerDemographics): number {
+  return (Object.keys(left) as Array<keyof PlayerDemographics>).reduce((sum, trait) => {
+    return sum + Math.abs(left[trait] - right[trait]);
+  }, 0);
+}
+
+function pickSuspensionTarget(
+  playerIdeology: PlayerDemographics,
+  rivals: RivalAI[],
+  endorsements: ActiveEndorsement[],
+  withdrawingRival: RivalAI
+): string | null {
+  const activeTargets = rivals.filter((rival) => rival.id !== withdrawingRival.id && rival.status !== 'withdrawn');
+  const playerDistance = getIdeologyDistance(playerIdeology, withdrawingRival.ideology);
+  const playerCoalition = getCandidateEndorsementSummary(endorsements, 'player');
+  let bestTargetId: string | null = 'player';
+  let bestScore = (1000 - playerDistance) + (playerCoalition.prestige * 6);
+
+  for (const rival of activeTargets) {
+    const distance = getIdeologyDistance(rival.ideology, withdrawingRival.ideology);
+    const coalition = getCandidateEndorsementSummary(endorsements, rival.id);
+    const score = (1000 - distance) + (coalition.prestige * 7) + rival.delegates + (rival.trust * 1.8);
+    if (score > bestScore) {
+      bestScore = score;
+      bestTargetId = rival.id;
+    }
+  }
+
+  if (bestScore < 825) {
+    return null;
+  }
+
+  return bestTargetId;
+}
+
+function evaluatePrimarySuspension(
+  rivals: RivalAI[],
+  primaryResults: Record<string, PrimaryStateResult>,
+  endorsements: ActiveEndorsement[],
+  playerIdeology: PlayerDemographics,
+  currentWeek: number,
+  delegateTarget: number
+): {
+  withdrawingRival: RivalAI;
+  endorsementTargetId: string | null;
+  reason: string;
+  supportTransfer: number;
+  momentumTransfer: number;
+  trustTransfer: number;
+} | null {
+  const activeRivals = getOrderedRivals(rivals).filter((rival) => rival.status === 'active');
+  if (activeRivals.length <= 2 || currentWeek < 34) {
+    return null;
+  }
+
+  const leader = activeRivals[0];
+  const candidates = activeRivals.slice(1).map((rival) => {
+    const winStats = getCandidateWinStats(primaryResults, rival.id, currentWeek);
+    const coalition = getCandidateEndorsementSummary(endorsements, rival.id);
+    const laneCrowding = activeRivals.some((other) => {
+      if (other.id === rival.id) return false;
+      const isCloseLane = getIdeologyDistance(other.ideology, rival.ideology) <= 78;
+      const isStronger = other.delegates > rival.delegates + 80 || other.momentum > rival.momentum + 9;
+      return isCloseLane && isStronger;
+    });
+    const delegateRatio = rival.delegates / Math.max(1, leader.delegates);
+    const delegateDeficit = leader.delegates - rival.delegates;
+    const factors = [
+      rival.budget < 240000 ? 'cash dried up' : null,
+      rival.trust < 42 ? 'elite support cracked' : null,
+      rival.momentum < 32 ? 'the campaign lost altitude' : null,
+      delegateRatio < 0.42 || delegateDeficit > Math.max(220, delegateTarget * 0.11) ? 'the delegate path narrowed' : null,
+      currentWeek >= 42 && winStats.stateWins === 0 ? 'their home-region promise never materialized' : null,
+      laneCrowding ? 'a stronger rival captured their lane' : null,
+      coalition.count === 0 && currentWeek >= 40 ? 'validators stopped taking the calls' : null
+    ].filter(Boolean) as string[];
+
+    const pressureScore = factors.length
+      + (rival.budget < 180000 ? 1 : 0)
+      + (rival.trust < 38 ? 1 : 0)
+      + (rival.momentum < 26 ? 1 : 0)
+      + (winStats.recentWins === 0 && currentWeek >= 40 ? 1 : 0);
+
+    return {
+      rival,
+      coalition,
+      factors,
+      pressureScore
+    };
+  });
+
+  const target = [...candidates]
+    .filter((entry) => entry.pressureScore >= 3 && entry.factors.length > 0)
+    .sort((left, right) => right.pressureScore - left.pressureScore)[0];
+
+  if (!target) {
+    return null;
+  }
+
+  const endorsementTargetId = pickSuspensionTarget(playerIdeology, rivals, endorsements, target.rival);
+  return {
+    withdrawingRival: target.rival,
+    endorsementTargetId,
+    reason: target.factors.slice(0, 2).join(' and '),
+    supportTransfer: 4 + Math.min(6, target.coalition.prestige + Math.floor(target.rival.supportBase / 3)),
+    momentumTransfer: target.rival.temperament === 'charismatic' ? 6 : 4,
+    trustTransfer: target.rival.trust >= 50 ? 4 : 2
+  };
 }
 
 function buildPlayerEndorsementSnapshot(
@@ -1324,6 +1373,7 @@ type PersistedGameState = Pick<GameState,
   | 'difficulty'
   | 'scenarioId'
   | 'scenarioName'
+  | 'scenarioElectionYear'
   | 'playerName'
   | 'playerHomeRegion'
   | 'budget'
@@ -1367,7 +1417,7 @@ type PersistedGameState = Pick<GameState,
   savedAt: string;
 };
 
-export { VP_CANDIDATES, computeEVTotals };
+export { computeEVTotals };
 export type { VPCandidate as VPCandidateType };
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -1381,14 +1431,14 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     // Generate realist campaign calendar
-    const calendar = CampaignDataParser.generateCalendar();
+    const calendar = CampaignDataParser.generateCalendar(state.scenarioElectionYear);
 
     const totalPrimaryDelegates = statesData.reduce((sum, contestState) => {
       return sum + (state.voterParty === 'Democrat' ? contestState.demDelegates : contestState.repDelegates);
     }, 0);
     const primaryTarget = Math.floor(totalPrimaryDelegates / 2) + 1;
 
-    const opponents = SimulationEngine.createPrimaryRivals(state.difficulty, state.voterParty, statesData);
+    const opponents = SimulationEngine.createPrimaryRivals(state.difficulty, state.voterParty, statesData, state.scenarioId);
     const donorBlocs = createInitialDonorBlocs(state.playerIdeology, state.playerIssues, state.voterParty);
     const mediaChannels = createInitialMediaChannels(state.voterParty, state.playerIssues);
     const oppositionResearch = createOppositionResearchBoard(opponents);
@@ -1420,7 +1470,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       primaryFieldHistory: [],
       rivalAIs: opponents,
       generalOpponent: null,
-      activityLog: [{ week: 1, message: `Campaign launched — July 2023. ${statesData.length} contests in play. You are facing ${opponents.length} major primary opponents.`, type: 'info' }]
+      activityLog: [{
+        week: 1,
+        message: `Campaign launched — ${calendar[0]?.month ?? 'July'} ${calendar[0]?.year ?? state.scenarioElectionYear - 1}. ${statesData.length} contests in play. You are facing ${opponents.length} major primary opponents.`,
+        type: 'info'
+      }]
     });
     get().runSimulation();
   },
@@ -1444,7 +1498,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const effectivePlayerIdeology = applyDebateStanding(state.playerIdeology, state.debateStanding);
     const activeGeneralOpponent = state.generalOpponent
-      ?? SimulationEngine.createGeneralOpponentAI(state.difficulty, state.voterParty, state.states);
+      ?? SimulationEngine.createGeneralOpponentAI(state.difficulty, state.voterParty, state.states, state.scenarioId);
     const rival = state.gamePhase === 'general'
       ? activeGeneralOpponent
       : getLeadRival(state.rivalAIs, state.difficulty);
@@ -1492,7 +1546,8 @@ export const useGameStore = create<GameState>((set, get) => ({
             visitMult,
             state.playerIssues,
             state.voterParty,
-            state.playerHomeRegion
+            state.playerHomeRegion,
+            state.vpPick
           );
       newPolling[s.stateName] = poll;
 
@@ -1796,7 +1851,21 @@ export const useGameStore = create<GameState>((set, get) => ({
         playerIdeology: newIdeology,
         momentum: Math.min(100, state.momentum + vp.momentumBonus),
         publicTrust: Math.min(100, state.publicTrust + vp.trustBonus),
-        activityLog: [...state.activityLog, { week: state.currentWeek, message: `Selected ${vp.name} as running mate!`, type: 'positive' }]
+        budget: Math.max(0, state.budget + vp.budgetBonus),
+        volunteerReserve: Math.min(2400, state.volunteerReserve + vp.volunteerBonus),
+        activityLog: capLog([
+          ...state.activityLog,
+          {
+            week: state.currentWeek,
+            message: `Selected ${vp.name} as running mate. ${vp.title} now joins the ticket.`,
+            type: 'positive'
+          },
+          {
+            week: state.currentWeek,
+            message: `Ticket effect: +${vp.momentumBonus} momentum, +${vp.trustBonus} trust, +${Math.round(vp.budgetBonus / 1000)}K launch money, +${vp.volunteerBonus} volunteers.`,
+            type: 'info'
+          }
+        ])
       });
       unlockAchievement('ACH_RUNNING_MATE');
       get().runSimulation();
@@ -1989,6 +2058,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       difficulty: state.difficulty,
       scenarioId: state.scenarioId,
       scenarioName: state.scenarioName,
+      scenarioElectionYear: state.scenarioElectionYear,
       playerName: state.playerName,
       playerHomeRegion: state.playerHomeRegion,
       budget: state.budget,
@@ -2043,7 +2113,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (saveDataStr) {
       try {
         const parsed = JSON.parse(saveDataStr) as Partial<PersistedGameState>;
-        const restoredCalendar = CampaignDataParser.generateCalendar();
+        const restoredCalendar = CampaignDataParser.generateCalendar(parsed.scenarioElectionYear ?? initialState.scenarioElectionYear);
         const restoredWeek = parsed.currentWeek ?? initialState.currentWeek;
         const restoredCalendarPhase = restoredCalendar[restoredWeek - 1]?.phase ?? parsed.calendarPhase ?? initialState.calendarPhase;
         const restoredStates = parsed.states ?? [];
@@ -2068,7 +2138,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         }));
         const normalizedGeneralOpponent = parsed.generalOpponent
           ? {
-              ...SimulationEngine.createGeneralOpponentAI(parsed.difficulty ?? initialState.difficulty, parsed.voterParty ?? initialState.voterParty, restoredStates),
+              ...SimulationEngine.createGeneralOpponentAI(parsed.difficulty ?? initialState.difficulty, parsed.voterParty ?? initialState.voterParty, restoredStates, parsed.scenarioId ?? initialState.scenarioId),
               ...parsed.generalOpponent,
               shortName: parsed.generalOpponent.shortName ?? parsed.generalOpponent.name?.split(' ').slice(-1)[0] ?? 'Opponent',
               trust: parsed.generalOpponent.trust ?? 55,
@@ -2106,6 +2176,13 @@ export const useGameStore = create<GameState>((set, get) => ({
         const normalizedMediaChannels = parsed.mediaChannels?.length
           ? parsed.mediaChannels
           : createInitialMediaChannels(restoredParty, restoredIssues);
+        const defaultVPBench = getScenarioVPCandidates(parsed.scenarioId ?? initialState.scenarioId, restoredParty);
+        const normalizedVPPick = parsed.vpPick
+          ? (() => {
+              const matched = defaultVPBench.find((candidate) => candidate.id === (parsed.vpPick as Partial<VPCandidate>).id || candidate.name === parsed.vpPick?.name);
+              return matched ? { ...matched, ...parsed.vpPick } : null;
+            })()
+          : null;
         const normalizedResearch = normalizeOppositionResearch(
           parsed.oppositionResearch,
           [
@@ -2118,6 +2195,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           ...initialState,
           ...parsed,
           hasStarted: true,
+          scenarioElectionYear: parsed.scenarioElectionYear ?? initialState.scenarioElectionYear,
           calendar: restoredCalendar,
           calendarPhase: restoredCalendarPhase,
           playerIdeology: restoredIdeology,
@@ -2139,6 +2217,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           primaryResults: parsed.primaryResults ?? {},
           primaryFieldAverages: parsed.primaryFieldAverages ?? [],
           primaryFieldHistory: parsed.primaryFieldHistory ?? [],
+          vpPick: normalizedVPPick,
           vpSelectionPending: parsed.vpSelectionPending ?? false,
           endReason: parsed.endReason ?? null,
           fundraisingStreakWeeks: parsed.fundraisingStreakWeeks ?? 0,
@@ -2185,7 +2264,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   resetGame: () => {
     set({
       ...initialState,
-      rivalAIs: SimulationEngine.createPrimaryRivals('normal', initialState.voterParty, initialState.states),
+      rivalAIs: SimulationEngine.createPrimaryRivals('normal', initialState.voterParty, initialState.states, initialState.scenarioId),
       generalOpponent: null,
       primaryResults: {},
       fieldOperations: createInitialFieldOperations(initialState.states),
@@ -2409,64 +2488,59 @@ export const useGameStore = create<GameState>((set, get) => ({
         unlockAchievement('ACH_SUPER_TUESDAY');
       }
 
-      const activeRivals = getOrderedRivals(updatedRivals).filter((rival) => rival.status !== 'withdrawn');
-      if (nextWeek >= 38 && activeRivals.length > 2) {
-        const trailingRival = [...activeRivals].reverse().find((rival) => {
-          const outOfMoney = rival.budget < 250000;
-          const trustCollapse = rival.trust < 42;
-          const momentumCollapse = rival.momentum < 30;
-          const delegateMathIsGone = rival.delegates < Math.max(120, activeRivals[0].delegates * 0.45);
-          return delegateMathIsGone && (outOfMoney || trustCollapse || momentumCollapse || nextWeek >= 46);
+      const suspension = evaluatePrimarySuspension(
+        updatedRivals,
+        updatedPrimaryResults,
+        updatedEndorsements,
+        state.playerIdeology,
+        nextWeek,
+        state.delegateTarget
+      );
+      if (suspension) {
+        updatedRivals = updatedRivals.map((rival) => {
+          if (rival.id === suspension.withdrawingRival.id) {
+            return {
+              ...rival,
+              status: 'withdrawn',
+              momentum: Math.max(12, rival.momentum - 10),
+              trust: Math.max(24, rival.trust - 8),
+              endorsedCandidateId: suspension.endorsementTargetId
+            };
+          }
+
+          if (rival.id === suspension.endorsementTargetId) {
+            return {
+              ...rival,
+              supportBase: rival.supportBase + suspension.supportTransfer,
+              momentum: Math.min(100, rival.momentum + suspension.momentumTransfer),
+              trust: Math.min(100, rival.trust + suspension.trustTransfer)
+            };
+          }
+
+          return rival;
         });
 
-        if (trailingRival) {
-          const endorsementTargetId = pickEndorsementTarget(state.playerIdeology, 'player', updatedRivals, trailingRival);
-          const suspensionReason = trailingRival.budget < 250000
-            ? 'cash dried up'
-            : trailingRival.trust < 42
-              ? 'elite support cracked'
-              : trailingRival.momentum < 30
-                ? 'the campaign stalled'
-                : 'their delegate path collapsed';
-          updatedRivals = updatedRivals.map((rival) => {
-            if (rival.id === trailingRival.id) {
-              return {
-                ...rival,
-                status: 'withdrawn',
-                momentum: Math.max(12, rival.momentum - 10),
-                trust: Math.max(24, rival.trust - 8),
-                endorsedCandidateId: endorsementTargetId
-              };
-            }
-
-            if (rival.id === endorsementTargetId) {
-              return {
-                ...rival,
-                supportBase: rival.supportBase + 6,
-                momentum: Math.min(100, rival.momentum + 5),
-                trust: Math.min(100, rival.trust + 3)
-              };
-            }
-
-            return rival;
+        if (suspension.endorsementTargetId === 'player') {
+          endorsementMomentumBonus += suspension.momentumTransfer;
+          newTrust = clampStat(newTrust + suspension.trustTransfer);
+          newLog.push({
+            week: nextWeek,
+            message: `${suspension.withdrawingRival.name} suspended their campaign after ${suspension.reason} and endorsed you, reframing the race around your coalition.`,
+            type: 'positive'
           });
-
-          if (endorsementTargetId === 'player') {
-            endorsementMomentumBonus += 6;
-            newTrust = clampStat(newTrust + 3);
-            newLog.push({
-              week: nextWeek,
-              message: `${trailingRival.name} suspended their campaign after ${suspensionReason} and endorsed you, giving your coalition new life.`,
-              type: 'positive'
-            });
-          } else {
-            const endorsedRival = updatedRivals.find((rival) => rival.id === endorsementTargetId);
-            newLog.push({
-              week: nextWeek,
-              message: `${trailingRival.name} suspended their campaign after ${suspensionReason} and endorsed ${endorsedRival?.name ?? 'another rival'}.`,
-              type: 'negative'
-            });
-          }
+        } else if (suspension.endorsementTargetId) {
+          const endorsedRival = updatedRivals.find((rival) => rival.id === suspension.endorsementTargetId);
+          newLog.push({
+            week: nextWeek,
+            message: `${suspension.withdrawingRival.name} suspended their campaign after ${suspension.reason} and lined up behind ${endorsedRival?.name ?? 'another rival'}.`,
+            type: endorsedRival?.id === getLeadRival(updatedRivals, state.difficulty).id ? 'negative' : 'info'
+          });
+        } else {
+          newLog.push({
+            week: nextWeek,
+            message: `${suspension.withdrawingRival.name} suspended their campaign after ${suspension.reason}, but stopped short of endorsing anyone immediately.`,
+            type: 'event'
+          });
         }
       }
     }
@@ -2551,7 +2625,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       if (playerWonOutright) {
         nextGamePhase = 'general';
         triggerVPSelection = true;
-        updatedGeneralOpponent = SimulationEngine.createGeneralOpponentAI(state.difficulty, state.voterParty, state.states);
+        updatedGeneralOpponent = SimulationEngine.createGeneralOpponentAI(state.difficulty, state.voterParty, state.states, state.scenarioId);
         const totalEV = state.states.reduce((sum, contestState) => sum + contestState.delegatesOrEV, 0);
         nextDelegateTarget = Math.floor(totalEV / 2) + 1;
         newLog.push({ week: nextWeek, message: `You secured the nomination with ${newPlayerDelegates} delegates.`, type: 'positive' });
@@ -2710,8 +2784,14 @@ export const useGameStore = create<GameState>((set, get) => ({
         newLog.push({ week: nextWeek, message: `Debate night: ${debateStage} at ${debate.venue}.`, type: 'event' });
       } else {
         const eventPhase = nextGamePhase === 'general' ? 'general' : 'primary';
-        const phaseEvents = POSSIBLE_EVENTS.filter((event) => !event.phase || event.phase === 'any' || event.phase === eventPhase);
-        const shockEvents = NEGATIVE_SHOCK_EVENTS.filter((event) => !event.phase || event.phase === 'any' || event.phase === eventPhase);
+        const phaseEvents = [
+          ...POSSIBLE_EVENTS,
+          ...getScenarioEventDeck(state.scenarioId, eventPhase, 'positive')
+        ].filter((event) => !event.phase || event.phase === 'any' || event.phase === eventPhase);
+        const shockEvents = [
+          ...NEGATIVE_SHOCK_EVENTS,
+          ...getScenarioEventDeck(state.scenarioId, eventPhase, 'negative')
+        ].filter((event) => !event.phase || event.phase === 'any' || event.phase === eventPhase);
         const shieldedShockChance = Math.max(0.12, (newCalendarPhase === 'general' ? 0.38 : newCalendarPhase === 'primary' ? 0.30 : 0.22) - mediaSummary.scandalShield);
         const eventChance = newCalendarPhase === 'general' ? 0.70 : newCalendarPhase === 'primary' ? 0.58 : 0.45;
 
@@ -2859,7 +2939,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const nextQuestionIndex = debate.currentQuestionIndex + 1;
     if (nextQuestionIndex >= debate.questions.length) {
       const featuredRival = debate.phase === 'general'
-        ? state.generalOpponent ?? SimulationEngine.createGeneralOpponentAI(state.difficulty, state.voterParty, state.states)
+        ? state.generalOpponent ?? SimulationEngine.createGeneralOpponentAI(state.difficulty, state.voterParty, state.states, state.scenarioId)
         : getLeadRival(state.rivalAIs, state.difficulty);
       let updatedRivals = state.rivalAIs;
       let updatedGeneralOpponent = state.generalOpponent;
@@ -2974,7 +3054,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!debateEntry) return;
 
     const rivalNames = phase === 'general'
-      ? [state.generalOpponent?.name ?? SimulationEngine.createGeneralOpponentAI(state.difficulty, state.voterParty, state.states).name]
+      ? [state.generalOpponent?.name ?? SimulationEngine.createGeneralOpponentAI(state.difficulty, state.voterParty, state.states, state.scenarioId).name]
       : getOrderedRivals(state.rivalAIs).map((rival) => rival.name);
     const baseDebate = createActiveDebate(debateEntry, state.playerName, rivalNames);
     const previewDebate = {
@@ -3213,7 +3293,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       const newLog = [...state.activityLog];
       if (playerWonConvention) {
-        const updatedGeneralOpponent = SimulationEngine.createGeneralOpponentAI(state.difficulty, state.voterParty, state.states);
+        const updatedGeneralOpponent = SimulationEngine.createGeneralOpponentAI(state.difficulty, state.voterParty, state.states, state.scenarioId);
         const totalEV = state.states.reduce((sum, contestState) => sum + contestState.delegatesOrEV, 0);
         const nextEVTarget = Math.floor(totalEV / 2) + 1;
         unlockAchievement('ACH_BROKERED_CONVENTION');

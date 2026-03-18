@@ -48,6 +48,13 @@
   transition: border-color 0.2s;
 }
 
+.vp-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
 .vp-card:hover {
   border-color: var(--primary-accent);
 }
@@ -61,8 +68,29 @@
   color: var(--text-muted);
   font-size: 0.85rem;
   line-height: 1.4;
-  flex: 1;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.vp-role {
+  font-size: 0.78rem;
+  color: var(--primary-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.vp-region {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.vp-copy {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  margin-bottom: 0.45rem;
 }
 
 .vp-bonuses {

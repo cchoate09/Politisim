@@ -41,6 +41,7 @@ test('store save/load round-trips donor, media, and debate state', () => {
     voterParty: 'Democrat',
     scenarioId: 'vanilla',
     scenarioName: 'Road to 2024',
+    scenarioElectionYear: 2024,
     difficulty: 'normal'
   });
   useGameStore.getState().initializeCampaign(states);
@@ -83,6 +84,7 @@ test('store save/load round-trips donor, media, and debate state', () => {
     assert.equal(restored.oppositionResearch[researchTargetId]?.heat, savedResearchHeat);
   }
   assert.equal(restored.playerIssues.length, 3);
+  assert.equal(restored.scenarioElectionYear, 2024);
   assert.match(restored.activeDebate?.participants[0]?.tagline ?? '', /Economy|Healthcare|Education/);
 
   storage.clear();

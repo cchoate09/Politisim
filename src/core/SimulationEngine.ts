@@ -1,7 +1,9 @@
 import { ElectionMath, type PlayerDemographics } from './ElectionMath';
 import type { CampaignSpendingData, StateElectionData } from './CampaignDataParser';
+import type { VPCandidate } from './CampaignTypes';
 import type { CandidateStateEndorsementEffect } from './EndorsementData';
 import type { CampaignMediaEffect, DonorBlocId, MediaChannelId } from './CampaignStrategy';
+import { getScenarioGeneralOpponentProfiles, getScenarioPrimaryProfiles, getVPCandidateStateEffect } from './ScenarioContent';
 import {
   applyWeeklyFieldOperationDecay,
   createInitialFieldOperations,
@@ -607,9 +609,12 @@ export class SimulationEngine {
   static createPrimaryRivals(
     level: 'easy' | 'normal' | 'hard',
     party: 'Democrat' | 'Republican',
-    states: StateElectionData[] = []
+    states: StateElectionData[] = [],
+    scenarioId: string = 'vanilla'
   ): RivalAI[] {
-    const profiles = party === 'Democrat' ? DEMOCRAT_PRIMARY_PROFILES : REPUBLICAN_PRIMARY_PROFILES;
+    const profiles = scenarioId === 'vanilla'
+      ? (party === 'Democrat' ? DEMOCRAT_PRIMARY_PROFILES : REPUBLICAN_PRIMARY_PROFILES)
+      : getScenarioPrimaryProfiles(scenarioId, party);
 
     return profiles.map((profile) => ({
       id: profile.id,
@@ -649,10 +654,13 @@ export class SimulationEngine {
   static createGeneralOpponentAI(
     level: 'easy' | 'normal' | 'hard',
     playerParty: 'Democrat' | 'Republican',
-    states: StateElectionData[] = []
+    states: StateElectionData[] = [],
+    scenarioId: string = 'vanilla'
   ): RivalAI {
     const opponentParty = playerParty === 'Democrat' ? 'Republican' : 'Democrat';
-    const profiles = GENERAL_OPPONENTS[opponentParty];
+    const profiles = scenarioId === 'vanilla'
+      ? GENERAL_OPPONENTS[opponentParty]
+      : getScenarioGeneralOpponentProfiles(scenarioId, opponentParty);
     const profile = level === 'hard' ? profiles[0] : profiles[1] ?? profiles[0];
 
     return {
@@ -1138,8 +1146,10 @@ export class SimulationEngine {
     globalVisitMult = 1.0,
     playerIssues: string[] = [],
     playerParty: 'Democrat' | 'Republican' = 'Democrat',
-    playerHomeRegion = 'National'
+    playerHomeRegion = 'National',
+    vpPick: VPCandidate | null = null
   ): PollingData & { turnout: number } {
+    const vpEffect = getVPCandidateStateEffect(vpPick, stateData, 'general', playerIssues);
     const playerTrustMultiplier = 0.4 + (publicTrust / 100) * 0.9;
     const playerResearchPressure = getResearchPressure(playerSpending);
     const rivalResearchPressure = getResearchPressure(rivalAI.spending[stateData.stateName] || cloneEmptySpending());
@@ -1159,6 +1169,7 @@ export class SimulationEngine {
       * playerEndorsementEffect.scoreMultiplier
       * playerFieldEffect.scoreMultiplier
       * playerMediaEffect.scoreMultiplier
+      * vpEffect.scoreMultiplier
       * (1 + playerResearchPressure * 0.2)
       * Math.max(0.82, 1 - (rivalResearchPressure * 0.55));
 
@@ -1185,7 +1196,7 @@ export class SimulationEngine {
       stateData,
       (playerSpending.groundGame || 0) + (rivalAI.spending[stateData.stateName]?.groundGame || 0),
       playerMomentum + rivalAI.momentum
-    ) + playerEndorsementEffect.turnoutBonus + playerFieldEffect.turnoutBonus + playerMediaEffect.turnoutBonus + (rivalEndorsementEffect.turnoutBonus * 0.7) + (rivalFieldEffect.turnoutBonus * 0.85) + (rivalMediaEffect.turnoutBonus * 0.75));
+    ) + playerEndorsementEffect.turnoutBonus + playerFieldEffect.turnoutBonus + playerMediaEffect.turnoutBonus + vpEffect.turnoutBonus + (rivalEndorsementEffect.turnoutBonus * 0.7) + (rivalFieldEffect.turnoutBonus * 0.85) + (rivalMediaEffect.turnoutBonus * 0.75));
 
     const totalScore = playerScore + rivalScore;
     if (totalScore <= 0) {

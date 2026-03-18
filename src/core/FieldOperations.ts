@@ -1,4 +1,5 @@
 import type { StateElectionData } from './CampaignDataParser';
+import type { VPCandidate } from './CampaignTypes';
 import type { ActiveEndorsement } from './EndorsementData';
 
 export interface StateFieldOperation {
@@ -37,36 +38,6 @@ export interface FieldNetworkSummary {
 }
 
 const OFFICE_CAPACITY_BY_LEVEL = [0, 140, 300, 500];
-const VP_METADATA: Record<string, { regionFocus: string[]; homeStates: string[]; power: number; turnoutBoost: number; trustBoost: number }> = {
-  'Sen. Maria Torres': {
-    regionFocus: ['West', 'South'],
-    homeStates: ['New Mexico', 'Arizona', 'Nevada'],
-    power: 1.9,
-    turnoutBoost: 2.2,
-    trustBoost: 0.7
-  },
-  'Gov. James Mitchell': {
-    regionFocus: ['South'],
-    homeStates: ['Georgia', 'North Carolina', 'Virginia'],
-    power: 1.8,
-    turnoutBoost: 1.5,
-    trustBoost: 1
-  },
-  'Fmr. Gen. Sarah Chen': {
-    regionFocus: ['West', 'Northeast'],
-    homeStates: ['California', 'Virginia'],
-    power: 1.7,
-    turnoutBoost: 1.2,
-    trustBoost: 1.4
-  },
-  'Rep. David Park': {
-    regionFocus: ['West', 'Midwest'],
-    homeStates: ['Colorado', 'Washington', 'Illinois'],
-    power: 1.7,
-    turnoutBoost: 1.9,
-    trustBoost: 0.4
-  }
-};
 
 const STAFF_SURROGATES: Record<string, SurrogateProfile> = {
   field_organizer: {
@@ -254,30 +225,26 @@ export function getTotalOfficeUpkeep(
 }
 
 export function buildPlayerSurrogateRoster(
-  vpPick: { name: string } | null,
+  vpPick: VPCandidate | null,
   hiredStaff: string[],
   endorsements: ActiveEndorsement[]
 ): SurrogateProfile[] {
   const roster: SurrogateProfile[] = [];
 
   if (vpPick) {
-    const metadata = VP_METADATA[vpPick.name] ?? {
-      regionFocus: ['South', 'Midwest', 'West', 'Northeast'],
-      homeStates: [],
-      power: 1.75,
-      turnoutBoost: 1.4,
-      trustBoost: 0.8
-    };
+    const regionFocus = vpPick.homeRegion === 'National'
+      ? ['South', 'Midwest', 'West', 'Northeast']
+      : [vpPick.homeRegion];
     roster.push({
       id: `vp-${vpPick.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
       name: vpPick.name,
       kind: 'vp',
       summary: 'Your running mate can headline local media, energize the ticket, and keep coalition partners visible when you are elsewhere.',
-      regionFocus: metadata.regionFocus,
-      homeStates: metadata.homeStates,
-      basePower: metadata.power,
-      turnoutBoost: metadata.turnoutBoost,
-      trustBoost: metadata.trustBoost
+      regionFocus,
+      homeStates: vpPick.homeStates,
+      basePower: vpPick.surrogatePower ?? (1.55 + (vpPick.regionalLift / 20) + (vpPick.debateBonus / 25)),
+      turnoutBoost: Math.max(0.6, vpPick.turnoutBonus),
+      trustBoost: Math.max(0.2, vpPick.trustBonus / 10)
     });
   }
 

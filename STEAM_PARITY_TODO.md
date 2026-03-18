@@ -4,13 +4,13 @@ This checklist turns the current competitive review into a working roadmap. The 
 
 ## Current Snapshot
 
-Estimated parity progress: `96%`
+Estimated parity progress: `98%`
 
-- Core election simulation: `96%`
-- Replayability and scenarios: `49%`
-- Presentation and immersion: `91%`
+- Core election simulation: `98%`
+- Replayability and scenarios: `82%`
+- Presentation and immersion: `93%`
 - Product shell and Steam readiness: `94%`
-- QA, onboarding, and usability: `90%`
+- QA, onboarding, and usability: `93%`
 
 ## What Is Already Stronger Than Before
 
@@ -23,7 +23,7 @@ Estimated parity progress: `96%`
 - [x] Election night now resolves through a dedicated state-calling sequence instead of an instant EV jump
 - [x] Debate stage is a bespoke screen with policy-choice consequences
 - [x] Scenario selector exists
-- [x] Three official scenarios exist
+- [x] Five official scenarios exist
 - [x] Offline-safe map asset is local
 - [x] DC is included and scenarios total 538 EV
 - [x] Save/load, build, lint, and data-integrity verification are in better shape
@@ -38,7 +38,7 @@ Goal: make the game feel strategically deep enough that players want multiple fu
   Acceptance: some states are proportional, some have thresholds, and some award bonus delegates or partial winner-take-all by party/state logic.
 - [x] Add endorsements as a real campaign system
   Acceptance: unions, governors, former presidents, local machines, activists, and media figures can endorse based on ideology, trust, momentum, or state performance.
-- [ ] Add rival suspensions and consolidation logic with more nuance
+- [x] Add rival suspensions and consolidation logic with more nuance
   Acceptance: rivals do not just drop mechanically; they suspend based on money, trust, bad debate nights, weak polling, or missed delegate paths.
 - [x] Add convention drama
   Acceptance: a close nomination can trigger contested-convention style events, unity decisions, or negotiated momentum/trust outcomes.
@@ -73,13 +73,13 @@ Goal: make the game worth revisiting and worth talking about.
 
 ### 4. Scenario and Content Breadth
 
-- [ ] Add at least 2 more official scenarios with unique strategic character
+- [x] Add at least 2 more official scenarios with unique strategic character
   Suggested targets: one historical election and one alternate-history scenario.
-- [ ] Give scenarios unique rival rosters and flavor text
+- [x] Give scenarios unique rival rosters and flavor text
   Acceptance: scenario choice changes more than state numbers.
-- [ ] Add more event pools tied to party, region, ideology, and scenario
+- [x] Add more event pools tied to party, region, ideology, and scenario
   Acceptance: campaigns stop feeling like they draw from one generic event deck.
-- [ ] Add more VP candidates with strategic tradeoffs
+- [x] Add more VP candidates with strategic tradeoffs
   Acceptance: VP selection feels like a real strategic fork, not just a stat bump.
 
 ### 5. Modding and Workshop
@@ -166,11 +166,11 @@ Goal: stop future content passes from quietly breaking the game.
 
 If we want the highest return on effort, tackle these next:
 
-1. More official scenarios and scenario-specific flavor
-2. Scenario-specific rival rosters and event pools
-3. More VP candidates with sharper strategic tradeoffs
-4. In-game mod browser and schema validation
-5. Final Steam app id validation pass and production Steamworks smoke
+1. In-game mod browser and scenario metadata panel
+2. Manifest/schema validation surfaced directly in the UI
+3. Steam Workshop planning pass and docs alignment
+4. Final Steam app id validation pass and production Steamworks smoke
+5. Bundle splitting / packaged-size optimization for the oversized main chunk
 
 ## Latest Milestone Notes
 
@@ -183,6 +183,7 @@ If we want the highest return on effort, tackle these next:
 - `2026-03-17`: Added real Steam platform plumbing in Electron with status reporting, overlay enablement, cloud-file IPC, browser-safe save reconciliation, and cloud-backed save uploads; broadened achievement coverage beyond the end screen; added reusable candidate identity cards and portrait-style presentation across the campaign; upgraded campaign-event staging into a more premium crisis/war-room presentation; and exposed the full multi-candidate primary field nationally and by state with regional starting variation tied to the player's selected home base.
 - `2026-03-17`: Added a packaged Electron smoke harness that boots the real built executable, validates preload IPC, scenario loading, save-slot writes, and key campaign screens; isolated packaged artifacts into a dedicated `release/` directory; added a Steam release checklist and release-readiness verifier; and wired packaged smoke validation into GitHub Actions.
 - `2026-03-17`: Added a full opposition-research desk with dossiers, discovered leads, release timing, backlash risk, donor/media follow-through, and persistence through saves; made state-level research spending materially affect polling instead of acting like a dead stat; rebuilt debate endings into custom spin-room aftermath events based on the player's actual answers; added branded launch splash and Windows icon assets plus stricter release validation; and expanded automated coverage for debate flow, election-day transition, and opposition-research resolution.
+- `2026-03-18`: Added two more official scenarios (`Restoration 2012` and `Fractured Republic 2032`), made the campaign calendar scenario-aware by election year, authored scenario-specific primary and general rosters for every official scenario, added scenario-tuned event decks and strategic briefings, expanded the VP bench into a richer ticket-building system with region, turnout, fundraising, and battleground tradeoffs, and replaced the flatter dropout logic with more political suspension and consolidation behavior tied to delegate math, coalition failure, money, trust, and lane crowding.
 
 ## How We Should Track Progress
 

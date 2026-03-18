@@ -35,10 +35,13 @@ export interface ModManifestEntry {
   id: string;
   name: string;
   yearLabel: string;
+  electionYear: number;
   tagline: string;
   description: string;
   challenge: 'Accessible' | 'Competitive' | 'Hardcore';
   focus: string[];
+  featuredStates?: string[];
+  specialRules?: string[];
   official?: boolean;
 }
 
@@ -61,6 +64,7 @@ export class CampaignDataParser {
         id: 'vanilla',
         name: 'Road to 2024',
         yearLabel: '2024',
+        electionYear: 2024,
         tagline: 'The default presidential campaign sandbox.',
         description: 'Fight through a modern nomination race and general election with the standard national map.',
         challenge: 'Competitive',
@@ -94,12 +98,11 @@ export class CampaignDataParser {
   /**
    * Generates a realistic 70-week campaign calendar from July 2023 to November 2024.
    */
-  static generateCalendar(): CalendarWeek[] {
+  static generateCalendar(electionYear: number = 2024): CalendarWeek[] {
     const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     const weeks: CalendarWeek[] = [];
     
-    // Start date: July 1, 2023
-    const currentDate = new Date(2023, 6, 1); // Month is 0-indexed
+    const currentDate = new Date(electionYear - 1, 6, 1);
     
     for (let w = 1; w <= 70; w++) {
       const month = currentDate.getMonth(); // 0-11

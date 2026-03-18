@@ -3,6 +3,7 @@ import './CandidateCreator.css';
 import { useGameStore } from '../store/gameStore';
 import { CampaignDataParser, type ModManifestEntry } from '../core/CampaignDataParser';
 import type { PlayerDemographics } from '../core/ElectionMath';
+import { getScenarioIntro, getScenarioPrimaryProfiles, getScenarioStrategicNotes, getScenarioVPCandidates } from '../core/ScenarioContent';
 import { CandidateIdentityCard } from './CandidateIdentityCard';
 
 const MAX_POINTS = 300;
@@ -29,6 +30,18 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
   const activeScenario = useMemo(
     () => availableMods.find((mod) => mod.id === selectedMod) ?? availableMods[0] ?? null,
     [availableMods, selectedMod]
+  );
+  const scenarioRivals = useMemo(
+    () => getScenarioPrimaryProfiles(selectedMod, voterParty).slice(0, 4),
+    [selectedMod, voterParty]
+  );
+  const scenarioVPBench = useMemo(
+    () => getScenarioVPCandidates(selectedMod, voterParty).slice(0, 3),
+    [selectedMod, voterParty]
+  );
+  const scenarioNotes = useMemo(
+    () => getScenarioStrategicNotes(selectedMod),
+    [selectedMod]
   );
 
   useEffect(() => {
@@ -97,7 +110,8 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
       difficulty,
       playerIssues: selectedIssues,
       scenarioId: selectedMod,
-      scenarioName: activeScenario?.name ?? selectedMod
+      scenarioName: activeScenario?.name ?? selectedMod,
+      scenarioElectionYear: activeScenario?.electionYear ?? 2024
     });
 
     useGameStore.getState().initializeCampaign(states);
@@ -345,8 +359,48 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
               <div className="summary-title">Scenario Briefing</div>
               <div className="scenario-briefing-name">{activeScenario.name}</div>
               <div className="scenario-briefing-copy">{activeScenario.description}</div>
+              <div className="scenario-briefing-copy" style={{ marginTop: '0.75rem' }}>
+                {getScenarioIntro(selectedMod)}
+              </div>
+              {activeScenario.featuredStates && activeScenario.featuredStates.length > 0 && (
+                <div className="scenario-briefing-copy" style={{ marginTop: '0.75rem' }}>
+                  Featured states: {activeScenario.featuredStates.join(', ')}
+                </div>
+              )}
+              {activeScenario.specialRules && activeScenario.specialRules.length > 0 && (
+                <div className="scenario-briefing-copy" style={{ marginTop: '0.75rem' }}>
+                  Strategic twist: {activeScenario.specialRules.join(' | ')}
+                </div>
+              )}
             </div>
           )}
+
+          <div className="scenario-briefing" style={{ marginTop: '1rem' }}>
+            <div className="summary-title">Scenario Notes</div>
+            {scenarioNotes.map((note) => (
+              <div key={note} className="scenario-briefing-copy" style={{ marginTop: '0.5rem' }}>
+                {note}
+              </div>
+            ))}
+          </div>
+
+          <div className="scenario-briefing" style={{ marginTop: '1rem' }}>
+            <div className="summary-title">Primary Field Preview</div>
+            {scenarioRivals.map((rival) => (
+              <div key={rival.id} className="scenario-briefing-copy" style={{ marginTop: '0.5rem' }}>
+                <strong>{rival.name}</strong>: {rival.tagline}. {rival.issueBrands.slice(0, 2).join(', ')}.
+              </div>
+            ))}
+          </div>
+
+          <div className="scenario-briefing" style={{ marginTop: '1rem' }}>
+            <div className="summary-title">Running Mate Bench</div>
+            {scenarioVPBench.map((vp) => (
+              <div key={vp.id} className="scenario-briefing-copy" style={{ marginTop: '0.5rem' }}>
+                <strong>{vp.name}</strong>: {vp.title}. {vp.strengths[0]}.
+              </div>
+            ))}
+          </div>
 
           <div className="summary-title">Calculated Archetype</div>
           <div className="archetype-name">{calculateArchetype()}</div>

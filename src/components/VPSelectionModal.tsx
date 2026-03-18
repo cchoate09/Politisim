@@ -1,9 +1,11 @@
 import React from 'react';
 import './VPSelectionModal.css';
-import { useGameStore, VP_CANDIDATES } from '../store/gameStore';
+import { useGameStore } from '../store/gameStore';
+import { getScenarioVPCandidates } from '../core/ScenarioContent';
 
 export const VPSelectionModal: React.FC = () => {
-  const { selectVP, vpSelectionPending } = useGameStore();
+  const { selectVP, vpSelectionPending, scenarioId, voterParty } = useGameStore();
+  const candidates = getScenarioVPCandidates(scenarioId, voterParty);
 
   if (!vpSelectionPending) return null;
 
@@ -16,18 +18,31 @@ export const VPSelectionModal: React.FC = () => {
         </p>
 
         <div className="vp-grid">
-          {VP_CANDIDATES.map((vp) => (
-            <div key={vp.name} className="vp-card">
-              <h3>{vp.name}</h3>
+          {candidates.map((vp) => (
+            <div key={vp.id} className="vp-card">
+              <div className="vp-card-top">
+                <div>
+                  <h3>{vp.name}</h3>
+                  <div className="vp-role">{vp.title}</div>
+                </div>
+                <div className="vp-region">{vp.homeRegion}</div>
+              </div>
               <p className="vp-desc">{vp.description}</p>
+              <div className="vp-copy"><strong>Strengths:</strong> {vp.strengths.join(', ')}</div>
+              <div className="vp-copy"><strong>Liabilities:</strong> {vp.liabilities.join(', ')}</div>
+              <div className="vp-copy"><strong>Issue lanes:</strong> {vp.issueFocus.join(', ')}</div>
               <div className="vp-bonuses">
                 {Object.entries(vp.bonuses).map(([key, val]) => (
                   <span key={key} className={`vp-bonus ${(val || 0) > 0 ? 'pos' : 'neg'}`}>
                     {(val || 0) > 0 ? '+' : ''}{val} {key}
                   </span>
                 ))}
-                {vp.momentumBonus > 0 && <span className="vp-bonus pos">+{vp.momentumBonus} momentum</span>}
-                {vp.trustBonus > 0 && <span className="vp-bonus pos">+{vp.trustBonus} trust</span>}
+                <span className="vp-bonus pos">+{vp.momentumBonus} momentum</span>
+                <span className="vp-bonus pos">+{vp.trustBonus} trust</span>
+                <span className="vp-bonus pos">+${Math.round(vp.budgetBonus / 1000)}K launch cash</span>
+                <span className="vp-bonus pos">+{vp.volunteerBonus} volunteers</span>
+                <span className="vp-bonus pos">{vp.turnoutBonus.toFixed(1)} turnout</span>
+                <span className="vp-bonus pos">{vp.battlegroundLift} battleground lift</span>
               </div>
               <button className="vp-select-btn" onClick={() => selectVP(vp)}>
                 Select {vp.name.split(' ').pop()}
