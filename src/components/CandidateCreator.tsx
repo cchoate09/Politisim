@@ -273,11 +273,18 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
                     key={issue}
                     type="button"
                     onClick={() => {
-                      if (isSelected) {
-                        setSelectedIssues(selectedIssues.filter((entry) => entry !== issue));
-                      } else if (selectedIssues.length < 3) {
-                        setSelectedIssues([...selectedIssues, issue]);
-                      }
+                      setSelectedIssues((current) => {
+                        const currentlySelected = current.includes(issue);
+                        if (currentlySelected) {
+                          return current.filter((entry) => entry !== issue);
+                        }
+
+                        if (current.length >= 3) {
+                          return current;
+                        }
+
+                        return [...current, issue];
+                      });
                     }}
                     style={{
                       padding: '0.4rem 0.8rem',

@@ -4,13 +4,13 @@ This checklist turns the current competitive review into a working roadmap. The 
 
 ## Current Snapshot
 
-Estimated parity progress: `89%`
+Estimated parity progress: `91%`
 
 - Core election simulation: `92%`
 - Replayability and scenarios: `45%`
 - Presentation and immersion: `84%`
-- Product shell and Steam readiness: `74%`
-- QA, onboarding, and usability: `70%`
+- Product shell and Steam readiness: `82%`
+- QA, onboarding, and usability: `79%`
 
 ## What Is Already Stronger Than Before
 
@@ -154,23 +154,23 @@ Goal: stop future content passes from quietly breaking the game.
 - [ ] Add tests for phase transitions and end-state logic
 - [x] Add save/load round-trip tests for mid-primary and mid-general runs
 - [ ] Add tests for debate scheduling and debate completion flow
-- [ ] Add packaged Electron smoke tests
+- [x] Add packaged Electron smoke tests
 
 ### 12. Build Discipline
 
 - [x] Add CI for lint, test, and build
 - [x] Add scenario data validation to CI
-- [ ] Add a release checklist for Steam builds
+- [x] Add a release checklist for Steam builds
 
 ## Recommended Order
 
 If we want the highest return on effort, tackle these next:
 
-1. Packaged Electron smoke tests and release checklist
+1. Proper app metadata, icons, splash assets, and installer polish
 2. More official scenarios and scenario-specific flavor
 3. Oppo research consequences
-4. Proper app metadata, icons, splash assets, and installer polish
-5. Debate aftermath depth and subgroup spin
+4. Debate aftermath depth and subgroup spin
+5. Phase-transition and debate-flow regression tests
 
 ## Latest Milestone Notes
 
@@ -181,6 +181,7 @@ If we want the highest return on effort, tackle these next:
 - `2026-03-17`: Added a first-run tutorial, a persistent guide and glossary drawer, phase-sensitive dashboard coaching, and richer save-slot metadata so the product now explains itself much more like a real Steam release instead of expecting genre knowledge.
 - `2026-03-17`: Added a full settings and accessibility drawer with audio controls, UI scale, motion tuning, high-contrast panels, and colorblind-safe map palettes; added procedural soundtrack and scene-aware sound effects; deepened the finance layer with donor blocs and channel-based media strategy; gave rivals stronger personality, style, and weekly campaign beats; and added CI plus behavior tests for primary rules, strategy systems, rival identity, and save/load persistence.
 - `2026-03-17`: Added real Steam platform plumbing in Electron with status reporting, overlay enablement, cloud-file IPC, browser-safe save reconciliation, and cloud-backed save uploads; broadened achievement coverage beyond the end screen; added reusable candidate identity cards and portrait-style presentation across the campaign; upgraded campaign-event staging into a more premium crisis/war-room presentation; and exposed the full multi-candidate primary field nationally and by state with regional starting variation tied to the player's selected home base.
+- `2026-03-17`: Added a packaged Electron smoke harness that boots the real built executable, validates preload IPC, scenario loading, save-slot writes, and key campaign screens; isolated packaged artifacts into a dedicated `release/` directory; added a Steam release checklist and release-readiness verifier; and wired packaged smoke validation into GitHub Actions.
 
 ## How We Should Track Progress
 

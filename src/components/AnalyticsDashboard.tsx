@@ -12,6 +12,22 @@ export const AnalyticsDashboard: React.FC = () => {
   const { nationalPollingHistory, primaryFieldHistory, primaryFieldAverages, states, pollingData, playerIdeology, gamePhase, voterParty, rivalAIs, playerName } = useGameStore();
   const latestNationalSnapshot = nationalPollingHistory[nationalPollingHistory.length - 1];
   const fieldPalette = ['#38bdf8', '#f97316', '#f43f5e', '#34d399', '#f6c453'];
+  const formatPollingTooltipValue = (value: number | string | readonly (number | string)[] | undefined): string => {
+    if (value === undefined) {
+      return '';
+    }
+
+    if (Array.isArray(value)) {
+      return value.map((entry) => formatPollingTooltipValue(entry)).join(' / ');
+    }
+
+    if (typeof value === 'number') {
+      return `${value.toFixed(1)}%`;
+    }
+
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) ? `${numericValue.toFixed(1)}%` : String(value);
+  };
   const lineCandidates = primaryFieldAverages.length > 0
     ? primaryFieldAverages
     : [
@@ -70,6 +86,7 @@ export const AnalyticsDashboard: React.FC = () => {
               <Tooltip 
                 contentStyle={{ backgroundColor: 'var(--bg-color)', border: '1px solid rgba(255,255,255,0.1)' }}
                 itemStyle={{ color: 'var(--text-main)' }}
+                formatter={formatPollingTooltipValue}
               />
               <Legend />
               <Line type="monotone" dataKey="player" name="Your Campaign" stroke="var(--primary-accent)" strokeWidth={3} dot={{ r: 4 }} />
@@ -92,6 +109,7 @@ export const AnalyticsDashboard: React.FC = () => {
               <Tooltip 
                 cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                 contentStyle={{ backgroundColor: 'var(--bg-color)', border: '1px solid rgba(255,255,255,0.1)' }}
+                formatter={formatPollingTooltipValue}
               />
               <Bar dataKey="support" name="Avg. Polling %" fill="var(--primary-accent)" radius={[0, 4, 4, 0]} barSize={20} />
             </BarChart>
@@ -114,6 +132,7 @@ export const AnalyticsDashboard: React.FC = () => {
                 <Tooltip
                   contentStyle={{ backgroundColor: 'var(--bg-color)', border: '1px solid rgba(255,255,255,0.1)' }}
                   itemStyle={{ color: 'var(--text-main)' }}
+                  formatter={formatPollingTooltipValue}
                 />
                 <Legend />
                 {lineCandidates.map((candidate, index) => (

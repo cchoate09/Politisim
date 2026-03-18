@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.4.0",
   "description": "A presidential campaign simulation game focused on winning a modern U.S. primary and general election.",
+  "author": "PolitiSim Team",
   "main": "public/electron/main.cjs",
   "type": "module",
   "scripts": {
@@ -13,7 +14,11 @@
     "preview": "vite preview",
     "electron:start": "cross-env NODE_ENV=development electron .",
     "electron:dev": "concurrently -k \"cross-env BROWSER=none npm run dev\" \"npm run electron:start\"",
-    "electron:build": "npm run build && electron-builder"
+    "electron:package:dir": "npm run build && electron-builder --dir --publish never -c.win.signAndEditExecutable=false",
+    "electron:smoke:packaged": "npm run electron:package:dir && node scripts/run-electron-smoke.mjs",
+    "electron:build": "npm run build && electron-builder --publish never -c.win.signAndEditExecutable=false",
+    "electron:build:release": "npm run build && electron-builder --publish never",
+    "release:verify": "npm run electron:smoke:packaged && node scripts/verify-release-readiness.mjs"
   },
   "dependencies": {
     "d3-geo": "^3.1.1",
@@ -50,6 +55,10 @@
   "build": {
     "appId": "com.politisim.game",
     "productName": "PolitiSim",
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "release"
+    },
     "files": [
       "dist/**/*",
       "public/electron/**/*",

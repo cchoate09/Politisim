@@ -37,6 +37,17 @@ npm run build
 npm run electron:build
 ```
 
+`npm run electron:build` produces an unsigned local installer/build for smoke testing. Use `npm run electron:build:release` on the properly provisioned release machine when you are ready for the final signed package.
+
+For a packaged Windows smoke pass before release:
+
+```bash
+npm run electron:smoke:packaged
+npm run release:verify
+```
+
+The full manual checklist lives in `docs/STEAM_RELEASE_CHECKLIST.md`.
+
 ## Quality Checks
 
 ```bash
