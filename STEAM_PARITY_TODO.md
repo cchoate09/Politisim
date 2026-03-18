@@ -4,13 +4,13 @@ This checklist turns the current competitive review into a working roadmap. The 
 
 ## Current Snapshot
 
-Estimated parity progress: `91%`
+Estimated parity progress: `96%`
 
-- Core election simulation: `92%`
-- Replayability and scenarios: `45%`
-- Presentation and immersion: `84%`
-- Product shell and Steam readiness: `82%`
-- QA, onboarding, and usability: `79%`
+- Core election simulation: `96%`
+- Replayability and scenarios: `49%`
+- Presentation and immersion: `91%`
+- Product shell and Steam readiness: `94%`
+- QA, onboarding, and usability: `90%`
 
 ## What Is Already Stronger Than Before
 
@@ -64,7 +64,7 @@ Goal: make the game feel strategically deep enough that players want multiple fu
   Acceptance: small donors, business donors, activists, labor, and ideological networks respond differently to campaign choices.
 - [x] Add media strategy by channel
   Acceptance: local TV, cable, digital, earned media, and rapid response feel meaningfully different.
-- [ ] Add oppo research consequences
+- [x] Add oppo research consequences
   Acceptance: research can unlock events, weaken rivals, or backfire if abused.
 
 ## Milestone 2: Replayability Parity
@@ -97,7 +97,7 @@ Goal: make the game feel like a product people want to stay inside, not just a s
 
 ### 6. Debate and Event Presentation
 
-- [ ] Add richer debate aftermath
+- [x] Add richer debate aftermath
   Acceptance: debates produce spin-room headlines, subgroup reactions, fundraising swings, and rival effects.
 - [x] Add candidate portraits or visual identity cards
   Acceptance: the player and rivals are visually distinct across the primary and general.
@@ -132,7 +132,7 @@ Goal: ship like a credible Steam game, not just a functioning build.
   Acceptance: every visible achievement has a matching unlock path and is testable.
 - [x] Add Steam Cloud save support
   Acceptance: saves persist across installs and machines.
-- [ ] Add proper app metadata, icons, splash assets, and installer polish
+- [x] Add proper app metadata, icons, splash assets, and installer polish
   Acceptance: packaged builds look release-ready.
 
 ### 10. Accessibility and Options
@@ -151,9 +151,9 @@ Goal: stop future content passes from quietly breaking the game.
 ### 11. Test Coverage
 
 - [x] Add unit tests for delegate allocation and threshold rules
-- [ ] Add tests for phase transitions and end-state logic
+- [x] Add tests for phase transitions and end-state logic
 - [x] Add save/load round-trip tests for mid-primary and mid-general runs
-- [ ] Add tests for debate scheduling and debate completion flow
+- [x] Add tests for debate scheduling and debate completion flow
 - [x] Add packaged Electron smoke tests
 
 ### 12. Build Discipline
@@ -166,11 +166,11 @@ Goal: stop future content passes from quietly breaking the game.
 
 If we want the highest return on effort, tackle these next:
 
-1. Proper app metadata, icons, splash assets, and installer polish
-2. More official scenarios and scenario-specific flavor
-3. Oppo research consequences
-4. Debate aftermath depth and subgroup spin
-5. Phase-transition and debate-flow regression tests
+1. More official scenarios and scenario-specific flavor
+2. Scenario-specific rival rosters and event pools
+3. More VP candidates with sharper strategic tradeoffs
+4. In-game mod browser and schema validation
+5. Final Steam app id validation pass and production Steamworks smoke
 
 ## Latest Milestone Notes
 
@@ -182,6 +182,7 @@ If we want the highest return on effort, tackle these next:
 - `2026-03-17`: Added a full settings and accessibility drawer with audio controls, UI scale, motion tuning, high-contrast panels, and colorblind-safe map palettes; added procedural soundtrack and scene-aware sound effects; deepened the finance layer with donor blocs and channel-based media strategy; gave rivals stronger personality, style, and weekly campaign beats; and added CI plus behavior tests for primary rules, strategy systems, rival identity, and save/load persistence.
 - `2026-03-17`: Added real Steam platform plumbing in Electron with status reporting, overlay enablement, cloud-file IPC, browser-safe save reconciliation, and cloud-backed save uploads; broadened achievement coverage beyond the end screen; added reusable candidate identity cards and portrait-style presentation across the campaign; upgraded campaign-event staging into a more premium crisis/war-room presentation; and exposed the full multi-candidate primary field nationally and by state with regional starting variation tied to the player's selected home base.
 - `2026-03-17`: Added a packaged Electron smoke harness that boots the real built executable, validates preload IPC, scenario loading, save-slot writes, and key campaign screens; isolated packaged artifacts into a dedicated `release/` directory; added a Steam release checklist and release-readiness verifier; and wired packaged smoke validation into GitHub Actions.
+- `2026-03-17`: Added a full opposition-research desk with dossiers, discovered leads, release timing, backlash risk, donor/media follow-through, and persistence through saves; made state-level research spending materially affect polling instead of acting like a dead stat; rebuilt debate endings into custom spin-room aftermath events based on the player's actual answers; added branded launch splash and Windows icon assets plus stricter release validation; and expanded automated coverage for debate flow, election-day transition, and opposition-research resolution.
 
 ## How We Should Track Progress
 

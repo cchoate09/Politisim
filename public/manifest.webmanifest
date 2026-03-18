@@ -1,0 +1,17 @@
+{
+  "name": "PolitiSim",
+  "short_name": "PolitiSim",
+  "description": "A presidential campaign simulation game about winning the primary and general election.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#07111e",
+  "theme_color": "#0d223b",
+  "icons": [
+    {
+      "src": "./brand/app-icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

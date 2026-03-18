@@ -5,6 +5,7 @@ import { evaluateEndorsement, getCandidateEndorsementSummary, type ActiveEndorse
 import type { PlayerDemographics } from '../core/ElectionMath';
 import { buildPlayerSurrogateRoster, getAssignedStateForSurrogate, getFieldNetworkSummary, getTotalOfficeUpkeep } from '../core/FieldOperations';
 import { getMediaSummary } from '../core/CampaignStrategy';
+import { getNationalResearchPressure } from '../core/OppositionResearch';
 
 const AVAILABLE_STAFF = [
   {
@@ -57,7 +58,14 @@ export const CampaignHQView: React.FC = () => {
     vpPick,
     deploySurrogate,
     donorBlocs,
-    mediaChannels
+    mediaChannels,
+    campaignSpending,
+    oppositionResearch,
+    generalOpponent,
+    activeDebate,
+    activeElectionNight,
+    commissionResearch,
+    releaseResearchLead
   } = useGameStore();
 
   const formattedBudget = new Intl.NumberFormat('en-US', {
@@ -179,6 +187,28 @@ export const CampaignHQView: React.FC = () => {
   }, [fieldOperations]);
   const donorHeat = useMemo(() => donorBlocs.filter((bloc) => bloc.relationship >= 60).length, [donorBlocs]);
   const mediaSummary = useMemo(() => getMediaSummary(mediaChannels), [mediaChannels]);
+  const visibleResearchTargets = useMemo(() => {
+    if (gamePhase === 'general' && generalOpponent) {
+      return [generalOpponent];
+    }
+
+    return rivalAIs.filter((rival) => rival.status !== 'withdrawn');
+  }, [gamePhase, generalOpponent, rivalAIs]);
+  const researchPressure = useMemo(() => getNationalResearchPressure(campaignSpending), [campaignSpending]);
+  const researchDesk = useMemo(() => {
+    return visibleResearchTargets.map((target) => {
+      const file = oppositionResearch[target.id];
+      const activeLeads = (file?.leads ?? []).filter((lead) => lead.status === 'active');
+      return {
+        target,
+        file,
+        activeLeads
+      };
+    });
+  }, [oppositionResearch, visibleResearchTargets]);
+  const totalResearchLeads = useMemo(() => researchDesk.reduce((sum, entry) => sum + entry.activeLeads.length, 0), [researchDesk]);
+  const totalResearchHeat = useMemo(() => researchDesk.reduce((sum, entry) => sum + (entry.file?.heat ?? 0), 0), [researchDesk]);
+  const warRoomLocked = Boolean(activeConvention || activeDebate || activeElectionNight);
 
   return (
     <div className="campaign-hq-view">
@@ -194,6 +224,8 @@ export const CampaignHQView: React.FC = () => {
         <SummaryCard label="Convention Weight" value={playerCoalition.conventionWeight.toString()} detail="Broker leverage if the nomination reaches a contested floor." />
         <SummaryCard label="Warm Donor Lanes" value={donorHeat.toString()} detail="Funding blocs currently ready to respond without a cold ask." />
         <SummaryCard label="Media Pressure" value={mediaSummary.strongestChannels.length.toString()} detail="Channels carrying meaningful national intensity right now." />
+        <SummaryCard label="Research Leads" value={totalResearchLeads.toString()} detail="Actionable opposition files currently sitting on the desk." />
+        <SummaryCard label="Research Pressure" value={researchPressure.toFixed(1)} detail="National research investment improves dossier quality and release odds." />
         <SummaryCard label="Office States" value={fieldSummary.officeStates.toString()} detail="States where you have a permanent on-the-ground footprint." />
         <SummaryCard label="Volunteer Reserve" value={volunteerReserve.toString()} detail="Unassigned volunteers ready to reinforce a state operation." />
         <SummaryCard label="Surrogates" value={surrogateRoster.length.toString()} detail="Running mate, staff, and endorsers available for weekly deployment." />
@@ -378,6 +410,111 @@ export const CampaignHQView: React.FC = () => {
       <section className="hq-panel">
         <div className="panel-header">
           <div>
+            <h3>Opposition Research Desk</h3>
+            <p>Build dossiers, wait for a clean opening, and decide whether to publish a hit now or hold it for a bigger moment.</p>
+          </div>
+        </div>
+
+        <div className="operations-summary-grid research-summary-grid">
+          <MiniMetric label="Live leads" value={totalResearchLeads.toString()} />
+          <MiniMetric label="Desk heat" value={Math.round(totalResearchHeat / Math.max(1, researchDesk.length || 1)).toString()} />
+          <MiniMetric label="Research pressure" value={researchPressure.toFixed(1)} />
+          <MiniMetric label="War room" value={warRoomLocked ? 'Locked' : 'Open'} />
+        </div>
+
+        {researchDesk.length === 0 ? (
+          <div className="empty-state-card">
+            No viable opposition targets are on the board right now.
+          </div>
+        ) : (
+          <div className="research-desk-grid">
+            {researchDesk.map(({ target, file, activeLeads }) => {
+              const canCommission = !warRoomLocked
+                && budget >= (gamePhase === 'general' ? 105000 : 85000)
+                && stamina >= 6
+                && file?.lastResearchWeek !== currentWeek;
+              const leadVulnerability = target.vulnerabilities[0] ?? 'message discipline';
+
+              return (
+                <div key={target.id} className="research-card">
+                  <div className="research-card-top">
+                    <div>
+                      <strong>{target.name}</strong>
+                      <span>{target.tagline}</span>
+                    </div>
+                    <div className={`research-heat ${getHeatTone(file?.heat ?? 0)}`}>
+                      Heat {file?.heat ?? 0}
+                    </div>
+                  </div>
+
+                  <p className="research-copy">
+                    War room brief: {leadVulnerability}. {target.strengths[0] ?? 'Organized campaign'} remains the strongest shield around this candidate.
+                  </p>
+
+                  <div className="research-metrics">
+                    <span>Dossier strength: {file?.dossierStrength ?? 0}</span>
+                    <span>Active leads: {activeLeads.length}</span>
+                    <span>{file?.lastResearchWeek === null ? 'No fresh memo yet' : `Last sweep: W${file.lastResearchWeek}`}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="court-btn research-btn"
+                    disabled={!canCommission}
+                    onClick={() => commissionResearch(target.id)}
+                  >
+                    {warRoomLocked
+                      ? 'Finish Current Event'
+                      : file?.lastResearchWeek === currentWeek
+                        ? 'Research Already Commissioned'
+                        : budget < (gamePhase === 'general' ? 105000 : 85000) || stamina < 6
+                          ? 'Need Cash or Stamina'
+                          : `Commission ${gamePhase === 'general' ? '$105K' : '$85K'} Sweep`}
+                  </button>
+
+                  {activeLeads.length === 0 ? (
+                    <div className="empty-inline-card">
+                      No clean release yet. More research pressure and better timing can surface a stronger hit.
+                    </div>
+                  ) : (
+                    <div className="research-lead-list">
+                      {activeLeads.map((lead) => (
+                        <div key={lead.id} className="research-lead-card">
+                          <div className="research-lead-top">
+                            <div>
+                              <strong>{lead.title}</strong>
+                              <span>{describeLeadCredibility(lead)}</span>
+                            </div>
+                            <button
+                              type="button"
+                              className="surrogate-target-btn research-release-btn"
+                              disabled={warRoomLocked || file?.lastReleaseWeek === currentWeek}
+                              onClick={() => releaseResearchLead(target.id, lead.id)}
+                            >
+                              {file?.lastReleaseWeek === currentWeek ? 'Already Released' : 'Release Hit'}
+                            </button>
+                          </div>
+                          <p>{lead.summary}</p>
+                          <div className="endorsement-tags research-tags">
+                            <span>{describeLeadSeverity(lead.severity)}</span>
+                            <span>{describeLeadBackfire(lead.backfireRisk)}</span>
+                            <span>Found W{lead.discoveredWeek}</span>
+                          </div>
+                          <div className="research-framing">{lead.framing}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <section className="hq-panel">
+        <div className="panel-header">
+          <div>
             <h3>Open Endorsement Board</h3>
             <p>Track who is available, what they care about, and whether they are leaning toward your campaign or drifting to a rival.</p>
           </div>
@@ -532,4 +669,28 @@ function formatCompactDollars(value: number) {
     notation: 'compact',
     maximumFractionDigits: 1
   }).format(value);
+}
+
+function getHeatTone(heat: number) {
+  if (heat >= 55) return 'high';
+  if (heat >= 30) return 'medium';
+  return 'low';
+}
+
+function describeLeadCredibility(lead: { credibility: number }) {
+  if (lead.credibility >= 72) return 'Well sourced';
+  if (lead.credibility >= 56) return 'Press-test ready';
+  return 'Thin sourcing';
+}
+
+function describeLeadSeverity(severity: number) {
+  if (severity >= 78) return 'Major hit';
+  if (severity >= 58) return 'Clean contrast';
+  return 'Narrow hit';
+}
+
+function describeLeadBackfire(backfireRisk: number) {
+  if (backfireRisk >= 60) return 'Backfire risk: high';
+  if (backfireRisk >= 36) return 'Backfire risk: medium';
+  return 'Backfire risk: low';
 }

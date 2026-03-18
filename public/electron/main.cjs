@@ -32,6 +32,14 @@ function getRendererEntry() {
   return path.join(app.getAppPath(), 'dist', 'index.html');
 }
 
+function getWindowIconPath() {
+  if (isBundledRuntime()) {
+    return path.join(process.resourcesPath, 'icon.ico');
+  }
+
+  return path.join(app.getAppPath(), 'build', 'icon.ico');
+}
+
 function isBundledRuntime() {
   return packagedRuntimeOverride || app.isPackaged;
 }
@@ -87,7 +95,10 @@ function createWindow() {
     height: 720,
     minWidth: 1024,
     minHeight: 576,
-    show: !isSmokeTest,
+    show: false,
+    title: 'PolitiSim',
+    backgroundColor: '#07111e',
+    icon: getWindowIconPath(),
     webPreferences: {
       preload: PRELOAD_PATH,
       nodeIntegration: false,
@@ -95,6 +106,12 @@ function createWindow() {
     },
     // Hide default menu bar for a cleaner game feel
     autoHideMenuBar: true, 
+  });
+
+  win.once('ready-to-show', () => {
+    if (!isSmokeTest) {
+      win.show();
+    }
   });
 
   // Load from localhost if in Vite Dev Mode, otherwise load the built production index.html

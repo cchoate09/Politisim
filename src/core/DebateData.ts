@@ -17,6 +17,16 @@ export interface DebateQuestion {
   choices: DebateChoice[];
 }
 
+export interface DebateAnswerRecord {
+  questionId: string;
+  topic: string;
+  choiceIndex: number;
+  choiceText: string;
+  momentumEffect: number;
+  trustEffect: number;
+  groupEffects: Partial<PlayerDemographics>;
+}
+
 export interface DebateTemplate {
   id: string;
   phase: DebatePhase;
@@ -58,6 +68,7 @@ export interface ActiveDebate {
   currentQuestionIndex: number;
   selectedChoiceIndex: number | null;
   latestReaction: string | null;
+  answerHistory: DebateAnswerRecord[];
 }
 
 export type DebateStanding = Record<keyof PlayerDemographics, number>;
@@ -1514,7 +1525,8 @@ export function createActiveDebate(
       : buildGeneralParticipants(playerName, rivalNames),
     currentQuestionIndex: 0,
     selectedChoiceIndex: null,
-    latestReaction: null
+    latestReaction: null,
+    answerHistory: []
   };
 }
 

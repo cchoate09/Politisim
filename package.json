@@ -4,6 +4,7 @@
   "version": "0.4.0",
   "description": "A presidential campaign simulation game focused on winning a modern U.S. primary and general election.",
   "author": "PolitiSim Team",
+  "homepage": "./",
   "main": "public/electron/main.cjs",
   "type": "module",
   "scripts": {
@@ -55,10 +56,21 @@
   "build": {
     "appId": "com.politisim.game",
     "productName": "PolitiSim",
+    "copyright": "Copyright 2026 PolitiSim Team",
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "directories": {
       "output": "release"
     },
+    "extraResources": [
+      {
+        "from": "build/icon.ico",
+        "to": "icon.ico"
+      },
+      {
+        "from": "build/icon.png",
+        "to": "icon.png"
+      }
+    ],
     "files": [
       "dist/**/*",
       "public/electron/**/*",
@@ -66,13 +78,19 @@
     ],
     "asar": true,
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         "nsis"
       ]
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "shortcutName": "PolitiSim",
+      "createDesktopShortcut": "always"
     }
   }
 }

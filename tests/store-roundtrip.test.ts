@@ -52,11 +52,24 @@ test('store save/load round-trips donor, media, and debate state', () => {
   assert.equal(useGameStore.getState().fundraiseFromBloc(donorId), true);
   assert.equal(useGameStore.getState().investInMedia(channelId), true);
   useGameStore.getState().previewDebate('primary');
+  const researchTargetId = useGameStore.getState().rivalAIs[0]?.id;
+  if (researchTargetId) {
+    useGameStore.setState((state) => ({
+      oppositionResearch: {
+        ...state.oppositionResearch,
+        [researchTargetId]: {
+          ...state.oppositionResearch[researchTargetId],
+          heat: 37
+        }
+      }
+    }));
+  }
 
   const beforeSave = useGameStore.getState();
   const savedDebateId = beforeSave.activeDebate?.id;
   const savedMediaIntensity = beforeSave.mediaChannels.find((channel) => channel.id === channelId)?.intensity ?? 0;
   const savedDonorEnergy = beforeSave.donorBlocs.find((bloc) => bloc.id === donorId)?.energy ?? 0;
+  const savedResearchHeat = researchTargetId ? beforeSave.oppositionResearch[researchTargetId]?.heat ?? 0 : 0;
 
   useGameStore.getState().saveGame(1);
   useGameStore.getState().resetGame();
@@ -66,6 +79,9 @@ test('store save/load round-trips donor, media, and debate state', () => {
   assert.equal(restored.activeDebate?.id, savedDebateId);
   assert.equal(restored.mediaChannels.find((channel) => channel.id === channelId)?.intensity, savedMediaIntensity);
   assert.equal(restored.donorBlocs.find((bloc) => bloc.id === donorId)?.energy, savedDonorEnergy);
+  if (researchTargetId) {
+    assert.equal(restored.oppositionResearch[researchTargetId]?.heat, savedResearchHeat);
+  }
   assert.equal(restored.playerIssues.length, 3);
   assert.match(restored.activeDebate?.participants[0]?.tagline ?? '', /Economy|Healthcare|Education/);
 

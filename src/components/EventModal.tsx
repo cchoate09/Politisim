@@ -21,7 +21,11 @@ export const EventModal: React.FC = () => {
         ? 'Spin Room'
         : 'Campaign Moment';
 
-  const describeChoiceProfile = (choice: { moneyEffect: number; momentumEffect: number; trustEffect: number }) => {
+  const describeChoiceProfile = (choice: { moneyEffect: number; momentumEffect: number; trustEffect: number; tags?: string[] }) => {
+    if (choice.tags && choice.tags.length > 0) {
+      return choice.tags;
+    }
+
     const tags: string[] = [];
     if (choice.moneyEffect <= -100000) tags.push('High cash cost');
     else if (choice.moneyEffect < 0) tags.push('Moderate cash cost');

@@ -507,6 +507,15 @@ function buildCandidateScore(
   return Math.max(1, campaignScore * trustMultiplier * momentumWeight * supportWeight * leanWeight * regionalWeight * statusPenalty);
 }
 
+function getResearchPressure(spending: CampaignSpendingData) {
+  return Math.min(0.15, Math.log((spending.research || 0) + 1) / 58);
+}
+
+function getResearchDefenseModifier(pressure: number, messageDiscipline: number, scandalRisk: number) {
+  const exposureFactor = 1.02 + (scandalRisk / 180) - (messageDiscipline / 240);
+  return Math.max(0.8, 1 - (pressure * exposureFactor));
+}
+
 function getContestValue(stateData: StateElectionData, rival: RivalAI): number {
   if (rival.status === 'nominee') return stateData.delegatesOrEV;
   return rival.party === 'Democrat' ? stateData.demDelegates : stateData.repDelegates;
@@ -974,6 +983,10 @@ export class SimulationEngine {
   ): PrimaryStateProjection {
     const activeRivals = rivals.length > 0 ? rivals : [SimulationEngine.createRivalAI('normal')];
     const trustMultiplier = 0.45 + (publicTrust / 100) * 0.85;
+    const playerResearchPressure = getResearchPressure(playerSpending);
+    const combinedRivalResearch = activeRivals.reduce((sum, rival) => {
+      return sum + getResearchPressure(rival.spending[stateData.stateName] || cloneEmptySpending());
+    }, 0);
     const playerScore = buildCandidateScore(
       playerIdeology,
       stateData,
@@ -986,13 +999,19 @@ export class SimulationEngine {
       playerMomentum,
       12,
       playerHomeRegion
-    ) * playerEndorsementEffect.scoreMultiplier * playerFieldEffect.scoreMultiplier * playerMediaEffect.scoreMultiplier;
+    )
+      * playerEndorsementEffect.scoreMultiplier
+      * playerFieldEffect.scoreMultiplier
+      * playerMediaEffect.scoreMultiplier
+      * (1 + playerResearchPressure * 0.22)
+      * Math.max(0.82, 1 - (combinedRivalResearch * 0.45));
 
     const rivalScores = activeRivals.map((rival) => {
       const statusPenalty = rival.status === 'withdrawn' ? 0.18 : 1;
       const endorsementEffect = rivalEndorsementEffects[rival.id] ?? { scoreMultiplier: 1, turnoutBonus: 0 };
       const fieldEffect = rivalFieldEffects[rival.id] ?? { scoreMultiplier: 1, turnoutBonus: 0, stabilityBonus: 0 };
       const mediaEffect = rivalMediaEffects[rival.id] ?? emptyMediaEffect();
+      const rivalResearchPressure = getResearchPressure(rival.spending[stateData.stateName] || cloneEmptySpending());
       const score = buildCandidateScore(
         rival.ideology,
         stateData,
@@ -1006,7 +1025,12 @@ export class SimulationEngine {
         rival.supportBase,
         rival.homeRegion,
         statusPenalty
-      ) * endorsementEffect.scoreMultiplier * fieldEffect.scoreMultiplier * mediaEffect.scoreMultiplier;
+      )
+        * endorsementEffect.scoreMultiplier
+        * fieldEffect.scoreMultiplier
+        * mediaEffect.scoreMultiplier
+        * (1 + rivalResearchPressure * 0.14)
+        * getResearchDefenseModifier(playerResearchPressure, rival.messageDiscipline, rival.scandalRisk);
 
       return { rival, score };
     });
@@ -1117,6 +1141,8 @@ export class SimulationEngine {
     playerHomeRegion = 'National'
   ): PollingData & { turnout: number } {
     const playerTrustMultiplier = 0.4 + (publicTrust / 100) * 0.9;
+    const playerResearchPressure = getResearchPressure(playerSpending);
+    const rivalResearchPressure = getResearchPressure(rivalAI.spending[stateData.stateName] || cloneEmptySpending());
     const playerScore = buildCandidateScore(
       playerIdeology,
       stateData,
@@ -1129,7 +1155,12 @@ export class SimulationEngine {
       playerMomentum,
       12,
       playerHomeRegion
-    ) * playerEndorsementEffect.scoreMultiplier * playerFieldEffect.scoreMultiplier * playerMediaEffect.scoreMultiplier;
+    )
+      * playerEndorsementEffect.scoreMultiplier
+      * playerFieldEffect.scoreMultiplier
+      * playerMediaEffect.scoreMultiplier
+      * (1 + playerResearchPressure * 0.2)
+      * Math.max(0.82, 1 - (rivalResearchPressure * 0.55));
 
     const rivalScore = buildCandidateScore(
       rivalAI.ideology,
@@ -1143,7 +1174,12 @@ export class SimulationEngine {
       rivalAI.momentum,
       rivalAI.supportBase,
       rivalAI.homeRegion
-    ) * rivalEndorsementEffect.scoreMultiplier * rivalFieldEffect.scoreMultiplier * rivalMediaEffect.scoreMultiplier;
+    )
+      * rivalEndorsementEffect.scoreMultiplier
+      * rivalFieldEffect.scoreMultiplier
+      * rivalMediaEffect.scoreMultiplier
+      * (1 + rivalResearchPressure * 0.14)
+      * getResearchDefenseModifier(playerResearchPressure, rivalAI.messageDiscipline, rivalAI.scandalRisk);
 
     const stateTurnout = clampPercentage(ElectionMath.calculateTurnout(
       stateData,

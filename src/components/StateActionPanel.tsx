@@ -361,7 +361,7 @@ export const StateActionPanel: React.FC<Props> = ({ stateName, onClose }) => {
             <span className="spend-title">Opposition Research</span>
             <span className="spend-cost">{formatCost(100000)}</span>
           </div>
-          <div className="spend-desc">Penalizes rival performance in this state.</div>
+          <div className="spend-desc">Improves state-level contrast pressure and feeds the national war room.</div>
         </button>
 
         <button

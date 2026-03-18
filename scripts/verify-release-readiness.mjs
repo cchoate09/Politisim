@@ -60,11 +60,15 @@ async function run() {
   await requirePath('dist/index.html', 'Renderer build exists.');
   await requirePath('dist/mods/manifest.json', 'Scenario manifest is present in the packaged renderer assets.');
   await requirePath('dist/geo/us-states-10m.json', 'Offline geo asset is present in the packaged renderer assets.');
+  await requirePath('dist/brand/app-icon.svg', 'Runtime brand icon is bundled with the renderer assets.');
+  await requirePath('dist/brand/launch-splash.svg', 'Launch splash art is bundled with the renderer assets.');
   await requirePath('public/electron/main.cjs', 'Electron main process entry exists.');
   await requirePath('public/electron/preload.cjs', 'Electron preload bridge exists.');
   await requirePath('public/electron/steam.cjs', 'Steam bridge exists.');
   await requirePath('.github/workflows/ci.yml', 'CI workflow is present.');
   await requirePath('docs/STEAM_RELEASE_CHECKLIST.md', 'Steam release checklist doc is present.');
+  await requirePath('build/icon.ico', 'Windows installer icon exists.');
+  await requirePath('build/icon.png', 'Windows launcher icon PNG exists.');
 
   if (await exists(executablePath)) {
     record(results, 'pass', `Packaged executable exists at ${executablePath}.`);
@@ -84,18 +88,6 @@ async function run() {
   } else {
     blockingFailures += 1;
     record(results, 'fail', `Packaged smoke report is missing: ${smokeReportPath}`);
-  }
-
-  const windowsIconCandidates = [
-    path.join(projectRoot, 'build', 'icon.ico'),
-    path.join(projectRoot, 'public', 'electron', 'icon.ico'),
-    path.join(projectRoot, 'public', 'icon.ico')
-  ];
-  const hasWindowsIcon = await Promise.all(windowsIconCandidates.map(exists)).then((values) => values.some(Boolean));
-  if (hasWindowsIcon) {
-    record(results, 'pass', 'A Windows .ico asset is present for branded installers.');
-  } else {
-    record(results, 'warn', 'No Windows .ico asset was found. The build will package, but it will not look release-grade on Steam until a branded icon is added.');
   }
 
   const configuredSteamAppId = Number(process.env.POLITISIM_STEAM_APP_ID);
