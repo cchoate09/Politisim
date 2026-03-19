@@ -1,12 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import './CandidateCreator.css';
 import { useGameStore } from '../store/gameStore';
 import { CampaignDataParser } from '../core/CampaignDataParser';
 import type { PlayerDemographics } from '../core/ElectionMath';
 import { getScenarioIntro, getScenarioPrimaryProfiles, getScenarioStrategicNotes, getScenarioVPCandidates } from '../core/ScenarioContent';
 import { CandidateIdentityCard } from './CandidateIdentityCard';
-import { ScenarioBrowser } from './ScenarioBrowser';
+import { ScenarioBrowser, type ScenarioBrowserMessageTone } from './ScenarioBrowser';
 import type { ScenarioCatalogEntry } from '../core/ScenarioValidation';
+import { importScenarioFromFiles } from '../core/ScenarioImport';
 
 const MAX_POINTS = 300;
 const HOME_REGIONS = ['National', 'Northeast', 'Midwest', 'South', 'West'] as const;
@@ -50,8 +51,11 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
   const [selectedMod, setSelectedMod] = useState('vanilla');
   const [loadingMods, setLoadingMods] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [catalogMessage, setCatalogMessage] = useState<string | null>(null);
+  const [catalogMessageTone, setCatalogMessageTone] = useState<ScenarioBrowserMessageTone>('info');
   const [modsError, setModsError] = useState<string | null>(null);
   const [isLaunching, setIsLaunching] = useState(false);
+  const [importBusy, setImportBusy] = useState(false);
 
   const pointsRemaining = useMemo(
     () => MAX_POINTS - Object.values(traits).reduce((acc, val) => acc + val, 0),
@@ -81,15 +85,11 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
   const isScenarioBlocked = activeScenario?.validation.status === 'invalid';
   const canLaunchCampaign = !loadingMods && !isLaunching && !isScenarioBlocked && pointsRemaining === 0 && selectedIssues.length === 3 && Boolean(activeScenario);
 
-  useEffect(() => {
-    let alive = true;
-
-    const loadMods = async () => {
+  const loadMods = useCallback(async (forceRefresh: boolean = false) => {
+    try {
       setLoadingMods(true);
       setCatalogError(null);
-      const mods = await CampaignDataParser.loadScenarioCatalog();
-
-      if (!alive) return;
+      const mods = await CampaignDataParser.loadScenarioCatalog({ forceRefresh });
 
       setAvailableMods(mods);
       setSelectedMod((current) => {
@@ -102,15 +102,30 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
       if (mods.length === 0) {
         setCatalogError('No scenarios were discovered. Add scenario folders to public/mods and declare them in manifest.json.');
       }
+    } catch (error) {
+      console.error('Failed to load scenario catalog:', error);
+      setCatalogError('The scenario catalog could not be loaded. Refresh the catalog or review imported scenario data.');
+    } finally {
       setLoadingMods(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+
+    const run = async () => {
+      await loadMods();
+      if (!alive) {
+        return;
+      }
     };
 
-    void loadMods();
+    void run();
 
     return () => {
       alive = false;
     };
-  }, []);
+  }, [loadMods]);
 
   const adjustTrait = (key: keyof PlayerDemographics, amount: number) => {
     setTraits((prev) => {
@@ -180,6 +195,43 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
     onComplete();
   };
 
+  const handleRefreshScenarios = async () => {
+    setCatalogMessage('Refreshing the scenario catalog and re-running validation checks...');
+    setCatalogMessageTone('info');
+    await loadMods(true);
+    setCatalogMessage('Scenario catalog refreshed. Validation diagnostics are up to date.');
+    setCatalogMessageTone('success');
+  };
+
+  const handleImportScenarioFiles = async (files: File[]) => {
+    setImportBusy(true);
+    setCatalogMessage(null);
+    setModsError(null);
+
+    try {
+      const existingIds = availableMods.map((scenario) => scenario.id);
+      const importedScenario = await importScenarioFromFiles(files, existingIds);
+      CampaignDataParser.saveImportedScenario(importedScenario);
+      await loadMods(true);
+      setSelectedMod(importedScenario.manifest.id);
+      setCatalogMessage(`Imported ${importedScenario.manifest.name}. Review the scenario browser diagnostics before launch if you made a custom map.`);
+      setCatalogMessageTone(importedScenario.importNotes.length > 0 ? 'warning' : 'success');
+    } catch (error) {
+      console.error('Scenario import failed:', error);
+      setCatalogMessage(error instanceof Error ? error.message : 'Scenario import failed.');
+      setCatalogMessageTone('error');
+    } finally {
+      setImportBusy(false);
+    }
+  };
+
+  const handleRemoveScenario = async (scenarioId: string) => {
+    CampaignDataParser.removeImportedScenario(scenarioId);
+    await loadMods(true);
+    setCatalogMessage(`Removed imported scenario ${scenarioId} from the local catalog.`);
+    setCatalogMessageTone('info');
+  };
+
   return (
     <div className="candidate-creator">
       <div className="creator-header">
@@ -195,6 +247,12 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
             loading={loadingMods}
             loadError={catalogError}
             onSelectScenario={setSelectedMod}
+            onRefreshScenarios={() => void handleRefreshScenarios()}
+            onImportScenarioFiles={handleImportScenarioFiles}
+            onRemoveScenario={handleRemoveScenario}
+            importBusy={importBusy}
+            statusMessage={catalogMessage}
+            statusTone={catalogMessageTone}
           />
 
           <div style={{ marginBottom: '1.5rem' }}>

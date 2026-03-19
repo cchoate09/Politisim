@@ -4,12 +4,12 @@ This checklist turns the current competitive review into a working roadmap. The 
 
 ## Current Snapshot
 
-Estimated parity progress: `99%`
+Estimated parity progress: `99.5%`
 
 - Core election simulation: `98%`
-- Replayability and scenarios: `92%`
+- Replayability and scenarios: `96%`
 - Presentation and immersion: `93%`
-- Product shell and Steam readiness: `96%`
+- Product shell and Steam readiness: `98%`
 - QA, onboarding, and usability: `93%`
 
 ## What Is Already Stronger Than Before
@@ -166,11 +166,11 @@ Goal: stop future content passes from quietly breaking the game.
 
 If we want the highest return on effort, tackle these next:
 
-1. Steam Workshop planning pass and docs alignment
-2. Final Steam app id validation pass and production Steamworks smoke
-3. Bundle splitting / packaged-size optimization for the oversized main chunk
-4. Scenario import UX polish for community content
-5. Final launch-candidate regression pass in packaged Electron
+1. Final Steam app id validation pass and production Steamworks smoke
+2. Final launch-candidate regression pass in packaged Electron
+3. Scenario sharing/export polish for community creators
+4. Optional Workshop uploader shell once Steamworks auth is ready
+5. Last-mile launch balancing and content polish
 
 ## Latest Milestone Notes
 
@@ -185,6 +185,7 @@ If we want the highest return on effort, tackle these next:
 - `2026-03-17`: Added a full opposition-research desk with dossiers, discovered leads, release timing, backlash risk, donor/media follow-through, and persistence through saves; made state-level research spending materially affect polling instead of acting like a dead stat; rebuilt debate endings into custom spin-room aftermath events based on the player's actual answers; added branded launch splash and Windows icon assets plus stricter release validation; and expanded automated coverage for debate flow, election-day transition, and opposition-research resolution.
 - `2026-03-18`: Added two more official scenarios (`Restoration 2012` and `Fractured Republic 2032`), made the campaign calendar scenario-aware by election year, authored scenario-specific primary and general rosters for every official scenario, added scenario-tuned event decks and strategic briefings, expanded the VP bench into a richer ticket-building system with region, turnout, fundraising, and battleground tradeoffs, and replaced the flatter dropout logic with more political suspension and consolidation behavior tied to delegate math, coalition failure, money, trust, and lane crowding.
 - `2026-03-19`: Added a full in-game scenario browser inside campaign setup with search, challenge and health filters, metadata-rich detail panels, battleground and rules summaries, browser-side validation badges, and human-readable diagnostics for manifest or state-data problems; blocked launches for invalid scenarios; added automated validation tests so official scenarios stay clean; and updated the modding guide to align with the scenario catalog and future Workshop-facing content flow.
+- `2026-03-19`: Split the app shell into lazy-loaded screen chunks for campaign setup, analytics, map, primary/general trackers, HQ, budget, tutorial, guide, settings, debates, conventions, election night, and endgame; added manual vendor chunking in Vite for framework, map, analytics, and generic vendor code; added background prewarming after campaign start so the first boot is leaner without making later navigation feel sluggish; and built a persistent community-scenario import flow that reads folder bundles (`manifest.json` + `states.json`), stores imported scenarios locally, merges them into the browser catalog, supports removal, surfaces import notes, and exposes Workshop-readiness metadata like author, version, and compatibility.
 
 ## How We Should Track Progress
 

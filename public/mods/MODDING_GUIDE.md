@@ -22,6 +22,16 @@ public/mods/
 3. Add an entry for that id in `public/mods/manifest.json`.
 4. Edit `states.json` to define your map, demographics, delegate totals, and issue priorities.
 
+If you are sharing a community scenario instead of editing the built-in manifest directly, package a single folder that contains:
+
+```text
+your-scenario/
+  manifest.json
+  states.json
+```
+
+The in-game browser can now import that folder directly and will validate it before launch.
+
 ## Manifest Schema
 
 Each scenario entry in `manifest.json` looks like this:
@@ -38,6 +48,9 @@ Each scenario entry in `manifest.json` looks like this:
   "focus": ["Debates", "Coalition building", "General election"],
   "featuredStates": ["Pennsylvania", "Georgia", "Arizona", "Michigan"],
   "specialRules": ["Balanced national map", "Multi-lane primary field", "Classic battleground finish"],
+  "author": "PolitiSim Team",
+  "version": "1.0.0",
+  "minGameVersion": "0.4.0",
   "official": true
 }
 ```
@@ -54,6 +67,9 @@ Manifest entries should include:
 - `focus`: Short tags for the scenario browser.
 - `featuredStates`: Optional list of marquee battlegrounds shown in browser metadata.
 - `specialRules`: Optional list of strategic twists shown in browser metadata.
+- `author`: Creator name shown in the scenario browser and useful for shared/community content.
+- `version`: Scenario version. Use a semver-style format such as `1.0.0`.
+- `minGameVersion`: Lowest supported game version for compatibility checks.
 - `official`: Marks built-in scenarios.
 
 ## `states.json` Schema
@@ -100,8 +116,10 @@ Each jurisdiction entry should look like this:
 - The primary system uses your delegate counts directly, so wildly uneven numbers will change the nomination pace.
 - The in-game scenario browser validates manifest metadata, state schema, DC/538 coverage, turnout sanity, and primary-date alignment before a run can start.
 - Scenarios with blocking validation errors appear as `Blocked` in the browser and cannot be launched until the listed issues are fixed.
+- Community scenarios import directly from a folder chooser in the scenario browser. The importer preserves the folder as a local catalog entry, normalizes unsafe ids, and records import notes when something had to be adjusted.
+- If you want your scenario to feel Workshop-ready, include `author`, `version`, `minGameVersion`, a clear tagline, focus tags, featured states, and a concise special-rules summary.
 - After editing a scenario, run `npm test` to catch manifest or data-shape mistakes.
 
 ## Workshop Support
 
-Steam Workshop upload is not wired in yet, but the scenario catalog is now manifest-driven and browser-validated, which keeps local mods aligned with a future Workshop flow. Local scenarios already work in both browser preview and the Electron build as long as they are declared in `manifest.json`.
+Steam Workshop upload is not wired in yet, but the scenario catalog is now manifest-driven, browser-validated, and community-importable, which keeps local mods aligned with a future Workshop flow. Local scenarios already work in both browser preview and the Electron build as long as they are declared in `manifest.json` or imported through the scenario browser.

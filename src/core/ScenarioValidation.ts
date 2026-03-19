@@ -117,6 +117,18 @@ function validateManifestEntry(
   if (!entry.description?.trim()) {
     addFinding(findings, 'error', 'manifest.description', 'Description is required so the scenario browser can explain the run.', 'manifest');
   }
+  if (!entry.author?.trim()) {
+    addFinding(findings, 'warning', 'manifest.author', 'Author metadata is missing; community scenarios are easier to trust when they name a creator.', 'manifest');
+  }
+  if (!entry.version?.trim()) {
+    addFinding(findings, 'warning', 'manifest.version', 'Version metadata is missing; Workshop-ready scenarios should report a visible version.', 'manifest');
+  }
+  if (entry.version?.trim() && !/^\d+\.\d+\.\d+(-[a-z0-9.-]+)?$/i.test(entry.version.trim())) {
+    addFinding(findings, 'warning', 'manifest.version_format', 'Version should use a semver-style format such as 1.0.0.', 'manifest');
+  }
+  if (!entry.minGameVersion?.trim()) {
+    addFinding(findings, 'info', 'manifest.min_game_version', 'Minimum compatible game version is missing.', 'manifest');
+  }
   if (!Array.isArray(entry.focus) || entry.focus.length === 0) {
     addFinding(findings, 'warning', 'manifest.focus', 'Focus tags are missing; the browser will not be able to explain the scenario lane.', 'manifest');
   }

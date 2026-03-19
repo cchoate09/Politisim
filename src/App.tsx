@@ -1,23 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { Suspense, lazy, useState, useEffect, useCallback, useRef } from 'react';
 import './index.css';
-import { PrimaryElectionView } from './components/PrimaryElectionView';
-import { GeneralElectionView } from './components/GeneralElectionView';
-import { USAMap } from './components/USAMap';
-import { AnalyticsDashboard } from './components/AnalyticsDashboard';
-import { CandidateCreator } from './components/CandidateCreator';
-import { BudgetAllocationView } from './components/BudgetAllocationView';
-import { EventModal } from './components/EventModal';
-import { DebateScreen } from './components/DebateScreen';
-import { ConventionModal } from './components/ConventionModal';
-import { StateActionPanel } from './components/StateActionPanel';
-import { CampaignHQView } from './components/CampaignHQView';
-import { ElectionNightScreen } from './components/ElectionNightScreen';
-import { EndGameScreen } from './components/EndGameScreen';
-import { VPSelectionModal } from './components/VPSelectionModal';
 import { ActivityLog } from './components/ActivityLog';
-import { CampaignGuideDrawer } from './components/CampaignGuideDrawer';
-import { TutorialModal } from './components/TutorialModal';
-import { SettingsDrawer } from './components/SettingsDrawer';
 import { useGameStore, computeEVTotals } from './store/gameStore';
 import { useSettingsStore } from './store/settingsStore';
 import { audioManager } from './core/AudioManager';
@@ -25,6 +8,57 @@ import { syncCloudSaves, type CloudSyncSummary, type SteamStatus } from './core/
 
 const TABS = ['map', 'analytics', 'primary', 'general', 'campaign', 'budget'] as const;
 const TUTORIAL_STORAGE_KEY = 'politisim_tutorial_complete';
+
+const loadPrimaryElectionView = () => import('./components/PrimaryElectionView');
+const loadGeneralElectionView = () => import('./components/GeneralElectionView');
+const loadUSAMap = () => import('./components/USAMap');
+const loadAnalyticsDashboard = () => import('./components/AnalyticsDashboard');
+const loadCandidateCreator = () => import('./components/CandidateCreator');
+const loadBudgetAllocationView = () => import('./components/BudgetAllocationView');
+const loadEventModal = () => import('./components/EventModal');
+const loadDebateScreen = () => import('./components/DebateScreen');
+const loadConventionModal = () => import('./components/ConventionModal');
+const loadStateActionPanel = () => import('./components/StateActionPanel');
+const loadCampaignHQView = () => import('./components/CampaignHQView');
+const loadElectionNightScreen = () => import('./components/ElectionNightScreen');
+const loadEndGameScreen = () => import('./components/EndGameScreen');
+const loadVPSelectionModal = () => import('./components/VPSelectionModal');
+const loadCampaignGuideDrawer = () => import('./components/CampaignGuideDrawer');
+const loadTutorialModal = () => import('./components/TutorialModal');
+const loadSettingsDrawer = () => import('./components/SettingsDrawer');
+
+const PrimaryElectionView = lazy(() => loadPrimaryElectionView().then((module) => ({ default: module.PrimaryElectionView })));
+const GeneralElectionView = lazy(() => loadGeneralElectionView().then((module) => ({ default: module.GeneralElectionView })));
+const USAMap = lazy(() => loadUSAMap().then((module) => ({ default: module.USAMap })));
+const AnalyticsDashboard = lazy(() => loadAnalyticsDashboard().then((module) => ({ default: module.AnalyticsDashboard })));
+const CandidateCreator = lazy(() => loadCandidateCreator().then((module) => ({ default: module.CandidateCreator })));
+const BudgetAllocationView = lazy(() => loadBudgetAllocationView().then((module) => ({ default: module.BudgetAllocationView })));
+const EventModal = lazy(() => loadEventModal().then((module) => ({ default: module.EventModal })));
+const DebateScreen = lazy(() => loadDebateScreen().then((module) => ({ default: module.DebateScreen })));
+const ConventionModal = lazy(() => loadConventionModal().then((module) => ({ default: module.ConventionModal })));
+const StateActionPanel = lazy(() => loadStateActionPanel().then((module) => ({ default: module.StateActionPanel })));
+const CampaignHQView = lazy(() => loadCampaignHQView().then((module) => ({ default: module.CampaignHQView })));
+const ElectionNightScreen = lazy(() => loadElectionNightScreen().then((module) => ({ default: module.ElectionNightScreen })));
+const EndGameScreen = lazy(() => loadEndGameScreen().then((module) => ({ default: module.EndGameScreen })));
+const VPSelectionModal = lazy(() => loadVPSelectionModal().then((module) => ({ default: module.VPSelectionModal })));
+const CampaignGuideDrawer = lazy(() => loadCampaignGuideDrawer().then((module) => ({ default: module.CampaignGuideDrawer })));
+const TutorialModal = lazy(() => loadTutorialModal().then((module) => ({ default: module.TutorialModal })));
+const SettingsDrawer = lazy(() => loadSettingsDrawer().then((module) => ({ default: module.SettingsDrawer })));
+
+function PanelFallback({ label = 'Loading campaign systems...' }: { label?: string }) {
+  return (
+    <div style={{
+      margin: '1rem',
+      padding: '1rem 1.1rem',
+      borderRadius: '14px',
+      border: '1px solid rgba(255,255,255,0.08)',
+      background: 'rgba(255,255,255,0.04)',
+      color: 'var(--text-muted)'
+    }}>
+      {label}
+    </div>
+  );
+}
 
 function App() {
   const [activeTab, setActiveTab] = useState<string>('map');
@@ -217,6 +251,26 @@ function App() {
   }, [activeConvention, activeDebate, activeElectionNight, calendarPhase, gamePhase, hasStarted]);
 
   useEffect(() => {
+    if (!hasStarted) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      void Promise.all([
+        loadAnalyticsDashboard(),
+        loadPrimaryElectionView(),
+        loadGeneralElectionView(),
+        loadCampaignHQView(),
+        loadBudgetAllocationView(),
+        loadCampaignGuideDrawer(),
+        loadSettingsDrawer()
+      ]);
+    }, 900);
+
+    return () => window.clearTimeout(timeout);
+  }, [hasStarted]);
+
+  useEffect(() => {
     if (currentWeek > previousWeekRef.current) {
       audioManager.playCue('advance');
     }
@@ -290,7 +344,11 @@ function App() {
   if (!hasStarted) {
     return (
       <>
-        <SettingsDrawer isOpen={showSettings} onClose={() => setShowSettings(false)} />
+        {showSettings && (
+          <Suspense fallback={<PanelFallback label="Loading settings..." />}>
+            <SettingsDrawer isOpen={showSettings} onClose={() => setShowSettings(false)} />
+          </Suspense>
+        )}
         <button
           type="button"
           className="settings-floating-btn"
@@ -298,35 +356,73 @@ function App() {
         >
           Settings & Audio
         </button>
-        <CandidateCreator onComplete={handleCampaignStart} />
+        <Suspense fallback={<PanelFallback label="Loading campaign setup..." />}>
+          <CandidateCreator onComplete={handleCampaignStart} />
+        </Suspense>
       </>
     );
   }
 
   if (gamePhase === 'ended') {
-    return <EndGameScreen />;
+    return (
+      <Suspense fallback={<PanelFallback label="Loading postgame report..." />}>
+        <EndGameScreen />
+      </Suspense>
+    );
   }
 
   if (activeElectionNight) {
-    return <ElectionNightScreen />;
+    return (
+      <Suspense fallback={<PanelFallback label="Loading election night desk..." />}>
+        <ElectionNightScreen />
+      </Suspense>
+    );
   }
 
   const saveSlots = getSaveSlots();
 
   return (
     <>
-      <DebateScreen />
-      <EventModal />
-      <ConventionModal />
-      {vpSelectionPending && <VPSelectionModal />}
-      <CampaignGuideDrawer isOpen={showGuide} onClose={() => setShowGuide(false)} />
-      <SettingsDrawer isOpen={showSettings} onClose={() => setShowSettings(false)} />
-      <TutorialModal
-        key={`tutorial-${tutorialSessionId}`}
-        isOpen={showTutorial}
-        onClose={dismissTutorial}
-        onOpenGuide={() => setShowGuide(true)}
-      />
+      {activeDebate && (
+        <Suspense fallback={<PanelFallback label="Loading debate stage..." />}>
+          <DebateScreen />
+        </Suspense>
+      )}
+      {activeEvent && (
+        <Suspense fallback={<PanelFallback label="Loading event briefing..." />}>
+          <EventModal />
+        </Suspense>
+      )}
+      {activeConvention && (
+        <Suspense fallback={<PanelFallback label="Loading convention floor..." />}>
+          <ConventionModal />
+        </Suspense>
+      )}
+      {vpSelectionPending && (
+        <Suspense fallback={<PanelFallback label="Loading running mate bench..." />}>
+          <VPSelectionModal />
+        </Suspense>
+      )}
+      {showGuide && (
+        <Suspense fallback={<PanelFallback label="Loading campaign guide..." />}>
+          <CampaignGuideDrawer isOpen={showGuide} onClose={() => setShowGuide(false)} />
+        </Suspense>
+      )}
+      {showSettings && (
+        <Suspense fallback={<PanelFallback label="Loading settings..." />}>
+          <SettingsDrawer isOpen={showSettings} onClose={() => setShowSettings(false)} />
+        </Suspense>
+      )}
+      {showTutorial && (
+        <Suspense fallback={<PanelFallback label="Loading tutorial..." />}>
+          <TutorialModal
+            key={`tutorial-${tutorialSessionId}`}
+            isOpen={showTutorial}
+            onClose={dismissTutorial}
+            onOpenGuide={() => setShowGuide(true)}
+          />
+        </Suspense>
+      )}
       <div className={`command-center ${voterParty === 'Republican' ? 'republican-theme' : ''}`}>
         <aside className="glass-panel nav-panel">
           <h2>PolitiSim Command</h2>
@@ -397,20 +493,44 @@ function App() {
 
         <main className="glass-panel center-view" style={{ padding: 0, overflow: 'hidden' }}>
           {activeTab === 'map' && (
-            <USAMap
-              activeStateName={selectedState}
-              onStateClick={(name: string) => setSelectedState(name)}
-            />
+            <Suspense fallback={<PanelFallback label="Loading national map..." />}>
+              <USAMap
+                activeStateName={selectedState}
+                onStateClick={(name: string) => setSelectedState(name)}
+              />
+            </Suspense>
           )}
-          {activeTab === 'analytics' && <AnalyticsDashboard />}
-          {activeTab === 'primary' && <PrimaryElectionView />}
-          {activeTab === 'general' && <GeneralElectionView />}
-          {activeTab === 'campaign' && <CampaignHQView />}
-          {activeTab === 'budget' && <BudgetAllocationView />}
+          {activeTab === 'analytics' && (
+            <Suspense fallback={<PanelFallback label="Loading analytics..." />}>
+              <AnalyticsDashboard />
+            </Suspense>
+          )}
+          {activeTab === 'primary' && (
+            <Suspense fallback={<PanelFallback label="Loading primary tracker..." />}>
+              <PrimaryElectionView />
+            </Suspense>
+          )}
+          {activeTab === 'general' && (
+            <Suspense fallback={<PanelFallback label="Loading general election desk..." />}>
+              <GeneralElectionView />
+            </Suspense>
+          )}
+          {activeTab === 'campaign' && (
+            <Suspense fallback={<PanelFallback label="Loading campaign HQ..." />}>
+              <CampaignHQView />
+            </Suspense>
+          )}
+          {activeTab === 'budget' && (
+            <Suspense fallback={<PanelFallback label="Loading finance desk..." />}>
+              <BudgetAllocationView />
+            </Suspense>
+          )}
         </main>
 
         {activeTab === 'map' && selectedState ? (
-          <StateActionPanel stateName={selectedState} onClose={() => setSelectedState(undefined)} />
+          <Suspense fallback={<PanelFallback label="Loading state operations..." />}>
+            <StateActionPanel stateName={selectedState} onClose={() => setSelectedState(undefined)} />
+          </Suspense>
         ) : (
           <aside className="glass-panel stats-panel">
             <h3>National Dashboard</h3>

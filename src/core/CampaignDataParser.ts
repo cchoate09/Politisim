@@ -1,5 +1,11 @@
 import { getDebateScheduleForWeek, type DebatePhase } from './DebateData';
 import { buildScenarioCatalogEntry, type ScenarioCatalogEntry } from './ScenarioValidation';
+import {
+  listImportedScenarios,
+  removeImportedScenario,
+  saveImportedScenario,
+  type ImportedScenarioRecord
+} from './CommunityScenarioRegistry';
 
 export interface StateElectionData {
   stateName: string;
@@ -44,12 +50,38 @@ export interface ModManifestEntry {
   featuredStates?: string[];
   specialRules?: string[];
   official?: boolean;
+  author?: string;
+  version?: string;
+  minGameVersion?: string;
+  importSource?: string;
+  importedAt?: string;
+  importNotes?: string[];
 }
 
 export class CampaignDataParser {
   private static manifestPromise: Promise<ModManifestEntry[]> | null = null;
   private static catalogPromise: Promise<ScenarioCatalogEntry[]> | null = null;
   private static modDataPromises = new Map<string, Promise<StateElectionData[]>>();
+
+  private static invalidateCaches() {
+    this.manifestPromise = null;
+    this.catalogPromise = null;
+    this.modDataPromises.clear();
+  }
+
+  static listImportedScenarios() {
+    return listImportedScenarios();
+  }
+
+  static saveImportedScenario(record: ImportedScenarioRecord) {
+    saveImportedScenario(record);
+    this.invalidateCaches();
+  }
+
+  static removeImportedScenario(scenarioId: string) {
+    removeImportedScenario(scenarioId);
+    this.invalidateCaches();
+  }
 
   static async listMods(options: { forceRefresh?: boolean } = {}): Promise<ModManifestEntry[]> {
     const { forceRefresh = false } = options;
@@ -58,7 +90,7 @@ export class CampaignDataParser {
       return this.manifestPromise;
     }
 
-    const manifestRequest = (async () => {
+    const manifestRequest: Promise<ModManifestEntry[]> = (async () => {
       try {
         if (window.electron) {
           return await window.electron.listMods();
@@ -81,17 +113,25 @@ export class CampaignDataParser {
           description: 'Fight through a modern nomination race and general election with the standard national map.',
           challenge: 'Competitive',
           focus: ['Primary strategy', 'Coalition building', 'Debates'],
-          official: true
+          official: true,
+          author: 'PolitiSim Team',
+          version: '1.0.0',
+          minGameVersion: '0.4.0'
         }];
         return fallbackManifest;
       }
     })();
 
+    const mergedManifestRequest = manifestRequest.then((officialManifest) => {
+      const importedManifest = this.listImportedScenarios().map((entry) => entry.manifest);
+      return [...officialManifest, ...importedManifest];
+    });
+
     if (!forceRefresh) {
-      this.manifestPromise = manifestRequest;
+      this.manifestPromise = mergedManifestRequest;
     }
 
-    return manifestRequest;
+    return mergedManifestRequest;
   }
 
   /**
@@ -102,6 +142,11 @@ export class CampaignDataParser {
 
     if (!forceRefresh && this.modDataPromises.has(modName)) {
       return await this.modDataPromises.get(modName)!;
+    }
+
+    const importedScenario = this.listImportedScenarios().find((entry) => entry.manifest.id === modName);
+    if (importedScenario) {
+      return importedScenario.states;
     }
 
     const modDataRequest = (async () => {

@@ -1,6 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './ScenarioBrowser.css';
 import type { ScenarioCatalogEntry, ScenarioCatalogStatus, ScenarioValidationFinding } from '../core/ScenarioValidation';
+
+export type ScenarioBrowserMessageTone = 'info' | 'success' | 'warning' | 'error';
 
 interface ScenarioBrowserProps {
   scenarios: ScenarioCatalogEntry[];
@@ -8,6 +10,12 @@ interface ScenarioBrowserProps {
   loading: boolean;
   loadError: string | null;
   onSelectScenario: (scenarioId: string) => void;
+  onRefreshScenarios: () => void;
+  onImportScenarioFiles: (files: File[]) => Promise<void>;
+  onRemoveScenario: (scenarioId: string) => Promise<void>;
+  importBusy: boolean;
+  statusMessage: string | null;
+  statusTone: ScenarioBrowserMessageTone;
 }
 
 const CHALLENGE_FILTERS = ['All', 'Accessible', 'Competitive', 'Hardcore'] as const;
@@ -69,11 +77,25 @@ export const ScenarioBrowser: React.FC<ScenarioBrowserProps> = ({
   selectedScenarioId,
   loading,
   loadError,
-  onSelectScenario
+  onSelectScenario,
+  onRefreshScenarios,
+  onImportScenarioFiles,
+  onRemoveScenario,
+  importBusy,
+  statusMessage,
+  statusTone
 }) => {
   const [query, setQuery] = useState('');
   const [challengeFilter, setChallengeFilter] = useState<(typeof CHALLENGE_FILTERS)[number]>('All');
   const [statusFilter, setStatusFilter] = useState<'all' | ScenarioCatalogStatus>('all');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!fileInputRef.current) return;
+
+    fileInputRef.current.setAttribute('webkitdirectory', '');
+    fileInputRef.current.setAttribute('directory', '');
+  }, []);
 
   const filteredScenarios = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -108,9 +130,48 @@ export const ScenarioBrowser: React.FC<ScenarioBrowserProps> = ({
     warning: scenarios.filter((scenario) => scenario.validation.status === 'warning').length,
     blocked: scenarios.filter((scenario) => scenario.validation.status === 'invalid').length
   }), [scenarios]);
+  const workshopReadiness = useMemo(() => {
+    if (!selectedScenario) return null;
+
+    const checklist = [
+      { label: 'Validates cleanly', met: selectedScenario.validation.errors === 0 },
+      { label: 'Author metadata', met: Boolean(selectedScenario.author?.trim()) },
+      { label: 'Version metadata', met: Boolean(selectedScenario.version?.trim()) },
+      { label: 'Compatibility target', met: Boolean(selectedScenario.minGameVersion?.trim()) },
+      { label: 'Scenario pitch and tags', met: Boolean(selectedScenario.tagline?.trim()) && selectedScenario.focus.length >= 2 },
+      { label: 'Battleground highlights', met: Boolean(selectedScenario.featuredStates?.length) },
+      { label: 'Strategic rules summary', met: Boolean(selectedScenario.specialRules?.length) }
+    ];
+    const metCount = checklist.filter((item) => item.met).length;
+
+    return {
+      score: Math.round((metCount / checklist.length) * 100),
+      checklist
+    };
+  }, [selectedScenario]);
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFilesSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    if (files.length > 0) {
+      await onImportScenarioFiles(files);
+    }
+
+    event.target.value = '';
+  };
 
   return (
     <section className="scenario-browser">
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        style={{ display: 'none' }}
+        onChange={handleFilesSelected}
+      />
       <div className="scenario-browser-header">
         <div>
           <div className="scenario-browser-eyebrow">Scenario Browser</div>
@@ -137,6 +198,34 @@ export const ScenarioBrowser: React.FC<ScenarioBrowserProps> = ({
           </div>
         </div>
       </div>
+
+      <div className="scenario-browser-actions">
+        <button
+          type="button"
+          className="scenario-browser-action-btn primary"
+          onClick={handleImportClick}
+          disabled={loading || importBusy}
+        >
+          {importBusy ? 'Importing Scenario...' : 'Import Scenario Folder'}
+        </button>
+        <button
+          type="button"
+          className="scenario-browser-action-btn"
+          onClick={onRefreshScenarios}
+          disabled={loading || importBusy}
+        >
+          Refresh Catalog
+        </button>
+        <div className="scenario-browser-action-copy">
+          Pick a folder that contains `manifest.json` and `states.json`. Imported scenarios stay in the browser catalog, are validated automatically, and can be removed later.
+        </div>
+      </div>
+
+      {statusMessage && (
+        <div className={`scenario-browser-message scenario-browser-message-${statusTone}`}>
+          {statusMessage}
+        </div>
+      )}
 
       <div className="scenario-browser-toolbar">
         <input
@@ -254,8 +343,16 @@ export const ScenarioBrowser: React.FC<ScenarioBrowserProps> = ({
                     <strong>{selectedScenario.electionYear}</strong>
                   </div>
                   <div className="scenario-browser-detail-stat">
+                    <span>Author</span>
+                    <strong>{selectedScenario.author ?? 'Unknown'}</strong>
+                  </div>
+                  <div className="scenario-browser-detail-stat">
                     <span>Challenge</span>
                     <strong>{selectedScenario.challenge}</strong>
+                  </div>
+                  <div className="scenario-browser-detail-stat">
+                    <span>Version</span>
+                    <strong>{selectedScenario.version ?? 'Unversioned'}</strong>
                   </div>
                   <div className="scenario-browser-detail-stat">
                     <span>Jurisdictions</span>
@@ -268,6 +365,10 @@ export const ScenarioBrowser: React.FC<ScenarioBrowserProps> = ({
                   <div className="scenario-browser-detail-stat">
                     <span>Avg. Turnout</span>
                     <strong>{selectedScenario.validation.stats.averageTurnout}%</strong>
+                  </div>
+                  <div className="scenario-browser-detail-stat">
+                    <span>Min Game Version</span>
+                    <strong>{selectedScenario.minGameVersion ?? 'Not declared'}</strong>
                   </div>
                   <div className="scenario-browser-detail-stat">
                     <span>Primary Window</span>
@@ -314,6 +415,37 @@ export const ScenarioBrowser: React.FC<ScenarioBrowserProps> = ({
                   </div>
                 )}
 
+                {selectedScenario.importNotes && selectedScenario.importNotes.length > 0 && (
+                  <div className="scenario-browser-detail-section">
+                    <div className="scenario-browser-detail-section-title">Import Notes</div>
+                    <div className="scenario-browser-rule-list">
+                      {selectedScenario.importNotes.map((note) => (
+                        <div key={`${selectedScenario.id}-note-${note}`} className="scenario-browser-rule">
+                          {note}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {workshopReadiness && (
+                  <div className="scenario-browser-detail-section">
+                    <div className="scenario-browser-detail-section-title">Workshop Readiness</div>
+                    <div className="scenario-browser-status-card scenario-browser-status-card-ready">
+                      <span>Checklist Score</span>
+                      <strong>{workshopReadiness.score}%</strong>
+                      <p>These checks keep community scenarios legible, versioned, and easier to publish or share later.</p>
+                    </div>
+                    <div className="scenario-browser-rule-list">
+                      {workshopReadiness.checklist.map((item) => (
+                        <div key={`${selectedScenario.id}-readiness-${item.label}`} className={`scenario-browser-rule ${item.met ? 'scenario-browser-rule-pass' : 'scenario-browser-rule-miss'}`}>
+                          {item.met ? 'Ready: ' : 'Missing: '}{item.label}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="scenario-browser-detail-section">
                   <div className="scenario-browser-detail-section-title">Validation Findings</div>
 
@@ -344,6 +476,19 @@ export const ScenarioBrowser: React.FC<ScenarioBrowserProps> = ({
                     </div>
                   ))}
                 </div>
+
+                {!selectedScenario.official && (
+                  <div className="scenario-browser-detail-section">
+                    <button
+                      type="button"
+                      className="scenario-browser-action-btn scenario-browser-remove-btn"
+                      onClick={() => void onRemoveScenario(selectedScenario.id)}
+                      disabled={importBusy}
+                    >
+                      Remove Imported Scenario
+                    </button>
+                  </div>
+                )}
               </>
             ) : (
               <div className="scenario-browser-empty-state">Select a scenario to inspect its rules, metadata, and validation diagnostics.</div>

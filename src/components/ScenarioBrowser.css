@@ -15,6 +15,91 @@
   gap: 1rem;
 }
 
+.scenario-browser-actions,
+.scenario-browser-message {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.scenario-browser-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.9rem 1rem;
+}
+
+.scenario-browser-action-btn {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+  padding: 0.55rem 0.95rem;
+  cursor: pointer;
+  font-weight: 700;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.scenario-browser-action-btn:hover:not(:disabled) {
+  border-color: rgba(56, 189, 248, 0.28);
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.scenario-browser-action-btn:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.scenario-browser-action-btn.primary {
+  border-color: rgba(56, 189, 248, 0.22);
+  background: rgba(56, 189, 248, 0.12);
+  color: var(--primary-accent);
+}
+
+.scenario-browser-remove-btn {
+  align-self: flex-start;
+  border-color: rgba(248, 113, 113, 0.2);
+  color: #fca5a5;
+}
+
+.scenario-browser-remove-btn:hover:not(:disabled) {
+  border-color: rgba(248, 113, 113, 0.35);
+  background: rgba(248, 113, 113, 0.08);
+}
+
+.scenario-browser-action-copy {
+  flex: 1 1 320px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.scenario-browser-message {
+  padding: 0.85rem 1rem;
+  color: var(--text-main);
+}
+
+.scenario-browser-message-success {
+  border-color: rgba(74, 222, 128, 0.2);
+  background: rgba(74, 222, 128, 0.08);
+}
+
+.scenario-browser-message-warning {
+  border-color: rgba(246, 196, 83, 0.2);
+  background: rgba(246, 196, 83, 0.08);
+}
+
+.scenario-browser-message-error {
+  border-color: rgba(248, 113, 113, 0.2);
+  background: rgba(248, 113, 113, 0.08);
+}
+
+.scenario-browser-message-info {
+  border-color: rgba(56, 189, 248, 0.2);
+  background: rgba(56, 189, 248, 0.08);
+}
+
 .scenario-browser-eyebrow {
   font-size: 0.73rem;
   letter-spacing: 0.08em;
@@ -280,6 +365,18 @@
   line-height: 1.45;
 }
 
+.scenario-browser-rule-pass {
+  border-color: rgba(74, 222, 128, 0.18);
+  background: rgba(74, 222, 128, 0.08);
+  color: #c7f9d4;
+}
+
+.scenario-browser-rule-miss {
+  border-color: rgba(246, 196, 83, 0.18);
+  background: rgba(246, 196, 83, 0.08);
+  color: #f6d989;
+}
+
 .scenario-browser-finding {
   display: grid;
   gap: 0.3rem;
@@ -346,5 +443,10 @@
 
   .scenario-browser-summary {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .scenario-browser-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
