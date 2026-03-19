@@ -1,13 +1,43 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './CandidateCreator.css';
 import { useGameStore } from '../store/gameStore';
-import { CampaignDataParser, type ModManifestEntry } from '../core/CampaignDataParser';
+import { CampaignDataParser } from '../core/CampaignDataParser';
 import type { PlayerDemographics } from '../core/ElectionMath';
 import { getScenarioIntro, getScenarioPrimaryProfiles, getScenarioStrategicNotes, getScenarioVPCandidates } from '../core/ScenarioContent';
 import { CandidateIdentityCard } from './CandidateIdentityCard';
+import { ScenarioBrowser } from './ScenarioBrowser';
+import type { ScenarioCatalogEntry } from '../core/ScenarioValidation';
 
 const MAX_POINTS = 300;
 const HOME_REGIONS = ['National', 'Northeast', 'Midwest', 'South', 'West'] as const;
+
+function getScenarioHealthCopy(scenario: ScenarioCatalogEntry | null) {
+  if (!scenario) {
+    return {
+      label: 'Unavailable',
+      summary: 'No scenario metadata is loaded yet.'
+    };
+  }
+
+  if (scenario.validation.status === 'valid') {
+    return {
+      label: 'Ready for launch',
+      summary: 'No blocking issues. The scenario passes manifest, schema, and map validation.'
+    };
+  }
+
+  if (scenario.validation.status === 'warning') {
+    return {
+      label: 'Launchable with warnings',
+      summary: 'The scenario can still launch, but the browser found non-blocking metadata or data quality issues.'
+    };
+  }
+
+  return {
+    label: 'Blocked by validation',
+    summary: 'This scenario has blocking manifest or data issues and should be fixed before a campaign starts.'
+  };
+}
 
 export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
   const { playerIdeology, voterParty, playerHomeRegion } = useGameStore();
@@ -16,9 +46,10 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
   const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
   const [traits, setTraits] = useState<PlayerDemographics>(playerIdeology);
   const [selectedIssues, setSelectedIssues] = useState<string[]>([]);
-  const [availableMods, setAvailableMods] = useState<ModManifestEntry[]>([]);
+  const [availableMods, setAvailableMods] = useState<ScenarioCatalogEntry[]>([]);
   const [selectedMod, setSelectedMod] = useState('vanilla');
   const [loadingMods, setLoadingMods] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
   const [modsError, setModsError] = useState<string | null>(null);
   const [isLaunching, setIsLaunching] = useState(false);
 
@@ -43,18 +74,34 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
     () => getScenarioStrategicNotes(selectedMod),
     [selectedMod]
   );
+  const scenarioHealth = useMemo(
+    () => getScenarioHealthCopy(activeScenario),
+    [activeScenario]
+  );
+  const isScenarioBlocked = activeScenario?.validation.status === 'invalid';
+  const canLaunchCampaign = !loadingMods && !isLaunching && !isScenarioBlocked && pointsRemaining === 0 && selectedIssues.length === 3 && Boolean(activeScenario);
 
   useEffect(() => {
     let alive = true;
 
     const loadMods = async () => {
       setLoadingMods(true);
-      const mods = await CampaignDataParser.listMods();
+      setCatalogError(null);
+      const mods = await CampaignDataParser.loadScenarioCatalog();
 
       if (!alive) return;
 
       setAvailableMods(mods);
-      setSelectedMod((current) => mods.some((mod) => mod.id === current) ? current : (mods[0]?.id ?? 'vanilla'));
+      setSelectedMod((current) => {
+        if (mods.some((mod) => mod.id === current)) {
+          return current;
+        }
+
+        return mods.find((mod) => mod.validation.isValid)?.id ?? mods[0]?.id ?? 'vanilla';
+      });
+      if (mods.length === 0) {
+        setCatalogError('No scenarios were discovered. Add scenario folders to public/mods and declare them in manifest.json.');
+      }
       setLoadingMods(false);
     };
 
@@ -96,7 +143,22 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
     setIsLaunching(true);
     setModsError(null);
 
-    const states = await CampaignDataParser.loadModData(selectedMod);
+    if (!activeScenario) {
+      setModsError('No scenario is selected yet. Wait for the catalog to finish loading and try again.');
+      setIsLaunching(false);
+      return;
+    }
+
+    if (!activeScenario.validation.isValid) {
+      setModsError('This scenario is blocked by validation errors. Review the scenario browser details and fix the listed issues before launching.');
+      setIsLaunching(false);
+      return;
+    }
+
+    const states = activeScenario.states.length > 0
+      ? activeScenario.states
+      : await CampaignDataParser.loadModData(selectedMod);
+
     if (states.length === 0) {
       setModsError('That scenario could not be loaded. Check the scenario files and try again.');
       setIsLaunching(false);
@@ -127,40 +189,13 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
 
       <div className="creator-layout">
         <div className="traits-panel">
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-              Scenario
-            </label>
-            {loadingMods ? (
-              <div className="scenario-empty-state">Loading official scenarios...</div>
-            ) : (
-              <div className="scenario-grid">
-                {availableMods.map((mod) => {
-                  const isSelected = mod.id === selectedMod;
-                  return (
-                    <button
-                      key={mod.id}
-                      type="button"
-                      className={`scenario-card ${isSelected ? 'scenario-card-selected' : ''}`}
-                      onClick={() => setSelectedMod(mod.id)}
-                    >
-                      <div className="scenario-card-header">
-                        <span className="scenario-card-year">{mod.yearLabel}</span>
-                        <span className="scenario-card-challenge">{mod.challenge}</span>
-                      </div>
-                      <div className="scenario-card-name">{mod.name}</div>
-                      <div className="scenario-card-tagline">{mod.tagline}</div>
-                      <div className="scenario-card-tags">
-                        {mod.focus.map((focus) => (
-                          <span key={`${mod.id}-${focus}`} className="scenario-card-tag">{focus}</span>
-                        ))}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <ScenarioBrowser
+            scenarios={availableMods}
+            selectedScenarioId={selectedMod}
+            loading={loadingMods}
+            loadError={catalogError}
+            onSelectScenario={setSelectedMod}
+          />
 
           <div style={{ marginBottom: '1.5rem' }}>
             <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
@@ -358,9 +393,18 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
             <div className="scenario-briefing">
               <div className="summary-title">Scenario Briefing</div>
               <div className="scenario-briefing-name">{activeScenario.name}</div>
+              <div className={`scenario-health-banner scenario-health-banner-${activeScenario.validation.status}`}>
+                <strong>{scenarioHealth.label}</strong>
+                <span>
+                  {activeScenario.validation.errors} errors · {activeScenario.validation.warnings} warnings · {activeScenario.validation.infos} diagnostics
+                </span>
+              </div>
               <div className="scenario-briefing-copy">{activeScenario.description}</div>
               <div className="scenario-briefing-copy" style={{ marginTop: '0.75rem' }}>
                 {getScenarioIntro(selectedMod)}
+              </div>
+              <div className="scenario-briefing-copy" style={{ marginTop: '0.75rem' }}>
+                {scenarioHealth.summary}
               </div>
               {activeScenario.featuredStates && activeScenario.featuredStates.length > 0 && (
                 <div className="scenario-briefing-copy" style={{ marginTop: '0.75rem' }}>
@@ -424,11 +468,13 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
           <button
             className="start-campaign-btn"
             onClick={handleStartCampaign}
-            disabled={pointsRemaining > 0 || selectedIssues.length < 3 || loadingMods || isLaunching}
+            disabled={!canLaunchCampaign}
           >
             {isLaunching
               ? 'Loading Scenario...'
-              : pointsRemaining > 0
+              : isScenarioBlocked
+                ? 'Resolve Scenario Errors First'
+                : pointsRemaining > 0
                 ? `Spend All Points (${pointsRemaining} left)`
                 : selectedIssues.length < 3
                   ? `Select ${3 - selectedIssues.length} more issues`

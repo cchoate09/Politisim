@@ -1,4 +1,5 @@
 import { getDebateScheduleForWeek, type DebatePhase } from './DebateData';
+import { buildScenarioCatalogEntry, type ScenarioCatalogEntry } from './ScenarioValidation';
 
 export interface StateElectionData {
   stateName: string;
@@ -46,53 +47,112 @@ export interface ModManifestEntry {
 }
 
 export class CampaignDataParser {
-  static async listMods(): Promise<ModManifestEntry[]> {
-    try {
-      if (window.electron) {
-        return await window.electron.listMods();
-      }
+  private static manifestPromise: Promise<ModManifestEntry[]> | null = null;
+  private static catalogPromise: Promise<ScenarioCatalogEntry[]> | null = null;
+  private static modDataPromises = new Map<string, Promise<StateElectionData[]>>();
 
-      const response = await fetch(new URL('./mods/manifest.json', window.location.href).toString());
-      if (!response.ok) {
-        throw new Error('Failed to load mod manifest');
-      }
+  static async listMods(options: { forceRefresh?: boolean } = {}): Promise<ModManifestEntry[]> {
+    const { forceRefresh = false } = options;
 
-      return await response.json() as ModManifestEntry[];
-    } catch (error) {
-      console.error('Error loading mod manifest:', error);
-      return [{
-        id: 'vanilla',
-        name: 'Road to 2024',
-        yearLabel: '2024',
-        electionYear: 2024,
-        tagline: 'The default presidential campaign sandbox.',
-        description: 'Fight through a modern nomination race and general election with the standard national map.',
-        challenge: 'Competitive',
-        focus: ['Primary strategy', 'Coalition building', 'Debates'],
-        official: true
-      }];
+    if (!forceRefresh && this.manifestPromise) {
+      return this.manifestPromise;
     }
+
+    const manifestRequest = (async () => {
+      try {
+        if (window.electron) {
+          return await window.electron.listMods();
+        }
+
+        const response = await fetch(new URL('./mods/manifest.json', window.location.href).toString());
+        if (!response.ok) {
+          throw new Error('Failed to load mod manifest');
+        }
+
+        return await response.json() as ModManifestEntry[];
+      } catch (error) {
+        console.error('Error loading mod manifest:', error);
+        const fallbackManifest: ModManifestEntry[] = [{
+          id: 'vanilla',
+          name: 'Road to 2024',
+          yearLabel: '2024',
+          electionYear: 2024,
+          tagline: 'The default presidential campaign sandbox.',
+          description: 'Fight through a modern nomination race and general election with the standard national map.',
+          challenge: 'Competitive',
+          focus: ['Primary strategy', 'Coalition building', 'Debates'],
+          official: true
+        }];
+        return fallbackManifest;
+      }
+    })();
+
+    if (!forceRefresh) {
+      this.manifestPromise = manifestRequest;
+    }
+
+    return manifestRequest;
   }
 
   /**
    * Loads a JSON file containing the state demographics for a specific 'mod' (e.g., 'vanilla', '1992').
    */
-  static async loadModData(modName: string = 'vanilla'): Promise<StateElectionData[]> {
-    try {
-      if (window.electron) {
-        return await window.electron.loadModData(modName);
-      }
+  static async loadModData(modName: string = 'vanilla', options: { forceRefresh?: boolean } = {}): Promise<StateElectionData[]> {
+    const { forceRefresh = false } = options;
 
-      const response = await fetch(new URL(`./mods/${modName}/states.json`, window.location.href).toString());
-      if (!response.ok) {
-        throw new Error(`Failed to load mod data for [${modName}]`);
-      }
-      const data: StateElectionData[] = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Error loading mod data:", error);
-      return [];
+    if (!forceRefresh && this.modDataPromises.has(modName)) {
+      return await this.modDataPromises.get(modName)!;
     }
+
+    const modDataRequest = (async () => {
+      try {
+        if (window.electron) {
+          return await window.electron.loadModData(modName);
+        }
+
+        const response = await fetch(new URL(`./mods/${modName}/states.json`, window.location.href).toString());
+        if (!response.ok) {
+          throw new Error(`Failed to load mod data for [${modName}]`);
+        }
+        const data: StateElectionData[] = await response.json();
+        return data;
+      } catch (error) {
+        console.error('Error loading mod data:', error);
+        return [];
+      }
+    })();
+
+    if (!forceRefresh) {
+      this.modDataPromises.set(modName, modDataRequest);
+    }
+
+    return modDataRequest;
+  }
+
+  static async loadScenarioCatalog(options: { forceRefresh?: boolean } = {}): Promise<ScenarioCatalogEntry[]> {
+    const { forceRefresh = false } = options;
+
+    if (!forceRefresh && this.catalogPromise) {
+      return this.catalogPromise;
+    }
+
+    const catalogRequest = (async () => {
+      const manifest = await this.listMods({ forceRefresh });
+      const catalog = await Promise.all(
+        manifest.map(async (entry) => {
+          const states = await this.loadModData(entry.id, { forceRefresh });
+          return buildScenarioCatalogEntry(entry, states, manifest);
+        })
+      );
+
+      return catalog;
+    })();
+
+    if (!forceRefresh) {
+      this.catalogPromise = catalogRequest;
+    }
+
+    return catalogRequest;
   }
 
   /**
