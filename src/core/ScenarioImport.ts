@@ -1,5 +1,6 @@
 import type { ModManifestEntry, StateElectionData } from './CampaignDataParser';
 import { normalizeImportedScenario, parseImportedScenarioBundle, type ImportedScenarioRecord } from './CommunityScenarioRegistry';
+import { importScenarioRecordFromBundle } from './ScenarioExchange';
 
 interface FileLike {
   name: string;
@@ -17,6 +18,15 @@ function getDirectorySegments(file: FileLike) {
   const relativePath = file.webkitRelativePath || file.name;
   const parts = relativePath.split('/').filter(Boolean);
   return parts.slice(0, -1);
+}
+
+function isSingleBundleImport(files: FileLike[]) {
+  if (files.length !== 1) {
+    return false;
+  }
+
+  const fileName = files[0]?.name.toLowerCase() ?? '';
+  return fileName.endsWith('.json');
 }
 
 function pickScenarioFolder(files: FileLike[]): ScenarioFolderFiles {
@@ -82,6 +92,18 @@ export async function importScenarioFromFiles(
 ): Promise<ImportedScenarioRecord> {
   if (files.length === 0) {
     throw new Error('No files were selected for import.');
+  }
+
+  if (isSingleBundleImport(files)) {
+    const bundleFile = files[0]!;
+    const raw = await bundleFile.text();
+
+    try {
+      return importScenarioRecordFromBundle(raw, existingIds, bundleFile.name);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'The selected file is not a valid scenario bundle.';
+      throw new Error(`${message} Use "Import Scenario Folder" for manifest.json + states.json folders, or import a single exported share bundle file here.`);
+    }
   }
 
   const { folderName, manifestFile, statesFile } = pickScenarioFolder(files);

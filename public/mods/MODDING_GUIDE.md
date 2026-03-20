@@ -32,6 +32,19 @@ your-scenario/
 
 The in-game browser can now import that folder directly and will validate it before launch.
 
+You can also share a single exported bundle file:
+
+```text
+your-scenario-share.politisim-scenario.json
+```
+
+The browser supports both:
+
+- `Import Scenario Folder` for a folder containing `manifest.json` + `states.json`
+- `Import Shared Bundle` for a single exported `.politisim-scenario.json` file
+
+The scenario browser can also export a scenario back out as a single portable bundle or generate a creator template bundle based on an existing scenario.
+
 ## Manifest Schema
 
 Each scenario entry in `manifest.json` looks like this:
@@ -117,6 +130,8 @@ Each jurisdiction entry should look like this:
 - The in-game scenario browser validates manifest metadata, state schema, DC/538 coverage, turnout sanity, and primary-date alignment before a run can start.
 - Scenarios with blocking validation errors appear as `Blocked` in the browser and cannot be launched until the listed issues are fixed.
 - Community scenarios import directly from a folder chooser in the scenario browser. The importer preserves the folder as a local catalog entry, normalizes unsafe ids, and records import notes when something had to be adjusted.
+- Shared scenario bundles include both manifest metadata and `states.json` in one file, which makes Discord, email, and cloud-drive sharing much easier for community creators.
+- Creator template downloads clone an existing scenario into an editable starter bundle with placeholder author metadata and remix-friendly notes.
 - If you want your scenario to feel Workshop-ready, include `author`, `version`, `minGameVersion`, a clear tagline, focus tags, featured states, and a concise special-rules summary.
 - After editing a scenario, run `npm test` to catch manifest or data-shape mistakes.
 

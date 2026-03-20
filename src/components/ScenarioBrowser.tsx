@@ -12,6 +12,8 @@ interface ScenarioBrowserProps {
   onSelectScenario: (scenarioId: string) => void;
   onRefreshScenarios: () => void;
   onImportScenarioFiles: (files: File[]) => Promise<void>;
+  onExportScenarioBundle: (scenarioId: string) => void | Promise<void>;
+  onDownloadScenarioTemplate: (scenarioId: string) => void | Promise<void>;
   onRemoveScenario: (scenarioId: string) => Promise<void>;
   importBusy: boolean;
   statusMessage: string | null;
@@ -72,6 +74,22 @@ function groupFindings(findings: ScenarioValidationFinding[]) {
   };
 }
 
+function formatCatalogSource(scenario: ScenarioCatalogEntry) {
+  if (scenario.official) {
+    return 'Built-in';
+  }
+
+  if (scenario.importSource?.startsWith('bundle:')) {
+    return 'Share bundle';
+  }
+
+  if (scenario.importSource?.startsWith('folder:')) {
+    return 'Imported folder';
+  }
+
+  return 'Community';
+}
+
 export const ScenarioBrowser: React.FC<ScenarioBrowserProps> = ({
   scenarios,
   selectedScenarioId,
@@ -80,6 +98,8 @@ export const ScenarioBrowser: React.FC<ScenarioBrowserProps> = ({
   onSelectScenario,
   onRefreshScenarios,
   onImportScenarioFiles,
+  onExportScenarioBundle,
+  onDownloadScenarioTemplate,
   onRemoveScenario,
   importBusy,
   statusMessage,
@@ -88,13 +108,14 @@ export const ScenarioBrowser: React.FC<ScenarioBrowserProps> = ({
   const [query, setQuery] = useState('');
   const [challengeFilter, setChallengeFilter] = useState<(typeof CHALLENGE_FILTERS)[number]>('All');
   const [statusFilter, setStatusFilter] = useState<'all' | ScenarioCatalogStatus>('all');
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const folderInputRef = useRef<HTMLInputElement | null>(null);
+  const bundleInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    if (!fileInputRef.current) return;
+    if (!folderInputRef.current) return;
 
-    fileInputRef.current.setAttribute('webkitdirectory', '');
-    fileInputRef.current.setAttribute('directory', '');
+    folderInputRef.current.setAttribute('webkitdirectory', '');
+    folderInputRef.current.setAttribute('directory', '');
   }, []);
 
   const filteredScenarios = useMemo(() => {
@@ -151,7 +172,11 @@ export const ScenarioBrowser: React.FC<ScenarioBrowserProps> = ({
   }, [selectedScenario]);
 
   const handleImportClick = () => {
-    fileInputRef.current?.click();
+    folderInputRef.current?.click();
+  };
+
+  const handleBundleImportClick = () => {
+    bundleInputRef.current?.click();
   };
 
   const handleFilesSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -163,12 +188,35 @@ export const ScenarioBrowser: React.FC<ScenarioBrowserProps> = ({
     event.target.value = '';
   };
 
+  const handleExportBundle = () => {
+    if (!selectedScenario) {
+      return;
+    }
+
+    void onExportScenarioBundle(selectedScenario.id);
+  };
+
+  const handleDownloadTemplate = () => {
+    if (!selectedScenario) {
+      return;
+    }
+
+    void onDownloadScenarioTemplate(selectedScenario.id);
+  };
+
   return (
     <section className="scenario-browser">
       <input
-        ref={fileInputRef}
+        ref={folderInputRef}
         type="file"
         multiple
+        style={{ display: 'none' }}
+        onChange={handleFilesSelected}
+      />
+      <input
+        ref={bundleInputRef}
+        type="file"
+        accept=".json,application/json"
         style={{ display: 'none' }}
         onChange={handleFilesSelected}
       />
@@ -211,13 +259,21 @@ export const ScenarioBrowser: React.FC<ScenarioBrowserProps> = ({
         <button
           type="button"
           className="scenario-browser-action-btn"
+          onClick={handleBundleImportClick}
+          disabled={loading || importBusy}
+        >
+          Import Shared Bundle
+        </button>
+        <button
+          type="button"
+          className="scenario-browser-action-btn"
           onClick={onRefreshScenarios}
           disabled={loading || importBusy}
         >
           Refresh Catalog
         </button>
         <div className="scenario-browser-action-copy">
-          Pick a folder that contains `manifest.json` and `states.json`. Imported scenarios stay in the browser catalog, are validated automatically, and can be removed later.
+          Import either a scenario folder with `manifest.json` and `states.json`, or a single exported `.politisim-scenario.json` share bundle. Imported scenarios stay in the browser catalog, validate automatically, and can be removed later.
         </div>
       </div>
 
@@ -355,6 +411,10 @@ export const ScenarioBrowser: React.FC<ScenarioBrowserProps> = ({
                     <strong>{selectedScenario.version ?? 'Unversioned'}</strong>
                   </div>
                   <div className="scenario-browser-detail-stat">
+                    <span>Catalog Source</span>
+                    <strong>{formatCatalogSource(selectedScenario)}</strong>
+                  </div>
+                  <div className="scenario-browser-detail-stat">
                     <span>Jurisdictions</span>
                     <strong>{selectedScenario.validation.stats.jurisdictionCount}</strong>
                   </div>
@@ -445,6 +505,36 @@ export const ScenarioBrowser: React.FC<ScenarioBrowserProps> = ({
                     </div>
                   </div>
                 )}
+
+                <div className="scenario-browser-detail-section">
+                  <div className="scenario-browser-detail-section-title">Sharing Tools</div>
+                  <div className="scenario-browser-share-grid">
+                    <div className="scenario-browser-share-card">
+                      <strong>{selectedScenario.official ? 'Export Reference Bundle' : 'Export Share Bundle'}</strong>
+                      <p>Save this scenario as a single portable `.politisim-scenario.json` file that another player can import directly from the browser.</p>
+                      <button
+                        type="button"
+                        className="scenario-browser-action-btn"
+                        onClick={handleExportBundle}
+                        disabled={loading || importBusy}
+                      >
+                        Export Bundle
+                      </button>
+                    </div>
+                    <div className="scenario-browser-share-card">
+                      <strong>Download Creator Template</strong>
+                      <p>Clone this scenario into an editable starter bundle with placeholder metadata so community creators can remix it faster.</p>
+                      <button
+                        type="button"
+                        className="scenario-browser-action-btn"
+                        onClick={handleDownloadTemplate}
+                        disabled={loading || importBusy}
+                      >
+                        Download Template
+                      </button>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="scenario-browser-detail-section">
                   <div className="scenario-browser-detail-section-title">Validation Findings</div>

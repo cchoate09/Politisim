@@ -195,7 +195,8 @@
 
 .scenario-browser-filter-group,
 .scenario-browser-tag-row,
-.scenario-browser-rule-list {
+.scenario-browser-rule-list,
+.scenario-browser-share-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
@@ -365,6 +366,33 @@
   line-height: 1.45;
 }
 
+.scenario-browser-share-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.scenario-browser-share-card {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.95rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.scenario-browser-share-card strong {
+  font-size: 0.92rem;
+  color: var(--text-main);
+}
+
+.scenario-browser-share-card p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
 .scenario-browser-rule-pass {
   border-color: rgba(74, 222, 128, 0.18);
   background: rgba(74, 222, 128, 0.08);
@@ -438,6 +466,10 @@
 
 @media (max-width: 720px) {
   .scenario-browser-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .scenario-browser-share-grid {
     grid-template-columns: 1fr;
   }
 

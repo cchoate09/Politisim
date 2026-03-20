@@ -8,6 +8,10 @@ import { CandidateIdentityCard } from './CandidateIdentityCard';
 import { ScenarioBrowser, type ScenarioBrowserMessageTone } from './ScenarioBrowser';
 import type { ScenarioCatalogEntry } from '../core/ScenarioValidation';
 import { importScenarioFromFiles } from '../core/ScenarioImport';
+import {
+  buildScenarioShareBundleDownload,
+  buildScenarioTemplateBundleDownload
+} from '../core/ScenarioExchange';
 
 const MAX_POINTS = 300;
 const HOME_REGIONS = ['National', 'Northeast', 'Midwest', 'South', 'West'] as const;
@@ -127,6 +131,16 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
     };
   }, [loadMods]);
 
+  const saveDownloadedText = (fileName: string, content: string) => {
+    const blob = new Blob([content], { type: 'application/json;charset=utf-8' });
+    const objectUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = fileName;
+    link.click();
+    window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 0);
+  };
+
   const adjustTrait = (key: keyof PlayerDemographics, amount: number) => {
     setTraits((prev) => {
       const newValue = prev[key] + amount;
@@ -214,7 +228,8 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
       CampaignDataParser.saveImportedScenario(importedScenario);
       await loadMods(true);
       setSelectedMod(importedScenario.manifest.id);
-      setCatalogMessage(`Imported ${importedScenario.manifest.name}. Review the scenario browser diagnostics before launch if you made a custom map.`);
+      const importLabel = importedScenario.importSource.startsWith('bundle:') ? 'shared bundle' : 'scenario folder';
+      setCatalogMessage(`Imported ${importedScenario.manifest.name} from a ${importLabel}. Review the scenario browser diagnostics before launch if you edited the map or metadata.`);
       setCatalogMessageTone(importedScenario.importNotes.length > 0 ? 'warning' : 'success');
     } catch (error) {
       console.error('Scenario import failed:', error);
@@ -223,6 +238,30 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
     } finally {
       setImportBusy(false);
     }
+  };
+
+  const handleExportScenarioBundle = (scenarioId: string) => {
+    const scenario = availableMods.find((entry) => entry.id === scenarioId);
+    if (!scenario) {
+      return;
+    }
+
+    const download = buildScenarioShareBundleDownload(scenario);
+    saveDownloadedText(download.fileName, download.content);
+    setCatalogMessage(`Exported ${scenario.name} as a portable share bundle. Another player can import that single file directly from the scenario browser.`);
+    setCatalogMessageTone(scenario.validation.warnings > 0 ? 'warning' : 'success');
+  };
+
+  const handleDownloadScenarioTemplate = (scenarioId: string) => {
+    const scenario = availableMods.find((entry) => entry.id === scenarioId);
+    if (!scenario) {
+      return;
+    }
+
+    const download = buildScenarioTemplateBundleDownload(scenario);
+    saveDownloadedText(download.fileName, download.content);
+    setCatalogMessage(`Downloaded a creator template based on ${scenario.name}. It includes placeholder metadata and the full map so a modder can start editing immediately.`);
+    setCatalogMessageTone('info');
   };
 
   const handleRemoveScenario = async (scenarioId: string) => {
@@ -249,6 +288,8 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
             onSelectScenario={setSelectedMod}
             onRefreshScenarios={() => void handleRefreshScenarios()}
             onImportScenarioFiles={handleImportScenarioFiles}
+            onExportScenarioBundle={handleExportScenarioBundle}
+            onDownloadScenarioTemplate={handleDownloadScenarioTemplate}
             onRemoveScenario={handleRemoveScenario}
             importBusy={importBusy}
             statusMessage={catalogMessage}
