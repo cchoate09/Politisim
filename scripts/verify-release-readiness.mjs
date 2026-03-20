@@ -30,6 +30,24 @@ async function run() {
   const executablePath = path.join(releaseRoot, 'win-unpacked', `${packageJson.build?.productName ?? 'PolitiSim'}.exe`);
   const results = [];
   let blockingFailures = 0;
+  const requiredSmokeSteps = [
+    'candidate_creator_loaded',
+    'preload_ipc_verified',
+    'scenario_assets_loaded',
+    'campaign_started',
+    'save_slot_written',
+    'primary_view_rendered',
+    'analytics_rendered',
+    'campaign_hq_rendered',
+    'debate_flow_verified',
+    'scenario_year_bootstrap_verified',
+    'save_roundtrip_verified',
+    'community_scenario_import_verified',
+    'community_scenario_bootstrap_verified',
+    'convention_flow_verified',
+    'election_night_flow_verified',
+    'endgame_render_verified'
+  ];
 
   const requirePath = async (relativePath, message) => {
     const fullPath = path.join(projectRoot, relativePath);
@@ -81,6 +99,24 @@ async function run() {
     const smokeReport = await readJson(smokeReportPath);
     if (smokeReport.success) {
       record(results, 'pass', `Packaged smoke test passed with ${smokeReport.steps?.length ?? 0} verified steps.`);
+      const missingSteps = requiredSmokeSteps.filter((step) => !smokeReport.steps?.includes(step));
+      if (missingSteps.length === 0) {
+        record(results, 'pass', 'Launch-candidate smoke flow covered scenario imports, save/load, debate, convention, election night, and endgame rendering.');
+      } else {
+        blockingFailures += 1;
+        record(results, 'fail', `Launch-candidate smoke flow is missing required steps: ${missingSteps.join(', ')}`);
+      }
+
+      if (
+        smokeReport.launchCandidateChecks?.catalogCountBeforeImport >= 5
+        && smokeReport.launchCandidateChecks?.restorationScenarioYear === 2012
+        && smokeReport.launchCandidateChecks?.importedScenarioYear === 2036
+      ) {
+        record(results, 'pass', 'Multi-scenario packaged coverage verified both official and imported scenario bootstraps.');
+      } else {
+        blockingFailures += 1;
+        record(results, 'fail', 'Smoke report does not confirm expected official/imported scenario bootstrap coverage.');
+      }
     } else {
       blockingFailures += 1;
       record(results, 'fail', `Packaged smoke report exists but failed: ${smokeReport.error ?? 'unknown error'}`);

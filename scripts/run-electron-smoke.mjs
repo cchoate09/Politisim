@@ -94,7 +94,7 @@ async function run() {
   const childArgs = [
     '--smoke-test',
     `--smoke-report=${reportPath}`,
-    `--smoke-timeout-ms=45000`,
+    `--smoke-timeout-ms=60000`,
     `--smoke-user-data=${smokeUserDataDir}`
   ];
 
@@ -120,7 +120,7 @@ async function run() {
       POLITISIM_PACKAGED_RUNTIME: '1',
       POLITISIM_SMOKE_TEST: '1',
       POLITISIM_SMOKE_REPORT_PATH: reportPath,
-      POLITISIM_SMOKE_TIMEOUT_MS: '45000',
+      POLITISIM_SMOKE_TIMEOUT_MS: '60000',
       POLITISIM_SMOKE_USER_DATA: smokeUserDataDir
     },
     windowsHide: true

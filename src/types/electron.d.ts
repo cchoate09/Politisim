@@ -3,7 +3,11 @@ import type { CloudFileInfo, SteamStatus } from '../core/SteamSync';
 
 declare global {
   interface Window {
+    __POLITISIM_SMOKE__?: unknown;
     electron?: {
+      runtimeFlags: {
+        isSmokeTest: boolean;
+      };
       unlockAchievement: (achievementId: string) => Promise<boolean>;
       getSteamStatus: () => Promise<SteamStatus>;
       readCloudFile: (fileName: string) => Promise<string | null>;

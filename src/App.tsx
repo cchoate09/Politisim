@@ -251,6 +251,16 @@ function App() {
   }, [activeConvention, activeDebate, activeElectionNight, calendarPhase, gamePhase, hasStarted]);
 
   useEffect(() => {
+    if (!window.electron?.runtimeFlags?.isSmokeTest) {
+      return;
+    }
+
+    void import('./core/SmokeBridge').then((module) => {
+      module.installSmokeBridge();
+    });
+  }, []);
+
+  useEffect(() => {
     if (!hasStarted) {
       return;
     }
