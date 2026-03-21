@@ -201,11 +201,11 @@ export function commissionOppositionResearch(
   playerTrust: number,
   researchPressure: number
 ): ResearchCommissionResult {
-  const discoveryChance = 0.28
-    + (rival.scandalRisk / 240)
-    + (researchPressure / 24)
+  const discoveryChance = 0.22
+    + (rival.scandalRisk / 280)
+    + (researchPressure / 30)
     + Math.max(0, 55 - playerTrust) / 260
-    - (rival.messageDiscipline / 360);
+    - (rival.messageDiscipline / 330);
   const foundLead = Math.random() < discoveryChance;
 
   if (!foundLead) {
@@ -289,12 +289,12 @@ export function releaseOppositionHit(
   week: number
 ): ResearchReleaseResult {
   const backfireChance = clamp(
-    (lead.backfireRisk * 0.52)
-      + (file.heat * 0.26)
-      + Math.max(0, 54 - playerTrust) * 0.65
+    (lead.backfireRisk * 0.56)
+      + (file.heat * 0.3)
+      + Math.max(0, 54 - playerTrust) * 0.72
       + (rival.messageDiscipline * 0.16)
       - (rapidResponseIntensity * 0.35)
-      - (researchPressure * 2.1),
+      - (researchPressure * 1.8),
     6,
     86
   ) / 100;
@@ -328,7 +328,7 @@ export function releaseOppositionHit(
       outcome: 'backfire',
       summary: `${rival.name} blunted your hit, reporters questioned the sourcing, and the story snapped back on your campaign.`,
       playerTrustDelta: -7,
-      playerMomentumDelta: -5,
+      playerMomentumDelta: -4,
       rivalTrustDelta: 2,
       rivalMomentumDelta: 3,
       rivalBudgetDelta: 25000,
@@ -350,11 +350,11 @@ export function releaseOppositionHit(
       outcome: 'contained',
       summary: `${rival.name} took a bruise from the release, but the campaign contained most of the fallout before it became a full collapse.`,
       playerTrustDelta: -1,
-      playerMomentumDelta: 2,
+      playerMomentumDelta: 1,
       rivalTrustDelta: -(4 + Math.round(lead.severity / 24)),
-      rivalMomentumDelta: -(3 + Math.round(lead.credibility / 28)),
-      rivalBudgetDelta: -(35000 + Math.round(lead.severity * 1100)),
-      volunteerDelta: 30,
+      rivalMomentumDelta: -(2 + Math.round(lead.credibility / 36)),
+      rivalBudgetDelta: -(26000 + Math.round(lead.severity * 900)),
+      volunteerDelta: 22,
       donorLane,
       mediaBoosts: [{ channelId: 'earned_media', intensityDelta: 3 }]
     };
@@ -372,15 +372,15 @@ export function releaseOppositionHit(
     outcome: 'breakthrough',
     summary: `${lead.title} landed cleanly, and ${rival.name} is spending the week trying to stop the bleed.`,
     playerTrustDelta: 2,
-    playerMomentumDelta: 6,
-    rivalTrustDelta: -(8 + Math.round(lead.severity / 12)),
-    rivalMomentumDelta: -(6 + Math.round(lead.credibility / 15)),
-    rivalBudgetDelta: -(70000 + Math.round(lead.severity * 1650)),
-    volunteerDelta: 65,
+    playerMomentumDelta: 4,
+    rivalTrustDelta: -(6 + Math.round(lead.severity / 16)),
+    rivalMomentumDelta: -(4 + Math.round(lead.credibility / 22)),
+    rivalBudgetDelta: -(52000 + Math.round(lead.severity * 1300)),
+    volunteerDelta: 48,
     donorLane,
     mediaBoosts: [
-      { channelId: 'earned_media', intensityDelta: 6 },
-      { channelId: 'rapid_response', intensityDelta: 4 }
+      { channelId: 'earned_media', intensityDelta: 5 },
+      { channelId: 'rapid_response', intensityDelta: 3 }
     ]
   };
 }

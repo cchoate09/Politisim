@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './ScenarioBrowser.css';
 import type { ScenarioCatalogEntry, ScenarioCatalogStatus, ScenarioValidationFinding } from '../core/ScenarioValidation';
+import { buildScenarioWorkshopPreview } from '../core/ScenarioWorkshop';
 
 export type ScenarioBrowserMessageTone = 'info' | 'success' | 'warning' | 'error';
 
@@ -14,6 +15,8 @@ interface ScenarioBrowserProps {
   onImportScenarioFiles: (files: File[]) => Promise<void>;
   onExportScenarioBundle: (scenarioId: string) => void | Promise<void>;
   onDownloadScenarioTemplate: (scenarioId: string) => void | Promise<void>;
+  onDownloadWorkshopPublishKit: (scenarioId: string) => void | Promise<void>;
+  onDownloadWorkshopBrief: (scenarioId: string) => void | Promise<void>;
   onRemoveScenario: (scenarioId: string) => Promise<void>;
   importBusy: boolean;
   statusMessage: string | null;
@@ -100,6 +103,8 @@ export const ScenarioBrowser: React.FC<ScenarioBrowserProps> = ({
   onImportScenarioFiles,
   onExportScenarioBundle,
   onDownloadScenarioTemplate,
+  onDownloadWorkshopPublishKit,
+  onDownloadWorkshopBrief,
   onRemoveScenario,
   importBusy,
   statusMessage,
@@ -145,6 +150,10 @@ export const ScenarioBrowser: React.FC<ScenarioBrowserProps> = ({
   );
   const statusSummary = selectedScenario ? formatStatus(selectedScenario.validation.status) : null;
   const groupedFindings = selectedScenario ? groupFindings(selectedScenario.validation.findings) : null;
+  const workshopPreview = useMemo(
+    () => (selectedScenario ? buildScenarioWorkshopPreview(selectedScenario) : null),
+    [selectedScenario]
+  );
 
   const healthCounts = useMemo(() => ({
     ready: scenarios.filter((scenario) => scenario.validation.status === 'valid').length,
@@ -202,6 +211,22 @@ export const ScenarioBrowser: React.FC<ScenarioBrowserProps> = ({
     }
 
     void onDownloadScenarioTemplate(selectedScenario.id);
+  };
+
+  const handleDownloadWorkshopKit = () => {
+    if (!selectedScenario) {
+      return;
+    }
+
+    void onDownloadWorkshopPublishKit(selectedScenario.id);
+  };
+
+  const handleDownloadWorkshopBrief = () => {
+    if (!selectedScenario) {
+      return;
+    }
+
+    void onDownloadWorkshopBrief(selectedScenario.id);
   };
 
   return (
@@ -502,6 +527,88 @@ export const ScenarioBrowser: React.FC<ScenarioBrowserProps> = ({
                           {item.met ? 'Ready: ' : 'Missing: '}{item.label}
                         </div>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {workshopPreview && (
+                  <div className="scenario-browser-detail-section">
+                    <div className="scenario-browser-detail-section-title">Workshop Prep</div>
+                    <div className={`scenario-browser-status-card scenario-browser-status-card-${
+                      workshopPreview.readiness.status === 'launch_ready'
+                        ? 'ready'
+                        : workshopPreview.readiness.status === 'needs_polish'
+                          ? 'warning'
+                          : 'blocked'
+                    }`}>
+                      <span>Publish Posture</span>
+                      <strong>{workshopPreview.readiness.score}% · {workshopPreview.readiness.status.replace('_', ' ')}</strong>
+                      <p>{workshopPreview.readiness.summary}</p>
+                    </div>
+
+                    <div className="scenario-browser-workshop-card">
+                      <div className="scenario-browser-workshop-head">
+                        <div>
+                          <strong>{workshopPreview.metadata.title}</strong>
+                          <p>{workshopPreview.metadata.shortDescription}</p>
+                        </div>
+                        <span className="scenario-browser-workshop-visibility">
+                          {workshopPreview.metadata.visibility.replace('_', ' ')}
+                        </span>
+                      </div>
+
+                      <div className="scenario-browser-workshop-copy">
+                        {workshopPreview.metadata.longDescription}
+                      </div>
+
+                      <div className="scenario-browser-tag-row">
+                        {workshopPreview.metadata.tags.map((tag) => (
+                          <span key={`${selectedScenario.id}-workshop-tag-${tag}`} className="scenario-browser-tag scenario-browser-tag-highlight">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="scenario-browser-rule-list">
+                        <div className="scenario-browser-rule">{workshopPreview.metadata.compatibilityLine}</div>
+                        {workshopPreview.readiness.blockers.slice(0, 2).map((item) => (
+                          <div key={`${selectedScenario.id}-workshop-blocker-${item}`} className="scenario-browser-rule scenario-browser-rule-miss">
+                            Blocker: {item}
+                          </div>
+                        ))}
+                        {workshopPreview.readiness.cautions.slice(0, 2).map((item) => (
+                          <div key={`${selectedScenario.id}-workshop-caution-${item}`} className="scenario-browser-rule">
+                            Polish: {item}
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="scenario-browser-share-grid">
+                        <div className="scenario-browser-share-card">
+                          <strong>Download Publish Kit</strong>
+                          <p>Exports a single Workshop-prep JSON package with metadata, readiness notes, and an embedded scenario share bundle.</p>
+                          <button
+                            type="button"
+                            className="scenario-browser-action-btn"
+                            onClick={handleDownloadWorkshopKit}
+                            disabled={loading || importBusy}
+                          >
+                            Download Publish Kit
+                          </button>
+                        </div>
+                        <div className="scenario-browser-share-card">
+                          <strong>Download Publish Brief</strong>
+                          <p>Exports a markdown brief with ready-to-edit store copy, tags, release notes, and screenshot guidance for creators.</p>
+                          <button
+                            type="button"
+                            className="scenario-browser-action-btn"
+                            onClick={handleDownloadWorkshopBrief}
+                            disabled={loading || importBusy}
+                          >
+                            Download Brief
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}

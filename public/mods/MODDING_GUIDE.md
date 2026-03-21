@@ -64,6 +64,10 @@ Each scenario entry in `manifest.json` looks like this:
   "author": "PolitiSim Team",
   "version": "1.0.0",
   "minGameVersion": "0.4.0",
+  "workshopTitle": "Road to 2024",
+  "workshopSummary": "Fight through a crowded 2024-style primary and a volatile general election on the full national map.",
+  "workshopTags": ["Campaign Sim", "Political Strategy", "2024", "Competitive Run"],
+  "workshopVisibility": "unlisted",
   "official": true
 }
 ```
@@ -83,6 +87,10 @@ Manifest entries should include:
 - `author`: Creator name shown in the scenario browser and useful for shared/community content.
 - `version`: Scenario version. Use a semver-style format such as `1.0.0`.
 - `minGameVersion`: Lowest supported game version for compatibility checks.
+- `workshopTitle`: Optional override for the generated Workshop/browser publish title.
+- `workshopSummary`: Optional short publish summary for share bundles or future Workshop uploads.
+- `workshopTags`: Optional publish tags. Keep the list concise.
+- `workshopVisibility`: Optional publish hint: `public`, `unlisted`, or `friends_only`.
 - `official`: Marks built-in scenarios.
 
 ## `states.json` Schema
@@ -132,9 +140,10 @@ Each jurisdiction entry should look like this:
 - Community scenarios import directly from a folder chooser in the scenario browser. The importer preserves the folder as a local catalog entry, normalizes unsafe ids, and records import notes when something had to be adjusted.
 - Shared scenario bundles include both manifest metadata and `states.json` in one file, which makes Discord, email, and cloud-drive sharing much easier for community creators.
 - Creator template downloads clone an existing scenario into an editable starter bundle with placeholder author metadata and remix-friendly notes.
-- If you want your scenario to feel Workshop-ready, include `author`, `version`, `minGameVersion`, a clear tagline, focus tags, featured states, and a concise special-rules summary.
+- The scenario browser can now generate a Workshop-prep package and a publish brief from any installed scenario. Those exports bundle metadata, validation notes, suggested tags, preview-art checklist items, and ready-to-edit release notes scaffolding.
+- If you want your scenario to feel Workshop-ready, include `author`, `version`, `minGameVersion`, a clear tagline, focus tags, featured states, a concise special-rules summary, and optional `workshopTitle` / `workshopSummary` overrides.
 - After editing a scenario, run `npm test` to catch manifest or data-shape mistakes.
 
 ## Workshop Support
 
-Steam Workshop upload is not wired in yet, but the scenario catalog is now manifest-driven, browser-validated, and community-importable, which keeps local mods aligned with a future Workshop flow. Local scenarios already work in both browser preview and the Electron build as long as they are declared in `manifest.json` or imported through the scenario browser.
+Steam Workshop upload is still waiting on the final Steamworks production pass, but the scenario catalog is now manifest-driven, browser-validated, importable, exportable, and able to generate Workshop-prep metadata bundles. Local scenarios already work in both browser preview and the Electron build as long as they are declared in `manifest.json` or imported through the scenario browser.

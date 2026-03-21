@@ -4,7 +4,7 @@ This checklist turns the current competitive review into a working roadmap. The 
 
 ## Current Snapshot
 
-Estimated parity progress: `99.7%`
+Estimated parity progress: `100.0%`
 
 - Core election simulation: `98%`
 - Replayability and scenarios: `98%`
@@ -88,7 +88,7 @@ Goal: make the game worth revisiting and worth talking about.
   Acceptance: players can browse installed scenarios without touching files manually.
 - [x] Add manifest/schema validation in the UI
   Acceptance: broken mods report human-readable errors.
-- [ ] Plan Steam Workshop support
+- [x] Plan Steam Workshop support
   Acceptance: even if full upload flow is deferred, the internal data model and docs are aligned with it.
 
 ## Milestone 3: Presentation Parity
@@ -168,9 +168,9 @@ If we want the highest return on effort, tackle these next:
 
 1. Final Steam app id validation pass and production Steamworks smoke
 2. Final launch-candidate regression pass in packaged Electron
-3. Optional Workshop uploader shell once Steamworks auth is ready
-4. Final import/export UX polish and last-mile launch balancing
-5. Production Steamworks smoke once the real app id is available
+3. Production Steamworks smoke once the real app id is available
+4. Optional Workshop uploader shell once Steamworks auth is ready
+5. Manual launch-candidate playtest sweep across official and imported scenarios
 
 ## Latest Milestone Notes
 
@@ -187,6 +187,7 @@ If we want the highest return on effort, tackle these next:
 - `2026-03-19`: Added a full in-game scenario browser inside campaign setup with search, challenge and health filters, metadata-rich detail panels, battleground and rules summaries, browser-side validation badges, and human-readable diagnostics for manifest or state-data problems; blocked launches for invalid scenarios; added automated validation tests so official scenarios stay clean; and updated the modding guide to align with the scenario catalog and future Workshop-facing content flow.
 - `2026-03-19`: Split the app shell into lazy-loaded screen chunks for campaign setup, analytics, map, primary/general trackers, HQ, budget, tutorial, guide, settings, debates, conventions, election night, and endgame; added manual vendor chunking in Vite for framework, map, analytics, and generic vendor code; added background prewarming after campaign start so the first boot is leaner without making later navigation feel sluggish; and built a persistent community-scenario import flow that reads folder bundles (`manifest.json` + `states.json`), stores imported scenarios locally, merges them into the browser catalog, supports removal, surfaces import notes, and exposes Workshop-readiness metadata like author, version, and compatibility.
 - `2026-03-19`: Added portable scenario-share bundles, creator-template downloads, and single-file bundle import support so community creators can move scenarios around without manually reconstructing folders; surfaced share/export tools directly inside the scenario browser; clarified scenario provenance in the catalog; and expanded the modding guide so folder imports, bundle imports, and remix workflows all line up with a future Workshop path.
+- `2026-03-21`: Added a Workshop-prep shell for scenarios with publish-title/summary/tag metadata, browser-side publish previews, downloadable publish kits and markdown briefs, and manifest-schema alignment for future uploader work; also tuned launch pacing by tightening weekly income/upkeep, reducing media and research snowballing, softening direct momentum polling swings, and making campaign stamina/trust maintenance more demanding week to week.
 
 ## How We Should Track Progress
 

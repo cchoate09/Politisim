@@ -53,6 +53,10 @@ export interface ModManifestEntry {
   author?: string;
   version?: string;
   minGameVersion?: string;
+  workshopTitle?: string;
+  workshopSummary?: string;
+  workshopTags?: string[];
+  workshopVisibility?: 'public' | 'unlisted' | 'friends_only';
   importSource?: string;
   importedAt?: string;
   importNotes?: string[];

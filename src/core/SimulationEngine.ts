@@ -501,7 +501,7 @@ function buildCandidateScore(
   const base = ElectionMath.calculateBaseScore(ideology, stateData, issues);
   const campaignScore = ElectionMath.applyCampaignBonuses(base, stateData, spending, staffDiv, visitMult);
   const partyLean = getPartyLeanAdjustment(stateData, party);
-  const momentumWeight = 1 + (momentum / 240);
+  const momentumWeight = 1 + (momentum / 360);
   const supportWeight = 1 + (supportBase / 180);
   const leanWeight = 1 + (Math.max(-22, Math.min(22, partyLean)) / 120);
   const regionalWeight = 1 + (getRegionalBonus(stateData, homeRegion) / 120);
@@ -510,12 +510,16 @@ function buildCandidateScore(
 }
 
 function getResearchPressure(spending: CampaignSpendingData) {
-  return Math.min(0.15, Math.log((spending.research || 0) + 1) / 58);
+  return Math.min(0.11, Math.log((spending.research || 0) + 1) / 66);
 }
 
 function getResearchDefenseModifier(pressure: number, messageDiscipline: number, scandalRisk: number) {
-  const exposureFactor = 1.02 + (scandalRisk / 180) - (messageDiscipline / 240);
-  return Math.max(0.8, 1 - (pressure * exposureFactor));
+  const exposureFactor = 0.92 + (scandalRisk / 220) - (messageDiscipline / 300);
+  return Math.max(0.84, 1 - (pressure * exposureFactor));
+}
+
+function getMomentumVoteSwing(momentum: number) {
+  return Math.max(-2.4, Math.min(3.4, (momentum - 50) / 18));
 }
 
 function getContestValue(stateData: StateElectionData, rival: RivalAI): number {
@@ -736,9 +740,9 @@ export class SimulationEngine {
   ): { rival: RivalAI; message: string; type: 'positive' | 'negative' | 'info' } | null {
     if (rival.status === 'withdrawn') return null;
 
-    const scandalChance = 0.04 + (rival.scandalRisk / 260) - (rival.messageDiscipline / 1200);
-    const surgeChance = 0.05 + (rival.earnedMediaSkill / 450) + (rival.attackPower / 900);
-    const organizationChance = 0.03 + (rival.organizationPower / 1300);
+    const scandalChance = 0.05 + (rival.scandalRisk / 230) - (rival.messageDiscipline / 1350);
+    const surgeChance = 0.042 + (rival.earnedMediaSkill / 540) + (rival.attackPower / 1150);
+    const organizationChance = 0.028 + (rival.organizationPower / 1500);
     const roll = Math.random();
 
     if (roll < scandalChance) {
@@ -750,7 +754,7 @@ export class SimulationEngine {
           ...rival,
           trust: clampPercentage(rival.trust - trustHit),
           momentum: clampPercentage(rival.momentum - momentumHit),
-          budget: Math.max(0, rival.budget - Math.round(45000 + (rival.scandalRisk * 1800)))
+          budget: Math.max(0, rival.budget - Math.round(55000 + (rival.scandalRisk * 1900)))
         },
         message: `${rival.name} hit turbulence after a ${vulnerability.toLowerCase()} problem turned into a damaging ${phase} news cycle.`,
         type: 'negative'
@@ -758,15 +762,15 @@ export class SimulationEngine {
     }
 
     if (roll < scandalChance + surgeChance) {
-      const momentumBoost = 4 + Math.round(rival.earnedMediaSkill / 24);
-      const trustBoost = rival.debateStyle === 'reassurer' ? 3 : 1;
+      const momentumBoost = 3 + Math.round(rival.earnedMediaSkill / 32);
+      const trustBoost = rival.debateStyle === 'reassurer' ? 2 : 1;
       const messageBase = rival.strengths[0] ?? 'media lane';
       return {
         rival: {
           ...rival,
           momentum: clampPercentage(rival.momentum + momentumBoost),
           trust: clampPercentage(rival.trust + trustBoost),
-          budget: rival.budget + Math.round(getRivalPassiveFinance(rival) * 0.2)
+          budget: rival.budget + Math.round(getRivalPassiveFinance(rival) * 0.12)
         },
         message: `${rival.name} broke through this week on ${messageBase.toLowerCase()}, giving the campaign a fresh burst of coverage.`,
         type: playerTrust < 46 ? 'negative' : 'info'
@@ -777,7 +781,7 @@ export class SimulationEngine {
       return {
         rival: {
           ...rival,
-          momentum: clampPercentage(rival.momentum + 2),
+          momentum: clampPercentage(rival.momentum + 1),
           trust: clampPercentage(rival.trust + 1)
         },
         message: `${rival.name} quietly tightened their ${rival.homeRegion.toLowerCase()} organization and kept the campaign stable.`,
@@ -945,11 +949,11 @@ export class SimulationEngine {
       return sum + (operation.officeLevel * 8) + Math.floor(operation.volunteerStrength / 30) + Math.round(operation.surrogatePower * 4);
     }, 0);
     const mediaMomentum = rival.mediaLanes.includes('earned_media')
-      ? Math.round(rival.earnedMediaSkill / 35)
+      ? Math.round(rival.earnedMediaSkill / 45)
       : rival.mediaLanes.includes('cable')
         ? 1
         : 0;
-    const momentumGain = (difficulty === 'hard' ? 3 : difficulty === 'normal' ? 1 : 0) + (fieldPresence >= 65 ? 1 : 0) + mediaMomentum;
+    const momentumGain = (difficulty === 'hard' ? 2 : difficulty === 'normal' ? 1 : 0) + (fieldPresence >= 85 ? 1 : 0) + mediaMomentum;
     const trustShift = newBudget > rival.budget
       ? 1 + Math.round(rival.messageDiscipline / 120)
       : officeUpkeep > weeklyIncome * 0.4
@@ -1011,8 +1015,8 @@ export class SimulationEngine {
       * playerEndorsementEffect.scoreMultiplier
       * playerFieldEffect.scoreMultiplier
       * playerMediaEffect.scoreMultiplier
-      * (1 + playerResearchPressure * 0.22)
-      * Math.max(0.82, 1 - (combinedRivalResearch * 0.45));
+      * (1 + playerResearchPressure * 0.14)
+      * Math.max(0.86, 1 - (combinedRivalResearch * 0.28));
 
     const rivalScores = activeRivals.map((rival) => {
       const statusPenalty = rival.status === 'withdrawn' ? 0.18 : 1;
@@ -1037,7 +1041,7 @@ export class SimulationEngine {
         * endorsementEffect.scoreMultiplier
         * fieldEffect.scoreMultiplier
         * mediaEffect.scoreMultiplier
-        * (1 + rivalResearchPressure * 0.14)
+        * (1 + rivalResearchPressure * 0.1)
         * getResearchDefenseModifier(playerResearchPressure, rival.messageDiscipline, rival.scandalRisk);
 
       return { rival, score };
@@ -1170,8 +1174,8 @@ export class SimulationEngine {
       * playerFieldEffect.scoreMultiplier
       * playerMediaEffect.scoreMultiplier
       * vpEffect.scoreMultiplier
-      * (1 + playerResearchPressure * 0.2)
-      * Math.max(0.82, 1 - (rivalResearchPressure * 0.55));
+      * (1 + playerResearchPressure * 0.12)
+      * Math.max(0.84, 1 - (rivalResearchPressure * 0.4));
 
     const rivalScore = buildCandidateScore(
       rivalAI.ideology,
@@ -1189,7 +1193,7 @@ export class SimulationEngine {
       * rivalEndorsementEffect.scoreMultiplier
       * rivalFieldEffect.scoreMultiplier
       * rivalMediaEffect.scoreMultiplier
-      * (1 + rivalResearchPressure * 0.14)
+      * (1 + rivalResearchPressure * 0.1)
       * getResearchDefenseModifier(playerResearchPressure, rivalAI.messageDiscipline, rivalAI.scandalRisk);
 
     const stateTurnout = clampPercentage(ElectionMath.calculateTurnout(
@@ -1207,19 +1211,19 @@ export class SimulationEngine {
     let playerPct = (playerScore / totalScore) * (100 - undecided);
     let rivalPct = (rivalScore / totalScore) * (100 - undecided);
 
-    playerPct += Math.floor(playerMomentum / 25) + (playerMomentum >= 75 ? 2 : playerMomentum >= 55 ? 1 : 0) + playerMediaEffect.momentumLift + playerMediaEffect.trustLift;
-    rivalPct += Math.floor(rivalAI.momentum / 25) + rivalMediaEffect.momentumLift + rivalMediaEffect.trustLift;
+    playerPct += getMomentumVoteSwing(playerMomentum) + (playerMediaEffect.momentumLift * 0.7) + (playerMediaEffect.trustLift * 0.85);
+    rivalPct += getMomentumVoteSwing(rivalAI.momentum) + (rivalMediaEffect.momentumLift * 0.7) + (rivalMediaEffect.trustLift * 0.85);
 
-    const stabilityNoiseFactor = Math.max(1.9, 6 - (playerFieldEffect.stabilityBonus * 0.35) - (playerMediaEffect.stabilityBonus * 0.24) - (rivalFieldEffect.stabilityBonus * 0.3) - (rivalMediaEffect.stabilityBonus * 0.22));
+    const stabilityNoiseFactor = Math.max(1.5, 5.2 - (playerFieldEffect.stabilityBonus * 0.28) - (playerMediaEffect.stabilityBonus * 0.18) - (rivalFieldEffect.stabilityBonus * 0.24) - (rivalMediaEffect.stabilityBonus * 0.16));
     const noise = (Math.random() - 0.5) * stabilityNoiseFactor;
     playerPct += noise;
     rivalPct -= noise * 0.7;
 
-    playerPct += playerFieldEffect.stabilityBonus * 0.18;
-    playerPct += playerMediaEffect.stabilityBonus * 0.12;
+    playerPct += playerFieldEffect.stabilityBonus * 0.13;
+    playerPct += playerMediaEffect.stabilityBonus * 0.08;
     playerPct -= rivalMediaEffect.rivalPenalty;
-    rivalPct += rivalFieldEffect.stabilityBonus * 0.18;
-    rivalPct += rivalMediaEffect.stabilityBonus * 0.12;
+    rivalPct += rivalFieldEffect.stabilityBonus * 0.13;
+    rivalPct += rivalMediaEffect.stabilityBonus * 0.08;
     rivalPct -= playerMediaEffect.rivalPenalty;
 
     if (playerPct + rivalPct > 100) {

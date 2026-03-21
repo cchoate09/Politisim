@@ -133,6 +133,18 @@ export function normalizeImportedScenario(
     minGameVersion: typeof normalizedManifest.minGameVersion === 'string' && normalizedManifest.minGameVersion.trim()
       ? normalizedManifest.minGameVersion.trim()
       : '0.4.0',
+    workshopTitle: typeof normalizedManifest.workshopTitle === 'string' && normalizedManifest.workshopTitle.trim()
+      ? normalizedManifest.workshopTitle.trim()
+      : undefined,
+    workshopSummary: typeof normalizedManifest.workshopSummary === 'string' && normalizedManifest.workshopSummary.trim()
+      ? normalizedManifest.workshopSummary.trim()
+      : undefined,
+    workshopTags: normalizeStringArray(normalizedManifest.workshopTags).slice(0, 8),
+    workshopVisibility: normalizedManifest.workshopVisibility === 'public'
+      || normalizedManifest.workshopVisibility === 'unlisted'
+      || normalizedManifest.workshopVisibility === 'friends_only'
+      ? normalizedManifest.workshopVisibility
+      : undefined,
     importSource,
     importedAt,
     importNotes

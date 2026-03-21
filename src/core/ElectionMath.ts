@@ -45,8 +45,8 @@ export class ElectionMath {
    */
   static calculateTurnout(stateData: StateElectionData, groundGame: number, momentum: number): number {
     // Base turnout is boosted by ground game and momentum
-    const groundBonus = Math.log(Math.max(1, groundGame) + 1) * 2;
-    const momentumBonus = momentum / 35.0;
+    const groundBonus = Math.log(Math.max(1, groundGame) + 1) * 1.7;
+    const momentumBonus = momentum / 50.0;
     
     const totalTurnout = stateData.baseTurnout + groundBonus + momentumBonus;
     return Math.min(100, Math.max(30, totalTurnout));
@@ -77,7 +77,7 @@ export class ElectionMath {
              (stateData.liberal + stateData.libertarian + 2 * stateData.owner) / 100.0);
     
     // Visits Bonus (Direct Impact) — BUFFED from visitMult to visitMult * 2.0
-    score += (spending.visits * visitMult * 2.0);
+    score += (spending.visits * visitMult * 1.55);
 
     // Social Media Influence
     score += Math.log(Math.max(1, spending.socialMedia || 0) + 1) * 2;

@@ -81,6 +81,15 @@ function buildTemplateManifest(scenario: ScenarioCatalogEntry): ModManifestEntry
     author: 'Your Name Here',
     version: '0.1.0',
     minGameVersion: GAME_VERSION,
+    workshopTitle: `My ${scenario.name} Remix`,
+    workshopSummary: `Community remix of ${scenario.name}. Replace this with a short publish-ready summary before sharing.`,
+    workshopTags: uniqueStrings([
+      'Campaign Sim',
+      'Political Strategy',
+      scenario.yearLabel,
+      ...scenario.focus.slice(0, 3)
+    ]).slice(0, 8),
+    workshopVisibility: 'unlisted',
     focus: uniqueStrings([
       'Custom scenario',
       'Editable template',
@@ -133,7 +142,11 @@ function createBundle(
         official: Boolean(scenario.official),
         author: scenario.author,
         version: scenario.version,
-        minGameVersion: scenario.minGameVersion
+        minGameVersion: scenario.minGameVersion,
+        workshopTitle: scenario.workshopTitle,
+        workshopSummary: scenario.workshopSummary,
+        workshopTags: scenario.workshopTags ? [...scenario.workshopTags] : undefined,
+        workshopVisibility: scenario.workshopVisibility
       };
 
   return {

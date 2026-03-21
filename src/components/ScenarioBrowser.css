@@ -393,6 +393,49 @@
   line-height: 1.5;
 }
 
+.scenario-browser-workshop-card {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.scenario-browser-workshop-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: flex-start;
+}
+
+.scenario-browser-workshop-head strong {
+  display: block;
+  font-size: 0.98rem;
+  color: var(--text-main);
+  margin-bottom: 0.25rem;
+}
+
+.scenario-browser-workshop-head p,
+.scenario-browser-workshop-copy {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  line-height: 1.55;
+  white-space: pre-line;
+}
+
+.scenario-browser-workshop-visibility {
+  padding: 0.26rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.12);
+  color: var(--primary-accent);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
 .scenario-browser-rule-pass {
   border-color: rgba(74, 222, 128, 0.18);
   background: rgba(74, 222, 128, 0.08);
@@ -475,6 +518,10 @@
 
   .scenario-browser-summary {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .scenario-browser-workshop-head {
+    flex-direction: column;
   }
 
   .scenario-browser-actions {

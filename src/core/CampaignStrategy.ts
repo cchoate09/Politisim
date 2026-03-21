@@ -115,11 +115,11 @@ function buildBaseDonorBlocs(): Omit<DonorBlocState, 'relationship' | 'energy'>[
       name: 'Small-Dollar Army',
       description: 'Email, text, and merch donors who reward authenticity, issue focus, and momentum.',
       askLabel: 'Launch grassroots push',
-      weeklyPotential: 85000,
-      askAmount: 95000,
+      weeklyPotential: 72000,
+      askAmount: 82000,
       staminaCost: 3,
       trustRisk: -1,
-      momentumBonus: 4,
+      momentumBonus: 3,
       priorities: { worker: 55, liberal: 45, religious: 20, immigrant: 30 },
       preferredIssues: ['Healthcare', 'Civil Rights', 'Climate Change', 'Economy'],
       partyAffinity: 'both'
@@ -129,8 +129,8 @@ function buildBaseDonorBlocs(): Omit<DonorBlocState, 'relationship' | 'energy'>[
       name: 'Labor Tables',
       description: 'Union leaders and blue-collar donor networks who care about wages, trade, and organizing strength.',
       askLabel: 'Hit labor roundtables',
-      weeklyPotential: 125000,
-      askAmount: 165000,
+      weeklyPotential: 108000,
+      askAmount: 145000,
       staminaCost: 5,
       trustRisk: 0,
       momentumBonus: 2,
@@ -143,10 +143,10 @@ function buildBaseDonorBlocs(): Omit<DonorBlocState, 'relationship' | 'energy'>[
       name: 'Business Roundtable',
       description: 'Executives, major investors, and trade groups who can fill the war chest but can hurt populist credibility.',
       askLabel: 'Host finance dinner',
-      weeklyPotential: 210000,
-      askAmount: 320000,
+      weeklyPotential: 185000,
+      askAmount: 285000,
       staminaCost: 6,
-      trustRisk: 7,
+      trustRisk: 8,
       momentumBonus: 0,
       priorities: { owner: 90, libertarian: 50, worker: 15 },
       preferredIssues: ['Economy', 'National Security'],
@@ -157,11 +157,11 @@ function buildBaseDonorBlocs(): Omit<DonorBlocState, 'relationship' | 'energy'>[
       name: 'Movement Activists',
       description: 'Issue-focused networks that reward boldness, clean enemies, and ideological clarity.',
       askLabel: 'Fire up activist lists',
-      weeklyPotential: 105000,
-      askAmount: 130000,
+      weeklyPotential: 92000,
+      askAmount: 115000,
       staminaCost: 4,
       trustRisk: 1,
-      momentumBonus: 5,
+      momentumBonus: 4,
       priorities: { liberal: 78, immigrant: 55, libertarian: 18, worker: 35 },
       preferredIssues: ['Climate Change', 'Civil Rights', 'Immigration'],
       partyAffinity: 'Democrat'
@@ -171,8 +171,8 @@ function buildBaseDonorBlocs(): Omit<DonorBlocState, 'relationship' | 'energy'>[
       name: 'Faith Coalition',
       description: 'Church networks, values PACs, and religious broadcasters that can mobilize loyal, high-turnout communities.',
       askLabel: 'Work the values circuit',
-      weeklyPotential: 115000,
-      askAmount: 145000,
+      weeklyPotential: 102000,
+      askAmount: 130000,
       staminaCost: 4,
       trustRisk: 1,
       momentumBonus: 3,
@@ -185,10 +185,10 @@ function buildBaseDonorBlocs(): Omit<DonorBlocState, 'relationship' | 'energy'>[
       name: 'Tech & Innovation Finance',
       description: 'Startup founders, digital financiers, and online bundlers who love disruption, data, and scale.',
       askLabel: 'Pitch innovation donors',
-      weeklyPotential: 150000,
-      askAmount: 215000,
+      weeklyPotential: 132000,
+      askAmount: 188000,
       staminaCost: 5,
-      trustRisk: 4,
+      trustRisk: 5,
       momentumBonus: 2,
       priorities: { owner: 52, libertarian: 58, liberal: 42, immigrant: 36 },
       preferredIssues: ['Economy', 'Immigration', 'Education'],
@@ -304,13 +304,13 @@ export function askDonorBloc(
   const enthusiasm = (target.relationship * 0.55) + (target.energy * 0.45);
   const amount = Math.round(
     target.askAmount
-    * (0.62 + (compatibility / 260))
-    * (0.58 + (enthusiasm / 210))
+    * (0.56 + (compatibility / 300))
+    * (0.54 + (enthusiasm / 240))
   );
 
   const updated = blocs.map((bloc) => {
     if (bloc.id !== blocId) {
-      const passiveRecovery = bloc.id === 'small_donors' ? 2 : 1;
+      const passiveRecovery = 1;
       return {
         ...bloc,
         energy: clamp(bloc.energy + passiveRecovery),
@@ -321,7 +321,7 @@ export function askDonorBloc(
     const relationshipDelta = target.trustRisk > 4 ? -1 : 1;
     return {
       ...bloc,
-      energy: clamp(bloc.energy - 22),
+      energy: clamp(bloc.energy - 26),
       relationship: clamp(bloc.relationship + relationshipDelta + Math.round((compatibility - 55) / 20))
     };
   });
@@ -359,14 +359,14 @@ export function recoverDonorBlocs(
 ): DonorBlocState[] {
   return blocs.map((bloc) => {
     const compatibility = scoreBlocCompatibility(ideology, bloc, playerIssues, party);
-    const trustModifier = (trust - 50) / 18;
-    const momentumModifier = (momentum - 45) / 22;
-    const targetRelationship = clamp((compatibility * 0.72) + 18 + trustModifier + momentumModifier, 24, 92);
+    const trustModifier = (trust - 50) / 20;
+    const momentumModifier = (momentum - 45) / 30;
+    const targetRelationship = clamp((compatibility * 0.68) + 16 + trustModifier + momentumModifier, 22, 90);
 
     return {
       ...bloc,
-      energy: clamp(bloc.energy + 7 + (bloc.id === 'small_donors' ? Math.max(0, Math.round(momentum / 30)) : 0)),
-      relationship: clamp(bloc.relationship + Math.round((targetRelationship - bloc.relationship) / 6))
+      energy: clamp(bloc.energy + 5 + (bloc.id === 'small_donors' ? Math.max(0, Math.round(momentum / 50)) : 0)),
+      relationship: clamp(bloc.relationship + Math.round((targetRelationship - bloc.relationship) / 7))
     };
   });
 }
@@ -379,7 +379,7 @@ export function getPassiveDonorIncome(
   return Math.round(blocs.reduce((sum, bloc) => {
     const relationshipFactor = bloc.relationship / 100;
     const energyFactor = bloc.energy / 100;
-    const moodFactor = 0.72 + (trust / 260) + (momentum / 280);
+    const moodFactor = 0.58 + (trust / 320) + (momentum / 420);
     return sum + (bloc.weeklyPotential * relationshipFactor * energyFactor * moodFactor);
   }, 0));
 }
@@ -390,7 +390,7 @@ export function investInMediaChannel(
 ): MediaChannelState[] {
   return channels.map((channel) => {
     if (channel.id !== channelId) return channel;
-    const lift = channel.id === 'rapid_response' ? 15 : channel.id === 'earned_media' ? 17 : 18;
+    const lift = channel.id === 'rapid_response' ? 12 : channel.id === 'earned_media' ? 13 : 14;
     return {
       ...channel,
       intensity: clamp(channel.intensity + lift)
@@ -401,7 +401,7 @@ export function investInMediaChannel(
 export function applyWeeklyMediaDecay(channels: MediaChannelState[]): MediaChannelState[] {
   return channels.map((channel) => ({
     ...channel,
-    intensity: clamp(channel.intensity - channel.decay)
+    intensity: clamp(channel.intensity - channel.decay - (channel.intensity >= 35 ? 2 : 0))
   }));
 }
 
@@ -425,9 +425,9 @@ export function getMediaSummary(channels: MediaChannelState[]): MediaSummary {
 
   return {
     weeklyCost: getWeeklyMediaCost(channels),
-    momentumDelta: Math.round((earned * 5.5) + (channelIntensity(channels, 'digital') * 2.5)),
-    trustDelta: Math.round((rapid * 3) + (channelIntensity(channels, 'local_tv') * 1.5) - (channelIntensity(channels, 'cable') * 0.8)),
-    scandalShield: (rapid * 0.35) + (channelIntensity(channels, 'cable') * 0.12),
+    momentumDelta: Math.round((earned * 4.0) + (channelIntensity(channels, 'digital') * 1.8)),
+    trustDelta: Math.round((rapid * 2.4) + (channelIntensity(channels, 'local_tv') * 1.2) - (channelIntensity(channels, 'cable') * 0.9)),
+    scandalShield: (rapid * 0.3) + (channelIntensity(channels, 'cable') * 0.1),
     strongestChannels
   };
 }
@@ -448,20 +448,20 @@ export function getMediaStateEffect(
 
   return {
     scoreMultiplier: 1
-      + (localTv * 0.11 * battlegroundFactor)
-      + (cable * 0.05 * coalitionDensity)
-      + (digital * 0.06 * digitalDensity)
-      + (directMail * 0.05 * coalitionDensity)
-      + (earned * 0.03),
+      + (localTv * 0.08 * battlegroundFactor)
+      + (cable * 0.035 * coalitionDensity)
+      + (digital * 0.045 * digitalDensity)
+      + (directMail * 0.04 * coalitionDensity)
+      + (earned * 0.02),
     turnoutBonus:
-      (digital * (4.2 - (stateData.baseTurnout / 30)))
-      + (directMail * 1.8)
-      + (localTv * 0.9 * battlegroundFactor),
-    stabilityBonus: (rapid * 12) + (cable * 4) + (directMail * 3),
-    trustLift: (rapid * 1.5) + (localTv * 0.8),
-    momentumLift: (earned * 4.5) + (digital * 1.8),
-    rivalPenalty: (rapid * 0.06) + (earned * 0.03),
-    scandalShield: (rapid * 0.38) + (cable * 0.16)
+      (digital * (3.2 - (stateData.baseTurnout / 36)))
+      + (directMail * 1.4)
+      + (localTv * 0.65 * battlegroundFactor),
+    stabilityBonus: (rapid * 9) + (cable * 3) + (directMail * 2),
+    trustLift: (rapid * 1.1) + (localTv * 0.55),
+    momentumLift: (earned * 3.2) + (digital * 1.2),
+    rivalPenalty: (rapid * 0.04) + (earned * 0.02),
+    scandalShield: (rapid * 0.28) + (cable * 0.12)
   };
 }
 

@@ -12,6 +12,10 @@ import {
   buildScenarioShareBundleDownload,
   buildScenarioTemplateBundleDownload
 } from '../core/ScenarioExchange';
+import {
+  buildScenarioWorkshopBriefDownload,
+  buildScenarioWorkshopPublishKitDownload
+} from '../core/ScenarioWorkshop';
 
 const MAX_POINTS = 300;
 const HOME_REGIONS = ['National', 'Northeast', 'Midwest', 'South', 'West'] as const;
@@ -131,8 +135,8 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
     };
   }, [loadMods]);
 
-  const saveDownloadedText = (fileName: string, content: string) => {
-    const blob = new Blob([content], { type: 'application/json;charset=utf-8' });
+  const saveDownloadedText = (fileName: string, content: string, mimeType = 'application/json;charset=utf-8') => {
+    const blob = new Blob([content], { type: mimeType });
     const objectUrl = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = objectUrl;
@@ -264,6 +268,30 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
     setCatalogMessageTone('info');
   };
 
+  const handleDownloadWorkshopPublishKit = (scenarioId: string) => {
+    const scenario = availableMods.find((entry) => entry.id === scenarioId);
+    if (!scenario) {
+      return;
+    }
+
+    const download = buildScenarioWorkshopPublishKitDownload(scenario);
+    saveDownloadedText(download.fileName, download.content);
+    setCatalogMessage(`Downloaded a Workshop publish kit for ${scenario.name}. It bundles scenario metadata, readiness notes, and a portable share file into one creator-facing package.`);
+    setCatalogMessageTone(download.kit.readiness.status === 'blocked' ? 'warning' : 'success');
+  };
+
+  const handleDownloadWorkshopBrief = (scenarioId: string) => {
+    const scenario = availableMods.find((entry) => entry.id === scenarioId);
+    if (!scenario) {
+      return;
+    }
+
+    const download = buildScenarioWorkshopBriefDownload(scenario);
+    saveDownloadedText(download.fileName, download.content, 'text/markdown;charset=utf-8');
+    setCatalogMessage(`Downloaded a publish brief for ${scenario.name}. It includes workshop-style title copy, tags, release notes scaffolding, and screenshot guidance.`);
+    setCatalogMessageTone('info');
+  };
+
   const handleRemoveScenario = async (scenarioId: string) => {
     CampaignDataParser.removeImportedScenario(scenarioId);
     await loadMods(true);
@@ -290,6 +318,8 @@ export const CandidateCreator: React.FC<{ onComplete: () => void }> = ({ onCompl
             onImportScenarioFiles={handleImportScenarioFiles}
             onExportScenarioBundle={handleExportScenarioBundle}
             onDownloadScenarioTemplate={handleDownloadScenarioTemplate}
+            onDownloadWorkshopPublishKit={handleDownloadWorkshopPublishKit}
+            onDownloadWorkshopBrief={handleDownloadWorkshopBrief}
             onRemoveScenario={handleRemoveScenario}
             importBusy={importBusy}
             statusMessage={catalogMessage}

@@ -129,6 +129,15 @@ function validateManifestEntry(
   if (!entry.minGameVersion?.trim()) {
     addFinding(findings, 'info', 'manifest.min_game_version', 'Minimum compatible game version is missing.', 'manifest');
   }
+  if (entry.workshopTitle?.trim() && entry.workshopTitle.trim().length > 70) {
+    addFinding(findings, 'warning', 'manifest.workshop_title_length', 'Workshop title should stay under about 70 characters for cleaner listing cards.', 'manifest');
+  }
+  if (entry.workshopSummary?.trim() && entry.workshopSummary.trim().length > 180) {
+    addFinding(findings, 'warning', 'manifest.workshop_summary_length', 'Workshop summary should stay concise enough for a store-style short description.', 'manifest');
+  }
+  if (entry.workshopTags && entry.workshopTags.length > 8) {
+    addFinding(findings, 'warning', 'manifest.workshop_tags', 'Workshop tags should stay concise; aim for 8 or fewer.', 'manifest');
+  }
   if (!Array.isArray(entry.focus) || entry.focus.length === 0) {
     addFinding(findings, 'warning', 'manifest.focus', 'Focus tags are missing; the browser will not be able to explain the scenario lane.', 'manifest');
   }

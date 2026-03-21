@@ -12,6 +12,8 @@ dist
 dist-ssr
 release
 *.local
+output/
+progress.md
 
 # Editor directories and files
 .vscode/*

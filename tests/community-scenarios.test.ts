@@ -15,6 +15,12 @@ import {
   importScenarioRecordFromBundle,
   SCENARIO_SHARE_BUNDLE_EXTENSION
 } from '../src/core/ScenarioExchange.ts';
+import {
+  buildScenarioWorkshopBriefDownload,
+  buildScenarioWorkshopPreview,
+  buildScenarioWorkshopPublishKitDownload,
+  SCENARIO_WORKSHOP_KIT_EXTENSION
+} from '../src/core/ScenarioWorkshop.ts';
 import type { ScenarioCatalogEntry } from '../src/core/ScenarioValidation.ts';
 
 function createMemoryStorage(): StorageLike {
@@ -66,6 +72,10 @@ const sampleCatalogEntry: ScenarioCatalogEntry = {
   author: 'Test Creator',
   version: '2.1.0',
   minGameVersion: '0.4.0',
+  workshopTitle: 'Future Path Deluxe',
+  workshopSummary: 'A Workshop-ready short pitch for a future-election scenario.',
+  workshopTags: ['Campaign Sim', 'Future Politics', 'Hardcore Challenge'],
+  workshopVisibility: 'public',
   states: sampleStates,
   validation: {
     isValid: true,
@@ -169,4 +179,32 @@ test('creator template bundles preserve a launchable scenario shell with placeho
   assert.equal(imported.manifest.version, '0.1.0');
   assert.equal(imported.manifest.official, false);
   assert.ok(imported.importNotes.some((note) => note.includes('creator template bundle')));
+});
+
+test('workshop preview honors manifest overrides and produces publish metadata', () => {
+  const preview = buildScenarioWorkshopPreview(sampleCatalogEntry);
+
+  assert.equal(preview.metadata.title, 'Future Path Deluxe');
+  assert.equal(preview.metadata.visibility, 'public');
+  assert.deepEqual(preview.metadata.tags, ['Campaign Sim', 'Future Politics', 'Hardcore Challenge']);
+  assert.ok(preview.metadata.longDescription.includes('Strategic focus'));
+  assert.ok(preview.readiness.score > 70);
+});
+
+test('workshop publish kits embed a share bundle and diagnostics for creators', () => {
+  const download = buildScenarioWorkshopPublishKitDownload(sampleCatalogEntry);
+
+  assert.ok(download.fileName.endsWith(SCENARIO_WORKSHOP_KIT_EXTENSION));
+  assert.equal(download.kit.shareBundle.exportSource.scenarioId, sampleCatalogEntry.id);
+  assert.ok(download.kit.metadata.shortDescription.includes('Workshop-ready'));
+  assert.equal(download.kit.readiness.status, 'launch_ready');
+});
+
+test('workshop briefs export human-readable markdown scaffolding', () => {
+  const download = buildScenarioWorkshopBriefDownload(sampleCatalogEntry);
+
+  assert.ok(download.fileName.endsWith('.md'));
+  assert.ok(download.content.includes('# Future Path Deluxe'));
+  assert.ok(download.content.includes('## Suggested Tags'));
+  assert.ok(download.content.includes('Compatibility'));
 });

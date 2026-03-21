@@ -855,6 +855,14 @@ function computeEVTotals(states: StateElectionData[], pollingData: Record<string
   return { playerEV, rivalEV };
 }
 
+const CAMPAIGN_LAUNCH_DEFAULTS = {
+  budget: 135000,
+  publicTrust: 54,
+  momentum: 10,
+  stamina: 82,
+  volunteerReserve: 78
+} as const;
+
 const initialState: Omit<GameState, 'initializeCampaign' | 'runSimulation' | 'setSpending' | 'buildFieldOffice' | 'deployVolunteers' | 'withdrawVolunteers' | 'deploySurrogate' | 'hireStaff' | 'selectVP' | 'advanceWeek' | 'addBudget' | 'spendBudget' | 'addMomentum' | 'resolveEvent' | 'answerDebateQuestion' | 'advanceDebate' | 'previewDebate' | 'answerConventionChoice' | 'advanceConvention' | 'courtEndorsement' | 'advanceElectionNight' | 'finalizeElectionNight' | 'fundraiseFromBloc' | 'investInMedia' | 'commissionResearch' | 'releaseResearchLead' | 'saveGame' | 'loadGame' | 'getSaveSlots' | 'setHasStarted' | 'resetGame'> = {
   currentWeek: 1,
   calendar: [] as CalendarWeek[],
@@ -868,8 +876,8 @@ const initialState: Omit<GameState, 'initializeCampaign' | 'runSimulation' | 'se
 
   playerName: 'Your Candidate',
   playerHomeRegion: 'National' as PlayerHomeRegion,
-  budget: 150000,
-  publicTrust: 58,
+  budget: CAMPAIGN_LAUNCH_DEFAULTS.budget,
+  publicTrust: CAMPAIGN_LAUNCH_DEFAULTS.publicTrust,
   playerIdeology: {
     liberal: 50,
     libertarian: 50,
@@ -878,8 +886,8 @@ const initialState: Omit<GameState, 'initializeCampaign' | 'runSimulation' | 'se
     religious: 50,
     immigrant: 50
   },
-  momentum: 12,
-  stamina: 85,
+  momentum: CAMPAIGN_LAUNCH_DEFAULTS.momentum,
+  stamina: CAMPAIGN_LAUNCH_DEFAULTS.stamina,
 
   playerDelegates: 0,
   rivalDelegates: 0,
@@ -1444,15 +1452,27 @@ export const useGameStore = create<GameState>((set, get) => ({
     const oppositionResearch = createOppositionResearchBoard(opponents);
 
     set({
+      currentWeek: 1,
       states: statesData,
+      budget: CAMPAIGN_LAUNCH_DEFAULTS.budget,
+      publicTrust: CAMPAIGN_LAUNCH_DEFAULTS.publicTrust,
+      momentum: CAMPAIGN_LAUNCH_DEFAULTS.momentum,
       campaignSpending: spending,
       fieldOperations: createInitialFieldOperations(statesData),
-      volunteerReserve: 90,
+      volunteerReserve: CAMPAIGN_LAUNCH_DEFAULTS.volunteerReserve,
       delegateTarget: primaryTarget,
       calendar,
       calendarPhase: 'campaigning',
       gamePhase: 'primary',
-      stamina: 85,
+      stamina: CAMPAIGN_LAUNCH_DEFAULTS.stamina,
+      playerDelegates: 0,
+      rivalDelegates: 0,
+      contestedStates: [],
+      pollingData: {},
+      nationalPollingHistory: [],
+      hiredStaff: [],
+      vpPick: null,
+      vpSelectionPending: false,
       fundraisingStreakWeeks: 0,
       pacFundraisedThisWeek: false,
       endReason: null,
@@ -1473,6 +1493,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       activityLog: [{
         week: 1,
         message: `Campaign launched — ${calendar[0]?.month ?? 'July'} ${calendar[0]?.year ?? state.scenarioElectionYear - 1}. ${statesData.length} contests in play. You are facing ${opponents.length} major primary opponents.`,
+        type: 'info'
+      }, {
+        week: 1,
+        message: `Launch posture: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(CAMPAIGN_LAUNCH_DEFAULTS.budget)} cash on hand, trust ${CAMPAIGN_LAUNCH_DEFAULTS.publicTrust}/100, momentum ${CAMPAIGN_LAUNCH_DEFAULTS.momentum}/100.`,
         type: 'info'
       }]
     });
@@ -2334,19 +2358,19 @@ export const useGameStore = create<GameState>((set, get) => ({
       getCandidateEndorsementSummary(updatedEndorsements, 'player').count,
       state.hiredStaff.includes('field_organizer')
     ));
-    const nextVolunteerReserve = Math.min(2400, state.volunteerReserve + volunteerRecruitment);
+    const nextVolunteerReserve = Math.min(2200, state.volunteerReserve + volunteerRecruitment);
 
     if (phaseChanged && newCalendarPhase === 'primary') {
       newLog.push({ week: nextWeek, message: 'Primary season begins. Early contests are about to shape the field.', type: 'info' });
     }
 
-    const trustLoss = newCalendarPhase === 'general' ? 4 : newCalendarPhase === 'primary' ? 3 : 2;
+    const trustLoss = newCalendarPhase === 'general' ? 5 : newCalendarPhase === 'primary' ? 4 : 3;
     let newTrust = Math.max(0, state.publicTrust - trustLoss + mediaSummary.trustDelta);
 
     let newStamina = state.stamina;
     const totalVisits = Object.values(state.campaignSpending).reduce((sum, spending) => sum + (spending.visits || 0), 0);
-    const rallyFatigue = Math.min(14, totalVisits * 4);
-    newStamina = Math.max(0, newStamina - 3 - rallyFatigue);
+    const rallyFatigue = Math.min(16, Math.ceil(totalVisits * 4.5));
+    newStamina = Math.max(0, newStamina - 4 - rallyFatigue);
     if (state.hiredStaff.includes('pr_manager')) newStamina = Math.min(100, newStamina + 1);
     let endorsementMomentumBonus = 0;
     if (newStamina < 25) {
@@ -2575,7 +2599,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       endorsementResolution.newlyEndorsed.forEach(({ endorsement, candidateId }) => {
         if (candidateId === 'player') {
-          endorsementAnnouncementBudgetBonus += Math.floor(endorsement.effects.weeklyFundraising * 1.5);
+          endorsementAnnouncementBudgetBonus += Math.floor(endorsement.effects.weeklyFundraising * 1.2);
           endorsementMomentumBonus += endorsement.effects.momentumBoost;
           newTrust = clampStat(newTrust + endorsement.effects.trustBoost);
           newLog.push({
@@ -2590,7 +2614,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           if (rival.id !== candidateId) return rival;
           return {
             ...rival,
-            budget: rival.budget + Math.floor(endorsement.effects.weeklyFundraising * 1.5),
+            budget: rival.budget + Math.floor(endorsement.effects.weeklyFundraising * 1.2),
             momentum: clampStat(rival.momentum + endorsement.effects.momentumBoost),
             trust: clampStat(rival.trust + endorsement.effects.trustBoost),
             supportBase: rival.supportBase + endorsement.effects.conventionWeight
@@ -2705,26 +2729,26 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     let momentumLoss: number;
     switch (newCalendarPhase) {
-      case 'campaigning': momentumLoss = 5; break;
-      case 'primary': momentumLoss = 7; break;
-      case 'convention': momentumLoss = 3; break;
-      case 'general': momentumLoss = 9; break;
+      case 'campaigning': momentumLoss = 6; break;
+      case 'primary': momentumLoss = 8; break;
+      case 'convention': momentumLoss = 4; break;
+      case 'general': momentumLoss = 10; break;
       case 'election_day': momentumLoss = 0; break;
       default: momentumLoss = 6;
     }
     if (state.hiredStaff.includes('pr_manager')) momentumLoss = Math.max(0, momentumLoss - 1);
-    const conventionBounce = phaseChanged && newCalendarPhase === 'convention' ? 8 : 0;
+    const conventionBounce = phaseChanged && newCalendarPhase === 'convention' ? 6 : 0;
 
     const coalitionFundraising = getCandidateEndorsementSummary(updatedEndorsements, 'player').weeklyFundraising;
     const donorIncome = getPassiveDonorIncome(updatedDonorBlocs, newTrust, state.momentum + mediaSummary.momentumDelta);
     const currentFieldSummary = getFieldNetworkSummary(nextFieldOperations);
     const fieldOfficeUpkeep = getTotalOfficeUpkeep(nextFieldOperations, state.states);
     const mediaOverhead = getWeeklyMediaCost(updatedMediaChannels);
-    const passiveIncome = Math.floor(6000 + (state.momentum / 100) * 14000) + donorIncome + coalitionFundraising + endorsementAnnouncementBudgetBonus;
-    const weeklyOverhead = 24000 + (state.hiredStaff.length * 7000) + fieldOfficeUpkeep + mediaOverhead;
+    const passiveIncome = Math.floor(4000 + (state.momentum / 100) * 9000) + donorIncome + coalitionFundraising + endorsementAnnouncementBudgetBonus;
+    const weeklyOverhead = 26000 + (state.hiredStaff.length * 8000) + fieldOfficeUpkeep + mediaOverhead;
     const nextBudget = Math.max(0, state.budget + passiveIncome - weeklyOverhead);
     newLog.push({ week: nextWeek, message: `Fundraising: +${(passiveIncome / 1000).toFixed(0)}K across donor lanes and national support.`, type: 'info' });
-    newLog.push({ week: nextWeek, message: `Donor network: +${(donorIncome / 1000).toFixed(0)}K from active blocs with ${updatedDonorBlocs.filter((bloc) => bloc.relationship >= 60).length} warm lanes.`, type: donorIncome > 140000 ? 'positive' : 'info' });
+    newLog.push({ week: nextWeek, message: `Donor network: +${(donorIncome / 1000).toFixed(0)}K from active blocs with ${updatedDonorBlocs.filter((bloc) => bloc.relationship >= 60).length} warm lanes.`, type: donorIncome > 120000 ? 'positive' : 'info' });
     if (coalitionFundraising > 0) {
       newLog.push({ week: nextWeek, message: `Coalition network: +${(coalitionFundraising / 1000).toFixed(0)}K from endorsements and surrogate finance channels.`, type: 'positive' });
     }
@@ -2792,8 +2816,8 @@ export const useGameStore = create<GameState>((set, get) => ({
           ...NEGATIVE_SHOCK_EVENTS,
           ...getScenarioEventDeck(state.scenarioId, eventPhase, 'negative')
         ].filter((event) => !event.phase || event.phase === 'any' || event.phase === eventPhase);
-        const shieldedShockChance = Math.max(0.12, (newCalendarPhase === 'general' ? 0.38 : newCalendarPhase === 'primary' ? 0.30 : 0.22) - mediaSummary.scandalShield);
-        const eventChance = newCalendarPhase === 'general' ? 0.70 : newCalendarPhase === 'primary' ? 0.58 : 0.45;
+        const shieldedShockChance = Math.max(0.14, (newCalendarPhase === 'general' ? 0.42 : newCalendarPhase === 'primary' ? 0.34 : 0.24) - mediaSummary.scandalShield);
+        const eventChance = newCalendarPhase === 'general' ? 0.58 : newCalendarPhase === 'primary' ? 0.48 : 0.36;
 
         if (Math.random() < shieldedShockChance && shockEvents.length > 0) {
           randomEvent = shockEvents[Math.floor(Math.random() * shockEvents.length)];
